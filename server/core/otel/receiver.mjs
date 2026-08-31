@@ -78,6 +78,17 @@ export function parseOtlpMetrics(body) {
 const round = (n) => Math.round(n * 1e6) / 1e6;
 const dayOf = (ts) => new Date(ts).toISOString().slice(0, 10);
 
+/** Canonical token-usage type. Claude Code emits input/output/cacheRead/cacheCreation. */
+export function normalizeTokenType(t) {
+  const v = String(t || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (v === "input") return "input";
+  if (v === "output") return "output";
+  if (v === "cacheread") return "cacheRead";
+  if (v === "cachecreation" || v === "cachecreate" || v === "cachewrite")
+    return "cacheCreation";
+  return "other";
+}
+
 /** First present attribution value across a few known attribute spellings. */
 function pick(attrs, keys) {
   for (const k of keys) {
@@ -96,8 +107,14 @@ export class OtelStore {
    */
   constructor(opts = {}) {
     this.dir = opts.dir || null;
-    this.retentionDays = opts.retentionDays ?? 14;
+    this.retentionDays = opts.retentionDays ?? 90;
     this.now = opts.now || (() => Date.now());
+    /**
+     * Per-day, per-model aggregates for the 7d/30d/all-time windows. "all" is
+     * bounded by retentionDays — the honest maximum this store can answer for.
+     * @type {Map<string, Map<string, {costUsd:number, tokens:number, types:Record<string,number>}>>}
+     */
+    this.byDay = new Map();
     /** @type {Record<string, {costUsd:number, tokens:number}>} */
     this.byModel = {};
     /** @type {Record<string, {costUsd:number, tokens:number}>} */
@@ -162,7 +179,73 @@ export class OtelStore {
     this._bucket(this.byModel, rec.model || "unknown", cost, tokens);
     this._bucket(this.byAgentType, rec.agentType, cost, tokens);
     this._bucket(this.byQuerySource, rec.querySource, cost, tokens);
+    this._bucketDay(rec, cost, tokens);
     return true;
+  }
+
+  /** Fold one record into the per-day, per-model window aggregates. */
+  _bucketDay(rec, cost, tokens) {
+    const day = dayOf(rec.ts || this.now());
+    let models = this.byDay.get(day);
+    if (!models) this.byDay.set(day, (models = new Map()));
+    const model = rec.model || "unknown";
+    let agg = models.get(model);
+    if (!agg) models.set(model, (agg = { costUsd: 0, tokens: 0, types: {} }));
+    agg.costUsd += cost;
+    agg.tokens += tokens;
+    if (tokens) {
+      const type = normalizeTokenType(rec.tokenType);
+      agg.types[type] = (agg.types[type] || 0) + tokens;
+    }
+  }
+
+  /**
+   * Time-windowed totals + per-model input/output/cache breakdowns.
+   * "all" spans everything loaded, i.e. at most retentionDays of history.
+   * @returns {{ d7: object, d30: object, all: object }}
+   */
+  windows() {
+    const build = (cutoffDay) => {
+      /** @type {Record<string, {costUsd:number, tokens:number, types:Record<string,number>}>} */
+      const perModel = {};
+      let costUsd = 0;
+      let tokens = 0;
+      let days = 0;
+      for (const [day, models] of this.byDay) {
+        if (cutoffDay && day < cutoffDay) continue;
+        days++;
+        for (const [model, v] of models) {
+          const agg =
+            perModel[model] ||
+            (perModel[model] = { costUsd: 0, tokens: 0, types: {} });
+          agg.costUsd += v.costUsd;
+          agg.tokens += v.tokens;
+          costUsd += v.costUsd;
+          tokens += v.tokens;
+          for (const [t, n] of Object.entries(v.types))
+            agg.types[t] = (agg.types[t] || 0) + n;
+        }
+      }
+      const models = Object.entries(perModel)
+        .map(([model, v]) => ({
+          model,
+          costUsd: round(v.costUsd),
+          tokens: v.tokens,
+          input: v.types.input || 0,
+          output: v.types.output || 0,
+          cacheRead: v.types.cacheRead || 0,
+          cacheCreation: v.types.cacheCreation || 0,
+          other: v.types.other || 0,
+        }))
+        .sort((a, b) => b.costUsd - a.costUsd || b.tokens - a.tokens);
+      return { costUsd: round(costUsd), tokens, days, models };
+    };
+    const now = this.now();
+    return {
+      d7: build(dayOf(now - 7 * 86400000)),
+      d30: build(dayOf(now - 30 * 86400000)),
+      all: build(null),
+    };
   }
 
   /** @param {any} body OTLP-JSON metrics payload */
@@ -238,6 +321,7 @@ export class OtelStore {
         agentType,
         querySource,
         sessionId,
+        tokenType,
         id,
         ...(r.cumulative ? { cumulative: true, seriesKey, cumRaw } : {}),
       };
@@ -294,6 +378,7 @@ export class OtelStore {
 
   /** Reset the in-memory aggregates (before a rebuild from surviving files). */
   _resetAggregates() {
+    this.byDay = new Map();
     this.byModel = {};
     this.byAgentType = {};
     this.byQuerySource = {};
@@ -350,6 +435,8 @@ export class OtelStore {
       byAgentType: project(this.byAgentType),
       byQuerySource: project(this.byQuerySource),
       records: this.records,
+      retentionDays: this.retentionDays,
+      windows: this.windows(),
       // Provenance parity with the live rollup: OTEL cost is an estimate, not
       // billed spend.
       estimated: true,

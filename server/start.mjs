@@ -169,9 +169,11 @@ let eventStore = new EventStore(eventsDir);
 // pointed at this panel; loopback + Host-check gate it (OTEL sends no auth).
 // Persist attributed records under the shared runtime dir so history survives
 // a restart; retention drops day files past the window.
+// 90 days so the Cost view's 30d window (and a meaningful "all-time") have
+// history to answer from; day files are small NDJSON.
 const otelStore = new OtelStore({
   dir: join(sharedEventsDir, "..", "otel"),
-  retentionDays: 14,
+  retentionDays: 90,
 });
 const INGEST_TOKEN = randomBytes(24).toString("hex");
 try {
@@ -329,6 +331,7 @@ async function currentSnapshot() {
     validation: readValidationCache(),
     jobs: jobs.list(),
     forge: forgeCache,
+    otel: otelStore.summary(),
     events: eventStore.reconcile().snapshot(),
     perf,
     panel: {

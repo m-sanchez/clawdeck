@@ -131,7 +131,7 @@ function buildAttention(runs, reviews, validation) {
 
 /**
  * @param {{ checkoutId: string, checkoutRoot: string, repoRoot: string, branch?: string, runtimeDir: string }} ctx
- * @param {{ reviews: any, validation: any, jobs?: any[], panel?: any, forge?: any, events?: any, perf?: any }} cached
+ * @param {{ reviews: any, validation: any, jobs?: any[], panel?: any, forge?: any, otel?: any, events?: any, perf?: any }} cached
  */
 export async function buildSnapshot(ctx, cached) {
   const perf = cached.perf ?? null;
@@ -190,6 +190,9 @@ export async function buildSnapshot(ctx, cached) {
   }
   const cost = {
     rollup: rollupCost(telemetry, events),
+    // Historical windows come from the optional OTEL receiver; absent = the
+    // Cost view shows its enable hint instead of the window tabs.
+    otel: cached.otel ?? { enabled: false },
     findings: detectWaste(telemetry, events, {
       agentModelPins: readAgentModelPins(ctx.checkoutRoot),
     }),

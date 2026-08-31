@@ -3521,3 +3521,37 @@ kbd {
 .wizard-foot .spacer {
   flex: 1;
 }
+
+/* ── Cost history window tabs + per-model token table ── */
+.cost-window-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.cost-window-tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+.cost-model-table {
+  display: grid;
+  gap: 2px;
+  overflow-x: auto;
+}
+.cost-model-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.6fr) 70px repeat(4, minmax(58px, 1fr));
+  gap: 8px;
+  align-items: center;
+  padding: 4px 2px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cost-model-row:last-child {
+  border-bottom: 0;
+}
+.cost-model-head {
+  border-bottom: 1px solid var(--line);
+}
+.btn-sm {
+  padding: 2px 10px;
+  font-size: 12px;
+}

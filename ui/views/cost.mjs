@@ -3,6 +3,96 @@ import { el, card, pill, emptyState } from "../lib/dom.mjs";
 
 const usd = (n) => "$" + (Number(n) || 0).toFixed(2);
 const pct = (n) => Math.round((Number(n) || 0) * 100) + "%";
+const compact = (n) => {
+  const v = Number(n) || 0;
+  if (v >= 1e9) return (v / 1e9).toFixed(1) + "B";
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + "k";
+  return String(v);
+};
+
+// Module-level so the choice survives auto re-renders on each snapshot.
+let selectedWindow = "d7";
+const WINDOW_LABELS = [
+  ["d7", "7d"],
+  ["d30", "30d"],
+  ["all", "all-time"],
+];
+
+/** Historical per-model token/cost breakdown from the OTEL receiver. */
+function historyCard(app, otel) {
+  if (!otel || !otel.enabled) {
+    return card("History by model", [
+      emptyState(
+        "No OTEL history yet.",
+        "Point Claude Code's OTEL metrics exporter (OTLP-JSON) at the panel's /v1/metrics to get 7d / 30d / all-time cost and token breakdowns.",
+      ),
+    ]);
+  }
+  const windows = otel.windows || {};
+  const win = windows[selectedWindow] || { costUsd: 0, tokens: 0, models: [] };
+
+  const tabs = el(
+    "div",
+    { class: "cost-window-tabs", role: "tablist" },
+    WINDOW_LABELS.map(([key, label]) => {
+      const btn = el("button", {
+        class: `btn btn-sm ${key === selectedWindow ? "btn-primary" : ""}`,
+        role: "tab",
+        "aria-selected": String(key === selectedWindow),
+        text: label,
+      });
+      btn.addEventListener("click", () => {
+        selectedWindow = key;
+        app.rerender?.();
+      });
+      return btn;
+    }),
+  );
+
+  const header = el("div", { class: "cp-row cost-window-head" }, [
+    tabs,
+    el("span", {
+      class: "muted small",
+      text:
+        `${usd(win.costUsd)} · ${compact(win.tokens)} tokens · ${win.days || 0} day(s)` +
+        (selectedWindow === "all"
+          ? ` · bounded by ${otel.retentionDays || 90}d retention`
+          : ""),
+    }),
+  ]);
+
+  const models = win.models || [];
+  const table = models.length
+    ? el("div", { class: "cost-model-table" }, [
+        el("div", { class: "cost-model-row cost-model-head muted small" }, [
+          el("span", { text: "model" }),
+          el("span", { text: "cost" }),
+          el("span", { text: "input" }),
+          el("span", { text: "output" }),
+          el("span", { text: "cache read" }),
+          el("span", { text: "cache write" }),
+        ]),
+        ...models.map((m) =>
+          el("div", { class: "cost-model-row" }, [
+            pill(m.model, /fable/i.test(m.model) ? "warn" : "info"),
+            el("strong", { text: usd(m.costUsd) }),
+            el("span", { class: "mono small", text: compact(m.input) }),
+            el("span", { class: "mono small", text: compact(m.output) }),
+            el("span", { class: "mono small", text: compact(m.cacheRead) }),
+            el("span", { class: "mono small", text: compact(m.cacheCreation) }),
+          ]),
+        ),
+      ])
+    : emptyState(
+        "No usage in this window.",
+        "Records appear as the OTEL exporter delivers cost/token metrics.",
+      );
+
+  return card("History by model", el("div", {}, [header, table]), {
+    help: "Historical windows from the optional OTEL receiver (estimated API-equivalent, not billed). Token columns: input / output / cache read / cache write.",
+  });
+}
 
 function kpi(label, value, sub, tone) {
   return el("div", { class: `kpi-card ${tone ? `kpi-${tone}` : ""}` }, [
@@ -70,7 +160,7 @@ export function render(app) {
     { class: "muted small", style: "margin:4px 0 2px" },
     [
       el("span", {
-        text: `Estimated API-equivalent cost from ${rollup.costSource || "the local statusline"} — not confirmed billed spend.`,
+        text: `Estimated API-equivalent cost from ${rollup.costSource || "the local statusline"} - not confirmed billed spend.`,
       }),
     ],
   );
@@ -161,7 +251,13 @@ export function render(app) {
     el(
       "div",
       { class: "cp-card-grid" },
-      [warnings, modelCard, agentCard, findings].filter(Boolean),
+      [
+        warnings,
+        historyCard(app, cost.otel),
+        modelCard,
+        agentCard,
+        findings,
+      ].filter(Boolean),
     ),
   ]);
 }
