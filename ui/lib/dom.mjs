@@ -245,3 +245,18 @@ export function worktreeSelect(app, value, onChange) {
     ],
   );
 }
+
+/** Display name + reference glyph for a forge provider id. */
+export function forgeLabel(provider) {
+  const names = {
+    github: "GitHub",
+    gitlab: "GitLab",
+    bitbucket: "Bitbucket",
+    gitea: "Gitea",
+    azuredevops: "Azure DevOps",
+  };
+  return {
+    name: names[provider] || "Forge",
+    ref: provider === "gitlab" ? "!" : "#",
+  };
+}

@@ -2,7 +2,7 @@
 /** Panel SPA bootstrap: router, store, SSE wiring, Clawd integration, config. */
 import "./clawd/clawd-element.mjs";
 import { bootstrapToken } from "./lib/token-bootstrap.mjs";
-import { el, clear, relTime, absTime } from "./lib/dom.mjs";
+import { el, clear, relTime, absTime, forgeLabel } from "./lib/dom.mjs";
 import { api, connectEvents } from "./lib/api.mjs";
 import { openPalette } from "./lib/command-palette.mjs";
 import { initTooltips } from "./lib/tooltip.mjs";
@@ -595,8 +595,7 @@ function route() {
 function reviewForgeHeader() {
   const g = store.snapshot?.forge;
   if (!g || !g.configured) return null;
-  const name = g.provider === "github" ? "GitHub" : "GitLab";
-  const ref = g.provider === "github" ? "#" : "!";
+  const { name, ref } = forgeLabel(g.provider);
   const parts = [];
   if (g.mr)
     parts.push(

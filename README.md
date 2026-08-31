@@ -119,14 +119,17 @@ read-only:
   optional for public repos.
 - **GitLab** (gitlab.com + self-hosted) - MRs and pipelines. Needs
   `GITLAB_TOKEN`.
-- Roadmap: Bitbucket Cloud, Gitea/Forgejo, Azure DevOps.
+- **Bitbucket Cloud** - PRs and Pipelines. Needs `BITBUCKET_TOKEN` (a
+  repository/workspace access token).
+- **Azure DevOps** - PRs and builds. Needs `AZURE_DEVOPS_TOKEN` (a PAT).
+- **Gitea / Forgejo** - PRs and commit status. Self-hosted hosts are
+  anonymous, so opt in with `GITEA_URL` (+ `GITEA_TOKEN` for private repos).
 
 Tokens live in the observed project's `.claude/settings.local.json` (or env)
 and never reach the browser.
 
 ## Roadmap
 
-- More forge connectors (above).
 - Stale-while-revalidate snapshot refresh and dirty-section re-rendering.
 - Session → subagent hierarchy tree view.
 

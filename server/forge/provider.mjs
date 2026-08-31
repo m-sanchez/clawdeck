@@ -5,8 +5,9 @@
  * server-side only (env or the checkout's settings.local.json) and never reach
  * the browser.
  *
- * v0.1 providers: github, gitlab (self-hosted included). Unknown hosts default
- * to gitlab, whose API shape most self-hosted forges follow.
+ * Providers: github, gitlab, bitbucket (Cloud), gitea/forgejo (env-forced,
+ * since a self-hosted host name reveals nothing), azuredevops. Unknown hosts
+ * default to gitlab, whose API shape most self-hosted forges follow.
  */
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -54,12 +55,17 @@ function settingsEnv(checkoutRoot, name) {
   }
 }
 
+const TOKEN_VARS = {
+  github: "GITHUB_TOKEN",
+  gitlab: "GITLAB_TOKEN",
+  bitbucket: "BITBUCKET_TOKEN",
+  gitea: "GITEA_TOKEN",
+  azuredevops: "AZURE_DEVOPS_TOKEN",
+};
+
 /** Provider token for this checkout. Never logged or returned to the client. */
 export function forgeToken(checkoutRoot, provider) {
-  return settingsEnv(
-    checkoutRoot,
-    provider === "github" ? "GITHUB_TOKEN" : "GITLAB_TOKEN",
-  );
+  return settingsEnv(checkoutRoot, TOKEN_VARS[provider] || "GITLAB_TOKEN");
 }
 
 /**
@@ -69,6 +75,20 @@ export function forgeToken(checkoutRoot, provider) {
 export async function detectForge(checkoutRoot) {
   const forced = (process.env.FORGE_PROVIDER || "").toLowerCase();
 
+  if (forced === "gitea" || (!forced && process.env.GITEA_URL)) {
+    // Gitea/Forgejo hosts are indistinguishable from any self-hosted git, so
+    // the provider is opt-in via env; project still comes from the remote.
+    const webBase = (process.env.GITEA_URL || "").replace(/\/+$/, "");
+    const parsedRemote = parseRemote(await remoteUrl(checkoutRoot));
+    const project = process.env.GITEA_REPO || parsedRemote?.path || null;
+    if (webBase && project)
+      return {
+        provider: "gitea",
+        apiBase: `${webBase}/api/v1`,
+        webBase,
+        project,
+      };
+  }
   if (forced === "github" || (!forced && process.env.GITHUB_REPO)) {
     const project = process.env.GITHUB_REPO || null;
     if (project)
@@ -97,6 +117,27 @@ export async function detectForge(checkoutRoot) {
   const parsed = parseRemote(await remoteUrl(checkoutRoot));
   if (!parsed) return null;
   const { host, path } = parsed;
+  if (/(^|\.)bitbucket\.org$/.test(host))
+    return {
+      provider: "bitbucket",
+      apiBase: "https://api.bitbucket.org/2.0",
+      webBase: "https://bitbucket.org",
+      project: path.split("/").slice(0, 2).join("/"),
+    };
+  if (host === "dev.azure.com" || host === "ssh.dev.azure.com") {
+    // https://dev.azure.com/{org}/{project}/_git/{repo} or ssh v3:{org}/{project}/{repo}
+    const segs = path
+      .replace(/^v3\//, "")
+      .split("/")
+      .filter((x) => x !== "_git");
+    if (segs.length >= 3)
+      return {
+        provider: "azuredevops",
+        apiBase: `https://dev.azure.com/${segs[0]}`,
+        webBase: `https://dev.azure.com/${segs[0]}`,
+        project: `${segs[1]}/${segs[2]}`,
+      };
+  }
   if (/(^|\.)github\.com$/.test(host))
     return {
       provider: "github",

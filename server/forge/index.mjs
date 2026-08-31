@@ -5,11 +5,14 @@
  * degrades to `{ configured: false }` when no forge is detected or (for GitLab)
  * no token is available, so the panel stays useful offline.
  *
- * v0.1 connectors: GitHub, GitLab. Bitbucket / Gitea / Azure DevOps: roadmap.
+ * Connectors: GitHub, GitLab, Bitbucket Cloud, Gitea/Forgejo, Azure DevOps.
  */
 import { detectForge, forgeToken } from "./provider.mjs";
 import { gitlabStatus, gitlabNewMrUrl } from "./gitlab.mjs";
 import { githubStatus, githubNewMrUrl } from "./github.mjs";
+import { bitbucketStatus, bitbucketNewMrUrl } from "./bitbucket.mjs";
+import { giteaStatus, giteaNewMrUrl } from "./gitea.mjs";
+import { azureStatus, azureNewMrUrl } from "./azure.mjs";
 
 const DETECT_TTL_MS = 60000;
 const detectCache = new Map();
@@ -30,9 +33,10 @@ export async function getForgeStatus(checkoutRoot, branch) {
   const forge = await forgeFor(checkoutRoot);
   if (!forge) return { configured: false };
   const token = forgeToken(checkoutRoot, forge.provider);
-  // GitHub answers unauthenticated for public repos; GitLab effectively never
-  // does for the MR list, so treat a tokenless GitLab as unconfigured.
-  if (!token && forge.provider === "gitlab") return { configured: false };
+  // GitHub and Gitea answer unauthenticated for public repos; the others
+  // effectively never do, so tokenless there reads as unconfigured.
+  const tokenOptional = forge.provider === "github" || forge.provider === "gitea";
+  if (!token && !tokenOptional) return { configured: false };
   if (!branch)
     return {
       configured: true,
@@ -41,16 +45,26 @@ export async function getForgeStatus(checkoutRoot, branch) {
       mr: null,
       pipeline: null,
     };
-  return forge.provider === "github"
-    ? githubStatus(forge, token, branch)
-    : gitlabStatus(forge, token, branch);
+  const impl = {
+    github: githubStatus,
+    gitlab: gitlabStatus,
+    bitbucket: bitbucketStatus,
+    gitea: giteaStatus,
+    azuredevops: azureStatus,
+  }[forge.provider];
+  return impl ? impl(forge, token, branch) : { configured: false };
 }
 
 /** Web URL that opens a new MR/PR for the branch, or null when undetected. */
 export async function newMrUrl(checkoutRoot, branch, target = "main") {
   const forge = await forgeFor(checkoutRoot);
   if (!forge) return null;
-  return forge.provider === "github"
-    ? githubNewMrUrl(forge, branch, target)
-    : gitlabNewMrUrl(forge, branch, target);
+  const impl = {
+    github: githubNewMrUrl,
+    gitlab: gitlabNewMrUrl,
+    bitbucket: bitbucketNewMrUrl,
+    gitea: giteaNewMrUrl,
+    azuredevops: azureNewMrUrl,
+  }[forge.provider];
+  return impl ? impl(forge, branch, target) : null;
 }

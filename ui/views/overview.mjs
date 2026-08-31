@@ -7,6 +7,7 @@ import {
   statusTone,
   relTime,
   emptyState,
+  forgeLabel,
 } from "../lib/dom.mjs";
 import { sparkline, donut, lines } from "../lib/charts.mjs";
 import { masonry } from "../lib/masonry.mjs";
@@ -979,7 +980,7 @@ function glLink(text, href, extra) {
 /** This branch's open MR + latest pipeline, polled read-only from the forge. */
 function forgeCard(s) {
   const g = s?.forge ?? { configured: false };
-  const name = g.provider === "github" ? "GitHub" : g.provider === "gitlab" ? "GitLab" : "Forge";
+  const name = forgeLabel(g.provider).name;
   let body;
   if (!g.configured) {
     body = emptyState(
