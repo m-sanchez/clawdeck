@@ -1,5 +1,7 @@
 <p align="center">
   <img src="docs/assets/social-preview.png" width="640" alt="Clawdeck: a local dashboard for Claude Code - sessions, events, cost, worktrees and reviews. Zero dependencies, loopback-only, MIT." />
+  <br />
+  <img src="docs/assets/clawd-patrol.gif" width="560" alt="Clawd on patrol, scuttling from side to side" />
 </p>
 
 # Clawdeck
