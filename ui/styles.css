@@ -3555,3 +3555,126 @@ kbd {
   padding: 2px 10px;
   font-size: 12px;
 }
+
+/* ── Trace waterfall ── */
+.trace-host {
+  display: grid;
+  gap: 6px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.trace-turn {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.trace-turn.open-turn {
+  border-color: var(--brand);
+}
+.trace-turn-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.trace-turn-title {
+  font-weight: 700;
+}
+.trace-tokens {
+  margin-left: auto;
+}
+.trace-spans {
+  padding: 4px 10px 8px;
+  display: grid;
+  gap: 3px;
+}
+.trace-span-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 28%) 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.trace-span-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trace-tool {
+  font-weight: 600;
+}
+.trace-track {
+  position: relative;
+  height: 18px;
+  background: var(--bg-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.trace-bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 3px;
+  min-width: 3px;
+}
+.trace-ok {
+  background: var(--brand);
+}
+.trace-task {
+  background: var(--info);
+  opacity: 0.85;
+}
+.trace-err {
+  background: var(--danger);
+}
+.trace-wait {
+  background: transparent;
+  border: 1.5px dashed var(--warn);
+}
+.trace-incomplete {
+  background: transparent;
+  border: 1.5px dotted var(--neutral);
+}
+.trace-running {
+  background: var(--ok);
+  animation: tracePulse 1.2s ease-in-out infinite;
+}
+@keyframes tracePulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trace-running {
+    animation: none;
+  }
+}
+.trace-dur {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.trace-ruler {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 2px;
+  border-top: 1px dashed var(--line-soft);
+}
+.trace-gap {
+  text-align: center;
+  padding: 2px 0;
+  border-top: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--line);
+}
+.trace-nospans {
+  padding: 2px 0;
+}

@@ -117,9 +117,23 @@ test("sensitive reads refuse a missing token", async () => {
   for (const path of [
     "/api/session-feed?session=00000000-0000-0000-0000-000000000000",
     "/api/session-tasks?session=00000000-0000-0000-0000-000000000000",
+    "/api/trace?session=00000000-0000-0000-0000-000000000000",
   ]) {
     assert.equal((await get(path, null)).status, 401, path);
   }
+});
+
+test("/api/trace validates the session id and returns the trace shape", async () => {
+  assert.equal((await get("/api/trace?session=..bad..", token)).status, 400);
+  const r = await get(
+    "/api/trace?session=00000000-0000-0000-0000-000000000000",
+    token,
+  );
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.missing, true);
+  assert.deepEqual(body.turns, []);
+  assert.equal(typeof body.sessionLive, "boolean");
 });
 
 test("the right token is accepted", async () => {

@@ -6,24 +6,14 @@
  * the view is open. Read-only.
  */
 import { el, card, clear, relTime, emptyState } from "../lib/dom.mjs";
+import {
+  agentsList,
+  pickSession,
+  sessionPicker,
+} from "../lib/session-picker.mjs";
 
 const POLL_MS = 4000;
 let pollTimer = null;
-
-function agentsList(app) {
-  return (app.snapshot?.sessions?.agents ?? []).filter(
-    (a) => a.latestSessionId,
-  );
-}
-
-function pickSession(app, agents) {
-  const want = app.store.feedSession;
-  if (want && agents.some((a) => a.latestSessionId === want.id)) return want;
-  const active = agents.find((a) => a.active) || agents[0];
-  return active
-    ? { id: active.latestSessionId, path: active.path, branch: active.branch }
-    : null;
-}
 
 export function render(app) {
   if (pollTimer) {
@@ -33,31 +23,7 @@ export function render(app) {
   const agents = agentsList(app);
   const sel = pickSession(app, agents);
 
-  const picker = /** @type {HTMLSelectElement} */ (
-    el(
-      "select",
-      {
-        class: "input",
-        onChange: (e) => {
-          const id = /** @type {HTMLSelectElement} */ (e.target).value;
-          const a = agents.find((x) => x.latestSessionId === id);
-          app.store.feedSession = a
-            ? { id: a.latestSessionId, path: a.path, branch: a.branch }
-            : null;
-          app.rerender();
-        },
-      },
-      agents.length
-        ? agents.map((a) =>
-            el("option", {
-              value: a.latestSessionId,
-              text: `${(a.branch || "").replace(/^MS\//, "")}${a.active ? " · live" : ""}`,
-              selected: sel && a.latestSessionId === sel.id ? true : null,
-            }),
-          )
-        : [el("option", { value: "", text: "No sessions" })],
-    )
-  );
+  const picker = sessionPicker(app, agents, sel);
 
   const meta = el("div", { class: "feed-meta small muted" });
   const feedHost = el("div", { class: "feed-stream" }, [
@@ -131,7 +97,7 @@ function renderMeta(host, sel, d) {
       el("span", { text: "live" }),
     ]),
     el("span", { class: "mono", text: d.model || "claude" }),
-    el("span", { text: (sel.branch || d.branch || "").replace(/^MS\//, "") }),
+    el("span", { text: sel.branch || d.branch || "" }),
     el("span", {
       text: last?.ts
         ? `updated ${relTime(last.ts)}`

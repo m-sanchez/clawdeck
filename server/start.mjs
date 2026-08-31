@@ -60,8 +60,9 @@ import {
   commandAvailable,
 } from "./lib/command-registry.mjs";
 import { getWorktrees } from "./adapters/worktrees.mjs";
-import { slugForPath } from "./adapters/sessions.mjs";
+import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
+import { getSessionTrace } from "./adapters/session-trace.mjs";
 import { pruneSessionRecords } from "./adapters/telemetry-live.mjs";
 import { getForgeStatus, newMrUrl } from "./forge/index.mjs";
 
@@ -895,6 +896,53 @@ const server = http.createServer(async (request, response) => {
       );
       const feed = getSessionFeed(file, { limit: 60 });
       return sendJson(response, 200, { session: sid, ...feed });
+    }
+
+    if (path === "/api/trace") {
+      // Turn/span waterfall from the transcript. Token-gated like the feed:
+      // span summaries carry command lines and file paths verbatim.
+      if (!hasPanelToken(request))
+        return sendJson(response, 401, {
+          error: "Missing or invalid panel token",
+        });
+      const sid = (url.searchParams.get("session") || "").trim();
+      if (!/^[0-9a-fA-F-]{8,64}$/.test(sid))
+        return sendJson(response, 400, { error: "Invalid session id." });
+      const wtParam = url.searchParams.get("worktree");
+      let basePath = ctx.checkoutRoot;
+      if (wtParam) {
+        const resolved = await resolveJobCwd(wtParam);
+        if (!resolved)
+          return sendJson(response, 400, {
+            error: "Unknown or invalid worktree.",
+          });
+        basePath = resolved.cwd;
+      }
+      const turnsParam = Number(url.searchParams.get("turns"));
+      const maxTurns = Number.isInteger(turnsParam)
+        ? Math.max(1, Math.min(50, turnsParam))
+        : undefined;
+      const file = join(
+        homedir(),
+        ".claude",
+        "projects",
+        slugForPath(basePath),
+        `${sid}.jsonl`,
+      );
+      // Liveness = the transcript still being appended to; a dead session must
+      // never present its unfinished tail as running tools.
+      let sessionLive = false;
+      try {
+        sessionLive = agentIsActive({
+          lastMs: statSync(file).mtimeMs,
+          sampleAgeMs: null,
+          now: Date.now(),
+        });
+      } catch {
+        /* missing file: adapter reports missing */
+      }
+      const trace = getSessionTrace(file, { maxTurns, sessionLive });
+      return sendJson(response, 200, { ...trace, sessionLive });
     }
 
     if (path === "/api/mr-draft") {

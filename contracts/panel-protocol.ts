@@ -139,6 +139,54 @@ export type WorkflowEvent =
  * shapes are typed where a dedicated contract exists and left structural
  * elsewhere, with the runtime builder (`lib/snapshot.mjs`) as the detail source.
  */
+export interface TraceSpan {
+  tool: string;
+  summary: string;
+  startTs: string;
+  /** null = unknown (unpaired in a closed turn). */
+  durMs: number | null;
+  /** Live-state assertion: true only while the session itself is live. */
+  running: boolean;
+  /** Unfinished span of a dead session; duration unknowable. */
+  incomplete: boolean;
+  ok: boolean | null;
+  isTask: boolean;
+  /** Human-wait span (plan approval / question); UI caps its width. */
+  wait: boolean;
+  agent: { agentType: string; description: string } | null;
+}
+
+export interface TraceTurn {
+  index: number;
+  startTs: string;
+  endTs: string | null;
+  open: boolean;
+  durMs: number | null;
+  model: string | null;
+  gapBeforeMs: number | null;
+  usage: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheCreate: number;
+    requests: number;
+  } | null;
+  /** Capped at 80; excess reported via spansDropped. */
+  spans: TraceSpan[];
+  spansDropped?: number;
+}
+
+export interface SessionTrace {
+  session: string;
+  missing?: true;
+  model: string | null;
+  turns: TraceTurn[];
+  /** Older history beyond the byte/turn budget was not read. */
+  truncated: boolean;
+  caps: { maxTurns: number; tailBytes: number };
+  sessionLive: boolean;
+}
+
 export interface PanelSnapshot {
   checkout: { id: string; root: string; branch?: string; isWorktree: boolean };
   runs: RunSummary[];

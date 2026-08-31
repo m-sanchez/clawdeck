@@ -64,6 +64,12 @@ export const api = {
     fetch(`/api/session-tasks?session=${encodeURIComponent(session)}`).then(
       asJson,
     ),
+  trace: (session, worktree, turns) => {
+    const q = new URLSearchParams({ session });
+    if (worktree) q.set("worktree", worktree);
+    if (turns) q.set("turns", String(turns));
+    return fetch(`/api/trace?${q}`).then(asJson);
+  },
   sessionFeed: (session, worktree) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);

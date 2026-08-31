@@ -44,7 +44,7 @@ function shortPath(p) {
 }
 
 /** One-line argument summary for a tool call, matching the CLI's `Tool(arg)`. */
-function summarizeTool(name, input) {
+export function summarizeTool(name, input) {
   const i = input || {};
   switch (name) {
     case "Bash":
