@@ -486,6 +486,7 @@ const server = http.createServer(async (request, response) => {
         setReviews: (r) => (reviewsCache = r),
         refresh: refreshAndBroadcast,
         resolveWorktree: resolveJobCwd,
+        snapshot: currentSnapshot,
       });
       return sendJson(response, result.ok === false ? 400 : 200, result);
     }

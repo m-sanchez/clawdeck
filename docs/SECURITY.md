@@ -21,7 +21,7 @@ The panel hardens its **HTTP interface**. It is not a sandbox.
 
 Mutating: `POST /api/actions/*` (including the whole `policy.*` enforcement plane), `POST /api/jobs`, `POST /api/jobs/:id/cancel`. Ingest: `POST /v1/metrics` - an OTEL exporter must therefore send `x-panel-token`, or its metrics are refused. Sensitive reads: `/api/session-feed` and `/api/session-tasks`, which serve prompt text, command lines and tool-result previews verbatim.
 
-`/health` stays open: the lifecycle scripts poll it to prove ownership before stopping a pid. `/events` (SSE) stays open because `EventSource` cannot send headers; it carries metadata deltas only, never prompt or command text.
+`/health` stays open: the lifecycle scripts poll it to prove ownership before stopping a pid. `/events` (SSE) stays open because `EventSource` cannot send headers; it carries the periodic snapshot (session state, counts, git and telemetry summaries, and worktree/commit paths) plus workflow event deltas - never prompt or command text. Treat everything on it as visible to anything that can reach the loopback port below the Host check.
 
 ## Binding
 

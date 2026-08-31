@@ -1,9 +1,6 @@
 node_modules/
 vendor/
 .claude/.runtime/
-repo-assessment.json
-implementation-report.md
-verification-report.md
 *.local.json
 *.tgz
 .claude/

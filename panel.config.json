@@ -11,7 +11,7 @@
   "services": [
     {
       "id": "panel",
-      "label": "Clawdeck starter",
+      "label": "Clawdeck",
       "entry": "server/start.mjs",
       "cwd": ".",
       "healthPath": "/health",

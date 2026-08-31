@@ -64,3 +64,22 @@ test("reconcile marks a silent running session stale, leaves closed ones", () =>
   reconcile(done, 2000 + 20 * 60 * 1000);
   assert.equal(done.get("s1").state, "completed"); // not reverted to stale
 });
+
+test("re-delivering one event by id does not double its counters (store-level idempotency)", async () => {
+  const { EventStore } = await import("../server/core/events/store.mjs");
+  const { mkdtempSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = mkdtempSync(join(tmpdir(), "evt-idem-"));
+  try {
+    const store = new EventStore(dir);
+    const evt = ev("prompt.submit", 10);
+    assert.equal(store.ingest(evt).ok, true);
+    const again = store.ingest(evt); // same id, delivered twice
+    assert.equal(again.duplicate, true, "the second delivery is recognised as a duplicate");
+    const s = store.snapshot().sessions.find((x) => x.sessionId === "s1");
+    assert.equal(s.prompts, 1, "the counter counted the event once, not twice");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

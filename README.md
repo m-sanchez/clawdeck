@@ -44,7 +44,16 @@ node scripts/panel-run.mjs --checkout /path/to/your/project
 ```
 
 That alone gives you the git-level views (worktrees, diff, commits, MR draft)
-and session liveness from Claude Code's own transcript files.
+and session liveness from Claude Code's own transcript files — zero setup,
+nothing written to your project, one loopback server that stops when you
+close it.
+
+> **`npx` vs a clone for `init`.** The one-off `run` above is fine over
+> `npx`. But `init` (below) writes generated `/panel` slash commands that
+> reference the panel's install path — under `npx` that is the npm cache
+> directory, which npm may garbage-collect. If you plan to keep the
+> integration installed, run `init` from a clone (or a global install) so
+> the referenced path is stable.
 
 ## Install the integration (optional, recommended)
 
@@ -70,6 +79,18 @@ Restart your Claude Code session afterwards.
 | + statusline bridge     | live cost, context-window, and model telemetry per session        |
 | + OTEL exporter pointed at the panel | token/cost metrics via OTLP-JSON                     |
 | + GitHub / GitLab token | MR/PR + pipeline status, merge tracking, notifications            |
+
+To point Claude Code's OTEL exporter at the panel, set these before
+launching Claude (the panel prints its port and token on start; the
+`/v1/metrics` endpoint requires the panel token):
+
+```bash
+export CLAUDE_CODE_ENABLE_TELEMETRY=1
+export OTEL_METRICS_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_PROTOCOL=http/json
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:<panel-port>
+export OTEL_EXPORTER_OTLP_HEADERS=x-panel-token=<panel-token>
+```
 
 ## Forge connectors
 
@@ -128,7 +149,7 @@ Details: [docs/SECURITY.md](docs/SECURITY.md).
 ## Development
 
 ```bash
-npm test              # node --test (~300 tests)
+npm test              # node --test (354 tests)
 npm run self-test     # boots the server against this repo and checks /health
 ```
 

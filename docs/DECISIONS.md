@@ -1,120 +1,110 @@
-# Implementation decisions
+# Architecture decisions
 
-Recorded after the Phase 0 repository assessment (`repo-assessment.json`,
-`git worktree list`, direct reads of the worktree lifecycle scripts and the
-review/hook libraries). Each decision cites the evidence that drove it.
+Why clawdeck is built the way it is. Each entry is a decision, the
+reasoning behind it, and what it costs. These are the trade-offs a
+reviewer would otherwise have to reverse-engineer from the code.
 
-## UI stack
+## Zero runtime dependencies
 
-**Decision:** Framework-independent, zero-build, browser-native ES modules
-(HTML + CSS + `.js` modules served directly). No Angular, no bundler, no
-runtime dependencies.
+**Decision.** The whole tool — server, browser UI, CLI, hooks — runs on
+system Node with no installed packages. HTML, CSS, and ES modules are
+served directly; there is no bundler and no build step.
 
-**Evidence:**
+**Why.** clawdeck watches a developer's Claude Code sessions, so it has to
+start instantly in any checkout, including a fresh worktree where nothing
+has been installed yet. A dashboard that needs its own `npm install`
+before it can render is a dashboard that is not there when you want it.
+Zero dependencies also means the security surface is entirely in this
+repository: there is no transitive tree to audit, and every guarantee the
+README makes is carried by code you can read here.
 
-- `repo-assessment.json` reports `nodeModulesPresent: false` for every project
-  (client, server, management-client, management-server). This is a fresh
-  worktree; nothing can run until `/wt-setup` junctions `node_modules` from main.
-  A panel that needs a junction merely to render its own dashboard is fragile.
-- The client *does* have Angular + Angular CLI, but a standalone Angular app
-  would (a) require the junction just to launch, (b) risk pulling the production
-  application bootstrap/build graph into the panel, (c) need a Node wrapper to
-  drive `ng` with a forwarded port. `ARCHITECTURE.md` only permits Angular "if it
-  can remain isolated from the production application bootstrap"; the isolation
-  cost here is high and the benefit for an operator console is low.
-- No `vite` / `esbuild` / `webpack` is exposed as a direct dependency anywhere
-  (Angular's internal esbuild is not a usable standalone binary), so the
-  "framework-independent TS using an installed bundler" path has no bundler.
-- Every existing `.claude/` tool is uniformly zero-dependency `.mjs`
-  (`worktree-*.mjs`, `loop-state.mjs`, `mongo.mjs`, ...). Matching that
-  convention keeps the panel consistent and lets it run on system Node alone
-  (v22.13.0). The included starter already proves this path (`self-test` passes).
+**Cost.** No framework conveniences (no components, no reactive bindings,
+no bundler tree-shaking). The UI is hand-written ES modules, and the code
+pays for that in verbosity. For an operator console watched a few tabs at
+a time, that is the right side of the trade.
 
-**Consequence:** The panel runs with **zero install**, in any checkout, before or
-after `/wt-setup`. The repo's installed `tsc`/`eslint`/`prettier`/`jest` are used
-only for the validation gates, never to run the panel.
+## Polling, not filesystem watchers
 
-## Local server stack
+**Decision.** The server derives its snapshot by polling git and reading
+the event store on a timer, rather than subscribing to filesystem events.
 
-**Decision:** Evolve the included zero-dependency Node `http` server
-(`server/`). HTTP request/response for snapshots and allowlisted actions;
-**SSE** for live logs and workflow events. ESM `.mjs`. Real data comes from
-typed adapters that import existing repo modules directly.
+**Why.** Watchers are per-platform, fire inconsistently across network and
+virtualised filesystems, and coalesce or miss events under load — exactly
+the conditions a busy checkout produces. A poll over a bounded set of
+git commands and a capped event window is predictable, is trivially
+degradable (a slow adapter degrades its own section, see below), and
+cannot leak watcher handles. The snapshot is cheap enough that a short
+interval keeps the UI live without a watcher's failure modes.
 
-**Evidence / adapter sources (all dependency-free, already in the repo):**
+**Cost.** A small, bounded latency between an event landing and the UI
+reflecting it, and steady low-cost git calls even when nothing changes.
 
-| Adapter     | Source module (imported, not duplicated)                              |
-| ----------- | -------------------------------------------------------------------- |
-| checkout    | `git` via `execFile` (branch, commit, dirty, ahead/behind)          |
-| worktrees   | `git worktree list --porcelain` + `.claude/scripts/worktree-registry.mjs` (`listEntries`, `detectMainRoot`, `isPidAlive`) + `worktree-ports.mjs` (`slotPorts`) |
-| runs        | `.claude/scripts/loop-state.mjs` (`listRuns`, `readRun`, `finalReport`, `isStale`) - autoloop runs are the real run records |
-| validation  | `.claude/scripts/worktree-verify.mjs --json` (allowlisted action; report cached under the runtime dir) |
-| reviews     | `.claude/hooks/lib/review-run.js` (`runPrePush`) via `createRequire` (CJS) |
-| logs        | tail of `.claude/.runtime/panel/<id>/*.log` + worktree run logs, streamed over SSE |
+## Single writer, leased
 
-**No file watchers.** The server polls adapters per request and on an SSE
-interval; it never recursively watches the tree. This satisfies the watch-safety
-requirement (`.claude/worktrees/**`, `.claude/.runtime/**`, `.git/**`,
-`**/node_modules/**`) by construction - there is nothing to exclude.
+**Decision.** One process owns the canonical event store at a time, held by
+a lease lock (O_EXCL create, heartbeat TTL, atomic steal-by-rename on
+reclaim). A server that loses or never gets the lease degrades to a local
+read-only store instead of writing.
 
-## Types
+**Why.** The event spool is multi-writer (hooks from many sessions append
+to it), but the *projection* — the derived session state — must have one
+owner, or two servers racing on the same store corrupt it. A lease is the
+smallest mechanism that gives single-writer safety without a database or a
+distributed lock service, and it fails safe: losing the lease demotes to
+reads, it does not crash.
 
-**Decision:** The `.ts` files in `contracts/` remain the authoritative contract.
-Server and UI modules are plain `.mjs`/`.js` annotated with `// @ts-check` +
-JSDoc `@typedef {import('...').X}` so they typecheck against the contracts using
-the client's installed `typescript` when junctioned - but never need it to run.
-The pure Clawd derivation is unit-tested with the built-in `node --test` runner
-(zero dependency).
+**Cost.** A second panel launched against the same checkout runs in a
+degraded read-only mode rather than sharing write duty. That is the
+correct outcome, but it is a surprise if you expected two live panels.
 
-## Dependency links
+## The bearer token rides in the URL fragment
 
-**Decision:** The panel needs **no** dependency links to run. Links are created
-only for the validation gates, using the provided `scripts/link-dependencies.mjs`
-(directory junctions on Windows), pointing at the resolved main `node_modules`
-via the existing `/wt-setup`. No `npx`, no global tools, no new packages.
+**Decision.** On launch the server writes a per-launch token to a
+`0600` file and opens the browser at `…/#token=<token>`. The page reads the
+fragment, stores the token, and strips it from the URL.
 
-## Worktree integration
+**Why.** The token has to reach the browser without ever being logged,
+served in HTML, or sent to a server as a query parameter (query strings
+land in access logs and `Referer` headers). A URL fragment is never sent
+to any server and never appears in a `Referer`, so it is the one part of a
+URL safe to carry a secret for the length of one hand-off. After the page
+captures it, it lives only in that tab's session storage.
 
-**Decision:** Reuse, do not replace. Checkout identity, port allocation, process
-ownership and runtime layout already come from `scripts/lib/context.mjs`,
-`panel.config.json` and `panel-run.mjs` and are sound (deterministic
-`checkoutId`, hashed port band, registry of owned PIDs, atomic writes). The
-worktrees view *reads* the central `.claude/.wt-registry/` and `git worktree
-list` so it reflects the same ports/slots the rest of the tooling reports. The
-panel's own lifecycle (start/stop/status/full) is left intact.
+**Cost.** The token is single-use per launch and per browser session; open
+the panel in another browser and you need the fresh link the CLI prints.
+For a local, per-launch operator tool that is a feature, not a limit.
 
-## Clawd implementation
+## Reads are gated; liveness and ingest are not
 
-**Decision:** Extract a production Web Component `<clawd-assistant>` that
-reproduces `reference/clawd-playground-v16.html` **verbatim** (same HTML shape
-structure, same CSS shapes, same `@keyframes`, same state vocabulary). The
-reference uses `data-state="working"` / `"validating"`; the production state
-contract names these `coding` / `inspecting`, so the component maps
-contract → reference internally. Props: `state`, `message`, `motion`,
-`showBadge`, `patrol`. Production state comes only from the pure
-`derive-clawd-state` layer fed by real snapshot facts. Random/demo cycling is
-available **only** in explicit demo mode (`?clawdDemo=1` or dev config).
+**Decision.** Every `/api/*` route requires the panel bearer, with two
+deliberate exceptions: `/health` and `/api/version` (liveness, no data),
+and `/api/ingest/event` (carries its own separate ingest token). The
+`/events` SSE stream is the one tokenless data stream, because
+`EventSource` cannot send headers.
 
-Preserved exactly: first-paint flicker protection (`booting` → `is-ready` on
-rAF), all-props-hidden-by-default with per-state reveal, overlap-protection CSS
-vars, state-entry + prop-in transitions, idle-only grounded footer patrol with
-turnaround + curiosity, persistent attention/blocked messages, contextual
-badges, `prefers-reduced-motion` + explicit motion setting.
+**Why.** A single, uniform read-auth rule is easier to reason about than
+per-route decisions, and it closed a real gap where some source-serving
+reads were ungated while others were locked. The exceptions each have a
+different trust story, stated in `docs/SECURITY.md`, rather than being
+silent holes.
 
-The canonical reference file is **never edited** (the package self-test asserts
-its state vocabulary) and stays served at `/clawd-playground` as the source of
-truth for visual parity checks.
+**Cost.** `/events` carries only what a tokenless stream may carry
+(metadata deltas, documented in `SECURITY.md`); anything sensitive goes
+through a gated JSON route instead.
 
-## Real-time transport
+## Named actions, never a command endpoint
 
-**Decision:** SSE for logs and run/validation/review events. No WebSockets -
-the panel has no bidirectional terminal.
+**Decision.** The browser can trigger only a fixed allowlist of named
+actions, each mapped to a specific script or state writer with validated,
+typed parameters. There is no arbitrary-command route, and the one action
+that launches an editor spawns a fixed binary with a discrete argv, never
+a shell.
 
-## Security boundary
+**Why.** A local web UI that can run shell commands is a local privilege
+escalation waiting for a rebinding or cross-origin bug to reach it. An
+allowlist means the worst a mis-scoped request can do is trigger a
+known-safe operation, and a discrete argv means no parameter can break out
+of a command line because there is no command line to break out of.
 
-Bind `127.0.0.1`. Static serving is allowlisted to `ui/` + the named
-reference file, with path canonicalisation and traversal rejection. No arbitrary
-filesystem or shell endpoint. Mutating endpoints are a fixed allowlist of named
-actions validated against typed schemas, guarded by a same-origin/CSRF check.
-Repository strings and logs are escaped before rendering; secret-bearing files
-are never served. (Full list: `docs/SECURITY.md`.)
+**Cost.** New capabilities require a new named action rather than a generic
+"run this" escape hatch. That friction is the point.

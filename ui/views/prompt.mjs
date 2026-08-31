@@ -5,7 +5,7 @@
  * recent commits), and copy one ready-to-paste prompt for a Claude session. Pure
  * read of the snapshot; assembles plain text only.
  */
-import { el, card, clear } from "../lib/dom.mjs";
+import { el, card, clear, pill } from "../lib/dom.mjs";
 import { buildClaudeCommand } from "../lib/open-in-claude.mjs";
 
 export function render(app) {
@@ -79,7 +79,117 @@ export function render(app) {
       ]),
     ]),
     openInClaude(app, s, preview),
+    askCard(app),
   ]);
+}
+
+/**
+ * Ask Clawdeck: one-question chat answered by a local `claude -p` child. The
+ * thread lives in the store so navigation keeps it; this hub never re-renders
+ * on snapshots, so in-flight typing is safe.
+ */
+function askCard(app) {
+  if (!Array.isArray(app.store.askThread)) app.store.askThread = [];
+
+  const thread = el("div", { class: "ask-thread" });
+  const renderThread = () => {
+    clear(thread);
+    if (!app.store.askThread.length) {
+      thread.append(
+        el("p", {
+          class: "muted small",
+          text: "Ask about panel state: what is blocking a push, where spend went, which sessions are live.",
+        }),
+      );
+      return;
+    }
+    for (const m of app.store.askThread) {
+      const row = el("div", { class: `ask-msg ask-${m.role}` });
+      row.append(
+        el("span", { class: "ask-role mono small", text: m.role === "user" ? ">" : "●" }),
+        el("div", { class: "ask-text", text: m.text }),
+      );
+      if (m.patterns?.length)
+        row.append(
+          el("div", { class: "ask-patterns" },
+            m.patterns.map((pat) => pill(pat, "warn"))),
+        );
+      thread.append(row);
+    }
+    thread.scrollTop = thread.scrollHeight;
+  };
+  renderThread();
+
+  const input = /** @type {HTMLTextAreaElement} */ (
+    el("textarea", {
+      class: "input",
+      rows: "2",
+      placeholder: "e.g. what is blocking a push right now?",
+    })
+  );
+  const askBtn = /** @type {HTMLButtonElement} */ (
+    el("button", { class: "btn btn-primary", text: "Ask" })
+  );
+  const busy = el("span", { class: "muted small", hidden: true }, [
+    el("span", { class: "spinner-inline" }),
+    el("span", { text: " thinking (runs claude -p locally)…" }),
+  ]);
+
+  const submit = async () => {
+    const question = input.value.trim();
+    if (!question) return;
+    if (app.store.askBusy) {
+      app.toast("Still answering the previous question.", "warn");
+      return;
+    }
+    app.store.askThread.push({ role: "user", text: question });
+    input.value = "";
+    renderThread();
+    app.store.askBusy = true;
+    askBtn.disabled = true;
+    busy.hidden = false;
+    try {
+      const r = await app.api.action("dash.ask", { question });
+      if (r.refused) {
+        app.store.askThread.push({
+          role: "assistant",
+          text: r.reason || "Refused.",
+          patterns: r.patterns || [],
+        });
+      } else {
+        app.store.askThread.push({ role: "assistant", text: r.answer || "(no answer)" });
+      }
+    } catch (e) {
+      app.store.askThread.push({
+        role: "assistant",
+        text: `Error: ${String((e && e.message) || e)}`,
+      });
+    } finally {
+      app.store.askBusy = false;
+      askBtn.disabled = false;
+      busy.hidden = true;
+      renderThread();
+    }
+  };
+  askBtn.addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
+  });
+
+  return card(
+    "Ask Clawdeck",
+    [
+      thread,
+      el("div", { class: "ask-controls" }, [input, askBtn, busy]),
+      el("p", {
+        class: "muted small",
+        text: "Runs `claude -p` locally on your plan, tool-less in a sterile temp dir with no settings loaded. A compact, secret-scanned snapshot summary is the only context sent.",
+      }),
+    ],
+    {
+      help: "The child process gets no tools, no MCP servers, and no user/project instruction files; the question and summary travel on stdin only. A summary containing suspected secret material is refused before anything is sent.",
+    },
+  );
 }
 
 /** "Open in Claude": opens Claude in the target checkout via a claude-cli:// deep
