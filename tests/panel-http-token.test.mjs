@@ -167,6 +167,26 @@ test("the token never reaches the HTML, an API body or the log", async () => {
   }
 });
 
+test("/api/snapshot answers 304 to a matching If-None-Match", async () => {
+  // A section may legitimately move between two builds (a transcript mtime
+  // tick); an unchanged pair must 304, so retry the pair a few times.
+  let got304 = false;
+  for (let i = 0; i < 3 && !got304; i++) {
+    const first = await get("/api/snapshot", token);
+    assert.equal(first.status, 200);
+    const etag = first.headers.get("etag");
+    assert.match(etag || "", /^"[0-9a-f]{8}"$/);
+    const body = await first.json();
+    assert.equal(`"${body.sections.version}"`, etag);
+    const second = await fetch(`${origin()}/api/snapshot`, {
+      headers: { "x-panel-token": token, "if-none-match": etag },
+    });
+    if (second.status === 304) got304 = true;
+    else assert.equal(second.status, 200);
+  }
+  assert.ok(got304, "an idle snapshot pair must revalidate as unchanged");
+});
+
 test("a foreign Host header is refused as misdirected (anti-rebinding)", async () => {
   // fetch() forbids overriding Host, so send the request raw over a socket.
   const status = await new Promise((resolvePromise, reject) => {
@@ -211,10 +231,16 @@ test("a path-traversal request cannot escape the static root", async () => {
     "/%2e%2e/%2e%2e/package.json",
   ]) {
     const r = await get(attempt, token);
-    assert.ok(r.status === 403 || r.status === 404, `${attempt} -> ${r.status}`);
+    assert.ok(
+      r.status === 403 || r.status === 404,
+      `${attempt} -> ${r.status}`,
+    );
     if (r.ok) {
       const body = await r.text();
-      assert.ok(!body.includes('"name": "clawdeck-panel"'), "must not leak package.json");
+      assert.ok(
+        !body.includes('"name": "clawdeck-panel"'),
+        "must not leak package.json",
+      );
     }
   }
 });

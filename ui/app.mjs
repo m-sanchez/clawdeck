@@ -4,6 +4,7 @@ import "./clawd/clawd-element.mjs";
 import { bootstrapToken } from "./lib/token-bootstrap.mjs";
 import { el, clear, relTime, absTime, forgeLabel } from "./lib/dom.mjs";
 import { api, connectEvents } from "./lib/api.mjs";
+import { diffSections, needsRender } from "./lib/dirty.mjs";
 import { openPalette } from "./lib/command-palette.mjs";
 import { initTooltips } from "./lib/tooltip.mjs";
 import { render as overview } from "./views/overview.mjs";
@@ -31,8 +32,34 @@ import { maybeOpenWizard } from "./lib/wizard.mjs";
 
 // Top-level hubs. A hub is either a single view (`render`) or a set of tabs.
 // `auto` marks a view/tab that may re-render on every snapshot (no input state).
+// `deps` lists the snapshot sections an auto view reads: when a snapshot
+// arrives with none of them changed (per snapshot.sections hashes), the
+// re-render is skipped. A dep the server does not hash (panel, perf) counts
+// as always changed, so live-vitals views keep updating.
 const HUBS = [
-  { key: "overview", label: "Overview", render: overview, auto: true },
+  {
+    key: "overview",
+    label: "Overview",
+    render: overview,
+    auto: true,
+    deps: [
+      "attention",
+      "authorBreakdown",
+      "checkout",
+      "commitActivity",
+      "forge",
+      "history",
+      "jobs",
+      "panel",
+      "readiness",
+      "recentCommits",
+      "reviews",
+      "runs",
+      "sessions",
+      "validation",
+      "worktrees",
+    ],
+  },
   {
     key: "activity",
     label: "Activity",
@@ -63,16 +90,62 @@ const HUBS = [
     label: "Review",
     tabs: [
       { id: "diff", label: "Diff", render: diff },
-      { id: "validation", label: "Validation", render: validation, auto: true },
-      { id: "reviews", label: "Reviews", render: reviews, auto: true },
-      { id: "findings", label: "Fix Station", render: findings, auto: true },
+      {
+        id: "validation",
+        label: "Validation",
+        render: validation,
+        auto: true,
+        deps: ["validation", "readiness"],
+      },
+      {
+        id: "reviews",
+        label: "Reviews",
+        render: reviews,
+        auto: true,
+        deps: ["reviews", "reviewHistory", "readiness"],
+      },
+      {
+        id: "findings",
+        label: "Fix Station",
+        render: findings,
+        auto: true,
+        deps: ["checkout", "findings", "reviews"],
+      },
       { id: "mr", label: "Merge Request", render: mr },
     ],
   },
   { key: "prompt", label: "Prompt", render: prompt },
-  { key: "cost", label: "Cost", render: cost, auto: true },
-  { key: "delivery", label: "Delivery", render: delivery, auto: true },
-  { key: "health", label: "Health", render: health, auto: true },
+  {
+    key: "cost",
+    label: "Cost",
+    render: cost,
+    auto: true,
+    deps: ["cost", "governor", "quotaPressure", "telemetry"],
+  },
+  {
+    key: "delivery",
+    label: "Delivery",
+    render: delivery,
+    auto: true,
+    deps: ["delivery"],
+  },
+  {
+    key: "health",
+    label: "Health",
+    render: health,
+    auto: true,
+    deps: [
+      "checkout",
+      "events",
+      "instructionBudget",
+      "panel",
+      "perf",
+      "policy",
+      "sessions",
+      "telemetry",
+      "worktrees",
+    ],
+  },
   { key: "config", label: "Configuration", render: config },
 ];
 const HUB_BY_KEY = Object.fromEntries(HUBS.map((h) => [h.key, h]));
@@ -117,6 +190,12 @@ const store = {
   commandCatalog: [],
   /** @type {Array<() => void>} per-second DOM updaters registered by the active view */
   tickers: [],
+  /** @type {Record<string, string>|null} previous snapshot's section hashes */
+  sectionHashes: null,
+  /** @type {string|null} last seen snapshot version (the /api/snapshot ETag) */
+  snapshotVersion: null,
+  /** Auto re-render accounting, surfaced in Health → panel self-performance. */
+  renderStats: { rendered: 0, skipped: 0, lastMs: 0 },
 };
 
 const params = new URLSearchParams(location.search);
@@ -529,6 +608,7 @@ function isAutoRoute() {
 }
 
 function route() {
+  const t0 = performance.now();
   const { hub, tab, id, explicitTab } = parseHash();
   const def = HUB_BY_KEY[hub];
 
@@ -589,6 +669,7 @@ function route() {
   }
   clear(main).append(node);
   main.focus({ preventScroll: true });
+  store.renderStats.lastMs = Math.round((performance.now() - t0) * 10) / 10;
 }
 
 /** Compact forge MR/pipeline status shown above the Review hub tabs. */
@@ -859,7 +940,10 @@ function reactToCommit(snapshot) {
 
 let hadSnapshot = false;
 function onSnapshot(snapshot) {
+  const prevSections = store.sectionHashes;
   store.snapshot = snapshot;
+  store.sectionHashes = snapshot.sections?.byKey ?? null;
+  store.snapshotVersion = snapshot.sections?.version ?? null;
   notifyNewAgents(snapshot);
   if (Array.isArray(snapshot.jobs)) store.jobs = snapshot.jobs;
   store.lastSnapshotAt = Date.now();
@@ -872,8 +956,47 @@ function onSnapshot(snapshot) {
   updateClawdSwarm();
   const first = !hadSnapshot;
   hadSnapshot = true;
-  if (first || isAutoRoute()) route();
-  if (first) maybeOpenWizard(app);
+  if (first) {
+    route();
+    maybeOpenWizard(app);
+    return;
+  }
+  if (!isAutoRoute()) return;
+  const changed = diffSections(prevSections, store.sectionHashes);
+  if (needsRender(activeAutoDeps(), changed, store.sectionHashes)) {
+    route();
+    store.renderStats.rendered++;
+  } else {
+    store.renderStats.skipped++;
+  }
+}
+
+/** The active auto view's declared snapshot deps, or null (always render). */
+function activeAutoDeps() {
+  const { hub, tab } = parseHash();
+  const def = HUB_BY_KEY[hub];
+  const active = def.tabs ? def.tabs.find((t) => t.id === tab) : def;
+  return active?.deps ?? null;
+}
+
+/**
+ * Stale-while-revalidate on tab focus: the rendered snapshot stays up while a
+ * conditional GET checks for drift (cheap 304 when nothing changed - typical
+ * after the machine slept through the SSE stream).
+ */
+async function revalidateSnapshot() {
+  try {
+    const snap = await api.snapshot(
+      store.snapshotVersion ? { etag: `"${store.snapshotVersion}"` } : {},
+    );
+    if (snap) onSnapshot(snap);
+    else {
+      store.lastSnapshotAt = Date.now();
+      updateClock();
+    }
+  } catch {
+    /* offline or restarting: SSE reconnect owns the error surface */
+  }
 }
 
 async function refreshNow() {
@@ -1135,6 +1258,9 @@ function boot() {
     ?.addEventListener("clawd-activate", openClawdMenu);
   window.addEventListener("hashchange", route);
   window.addEventListener("keydown", onKey);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") revalidateSnapshot();
+  });
   renderSkeleton();
   connectEvents({
     onSnapshot,

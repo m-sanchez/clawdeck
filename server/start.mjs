@@ -730,7 +730,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (path === "/api/snapshot") {
-      return sendJson(response, 200, await currentSnapshot());
+      const snap = await currentSnapshot();
+      const etag = `"${snap.sections?.version || "0"}"`;
+      if (request.headers["if-none-match"] === etag) {
+        response.writeHead(304, { etag });
+        return response.end();
+      }
+      return sendJson(response, 200, snap, { etag });
     }
 
     if (path.startsWith("/api/runs/")) {

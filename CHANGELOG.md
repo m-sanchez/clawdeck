@@ -34,6 +34,12 @@ release closes them and pins each with a test against the real server.
 - **Forge connectors for Bitbucket Cloud, Gitea/Forgejo and Azure
   DevOps**, joining GitHub and GitLab behind the same auto-detected,
   read-only, normalized status shape.
+- **Dirty-section re-render + snapshot revalidation**. The snapshot now
+  carries per-section content hashes; auto-refreshing views declare which
+  sections they read and skip the re-render when none changed (skip counts
+  in Health). /api/snapshot answers 304 to a matching ETag, and the SPA
+  revalidates on tab focus - cheap freshness after the machine slept
+  through the SSE stream.
 - **Config map with usage overlay** (Configuration). Everything the
   checkout declares to Claude Code - rules, commands, skills, agents,
   MCP servers, hooks - correlated with what recent sessions actually

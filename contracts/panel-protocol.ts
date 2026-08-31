@@ -277,5 +277,12 @@ export interface PanelSnapshot {
   /** Panel self-performance (p50/p95 snapshot + adapter latency, counters). */
   perf: unknown;
   clawd: unknown;
+  /**
+   * Per-section FNV-1a content hashes. `version` doubles as the /api/snapshot
+   * ETag. Time-driven sections (`panel`, `perf`, `history`, `emittedAt`) are
+   * deliberately absent from `byKey`: consumers must treat them as always
+   * changed.
+   */
+  sections: { version: string; byKey: Record<string, string> };
   emittedAt: string;
 }

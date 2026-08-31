@@ -48,6 +48,7 @@ const EXPECTED = [
   "delivery",
   "perf",
   "clawd",
+  "sections",
   "emittedAt",
 ].sort();
 

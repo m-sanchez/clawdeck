@@ -47,13 +47,14 @@ export function escapeHtml(value) {
   );
 }
 
-export function sendJson(response, status, value) {
+export function sendJson(response, status, value, extraHeaders = {}) {
   const body = JSON.stringify(value, null, 2);
   response.writeHead(status, {
     "content-type": CONTENT_TYPES[".json"],
     "content-length": Buffer.byteLength(body),
     "content-security-policy": CSP,
     ...SECURITY_HEADERS,
+    ...extraHeaders,
   });
   response.end(body);
 }

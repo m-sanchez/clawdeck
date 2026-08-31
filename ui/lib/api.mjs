@@ -21,7 +21,12 @@ async function asJson(response) {
 }
 
 export const api = {
-  snapshot: () => fetch("/api/snapshot").then(asJson),
+  /** With `opts.etag`, resolves to null when the server answers 304 (unchanged). */
+  snapshot: (opts = {}) =>
+    fetch(
+      "/api/snapshot",
+      opts.etag ? { headers: { "if-none-match": opts.etag } } : {},
+    ).then((r) => (r.status === 304 ? null : asJson(r))),
   version: () => fetch("/api/version").then(asJson),
   run: (id) => fetch(`/api/runs/${encodeURIComponent(id)}`).then(asJson),
   logs: (opts = {}) => {

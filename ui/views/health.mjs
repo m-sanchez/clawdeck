@@ -31,13 +31,7 @@ function shortPath(abs, root) {
 /** Panel Health: the panel observing itself: process + runtime store sizes. */
 function meterRow(label, pct, detail) {
   const tone =
-    pct == null
-      ? "neutral"
-      : pct > 92
-        ? "danger"
-        : pct > 80
-          ? "warn"
-          : "ok";
+    pct == null ? "neutral" : pct > 92 ? "danger" : pct > 80 ? "warn" : "ok";
   return el("div", { class: "host-meter" }, [
     el("span", { class: "host-meter-label small", text: label }),
     el("div", { class: "host-meter-track" }, [
@@ -118,6 +112,14 @@ export function render(app) {
     ["Events dropped", pf.eventsDropped],
     ["SSE clients", pf.sseClients ?? p.sseClients],
   ];
+  const rs = app.store.renderStats;
+  if (rs) {
+    perfRows.push([
+      "Auto re-renders (this visit)",
+      `${rs.rendered} rendered / ${rs.skipped} skipped`,
+    ]);
+    perfRows.push(["Last view render", ms(rs.lastMs)]);
+  }
 
   const ib = s.instructionBudget || {};
   const root = s.checkout?.root || "";

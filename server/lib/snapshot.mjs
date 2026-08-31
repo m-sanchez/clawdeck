@@ -40,6 +40,7 @@ import { readSetupState } from "./setup-state.mjs";
 import { recordSample } from "./history.mjs";
 import { getInstructionBudget } from "../adapters/instruction-budget.mjs";
 import { deriveClawdPresentation } from "../../ui/shared/clawd-state.mjs";
+import { sectionHashes } from "./section-hash.mjs";
 
 /** Time one adapter and record its duration into perf (when supplied). */
 async function timed(perf, name, thunk) {
@@ -153,10 +154,14 @@ export async function buildSnapshot(ctx, cached) {
     timed(perf, "checkout", () => getCheckout(ctx)).catch(() => null),
     timed(perf, "worktrees", () => getWorktrees(ctx)).catch(() => []),
     timed(perf, "runs", () => getRuns(ctx)).catch(() => []),
-    timed(perf, "remoteBranches", () => getMergedRemoteBranches(ctx)).catch(() => []),
+    timed(perf, "remoteBranches", () => getMergedRemoteBranches(ctx)).catch(
+      () => [],
+    ),
     timed(perf, "recentCommits", () => getRecentCommits(ctx)).catch(() => []),
     timed(perf, "commitActivity", () => getCommitActivity(ctx)).catch(() => []),
-    timed(perf, "authorBreakdown", () => getAuthorBreakdown(ctx)).catch(() => []),
+    timed(perf, "authorBreakdown", () => getAuthorBreakdown(ctx)).catch(
+      () => [],
+    ),
   ]);
   const reviews = cached.reviews ?? {
     status: "pending",
@@ -293,5 +298,6 @@ export async function buildSnapshot(ctx, cached) {
     });
   }
   snapshot.clawd = deriveClawdPresentation(snapshot);
+  snapshot.sections = sectionHashes(snapshot);
   return snapshot;
 }
