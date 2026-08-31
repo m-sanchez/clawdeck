@@ -1,7 +1,7 @@
 <p align="center">
   <img src="docs/assets/social-preview.png" width="640" alt="Clawdeck: a local dashboard for Claude Code - sessions, events, cost, worktrees and reviews. Zero dependencies, loopback-only, MIT." />
   <br />
-  <img src="docs/assets/clawd-patrol.gif" width="560" alt="Clawd on patrol, scuttling from side to side" />
+  <img src="docs/assets/clawd-patrol-v2.gif" width="560" alt="Clawd on patrol, scuttling from side to side" />
 </p>
 
 # Clawdeck
@@ -88,8 +88,6 @@ and never reach the browser.
 ## Roadmap
 
 - More forge connectors (above).
-- Time-window tabs (7d / 30d / all-time) on the Cost view, with per-model
-  input/output/cache breakdowns.
 - Stale-while-revalidate snapshot refresh and dirty-section re-rendering.
 - Collapsible dashboard cards persisted per browser.
 - Session → subagent hierarchy tree view.

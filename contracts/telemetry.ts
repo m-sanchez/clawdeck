@@ -23,16 +23,34 @@ export interface SessionTelemetry {
   cacheRead?: number | null;
   cacheCreate?: number | null;
   exceeds200k?: boolean;
-  rateLimits?: { fiveHourPct?: number | null; sevenDayPct?: number | null };
+  rateLimits?: {
+    fiveHourPct?: number | null;
+    /** Epoch SECONDS when the 5h window resets; absent on harness versions that omit it. */
+    fiveHourResetsAt?: number | null;
+    sevenDayPct?: number | null;
+    /** Epoch SECONDS when the 7d window resets. */
+    sevenDayResetsAt?: number | null;
+  };
   /** Epoch ms when the sample was written. */
   ts: number;
   /** now - ts at read time; null when ts is unknown. */
   ageMs?: number | null;
+  /** Older than the live window at read time. */
+  stale?: boolean;
 }
 
 export interface LiveTelemetry {
   sessions: Record<string, SessionTelemetry>;
+  /** Subset of `sessions` fresh within `liveWindowMs`; the ONLY input to live rollups. */
+  live: Record<string, SessionTelemetry>;
   count: number;
+  liveCount: number;
+  historicalCount: number;
+  /** Sum of the latest cost sample per live session. */
+  sumLiveCostUsd: number;
   /** Sum of the latest cost sample per known session (not a time-bucketed total). */
   sumSessionCostUsd: number;
+  estimated: true;
+  costSource: string;
+  liveWindowMs: number;
 }
