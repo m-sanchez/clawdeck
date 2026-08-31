@@ -22,7 +22,7 @@ Constraints to keep:
 - **Windows:** any timer or child process that shells git must pass
   `windowsHide: true`.
 
-Validate before claiming done: `node scripts/self-test.mjs` and `node --test tests/`.
+Validate before claiming done: `node scripts/self-test.mjs` and `npm test`.
 Use explicit binary paths, not `npx`.
 
 Treat `reference/clawd-playground-v16.html` as the canonical Clawd reference;

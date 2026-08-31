@@ -19,6 +19,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Unit tests
-        run: node --test tests/
+        run: node --test
       - name: Package self-test (boots the server on loopback)
         run: node scripts/self-test.mjs

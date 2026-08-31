@@ -123,7 +123,7 @@ Details: [docs/SECURITY.md](docs/SECURITY.md).
 ## Development
 
 ```bash
-npm test              # node --test tests/ (~300 tests)
+npm test              # node --test (~300 tests)
 npm run self-test     # boots the server against this repo and checks /health
 ```
 
