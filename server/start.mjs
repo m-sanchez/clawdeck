@@ -18,7 +18,7 @@
  * tree; it polls adapters per request and on a bounded SSE interval.
  */
 import http from "node:http";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   readdirSync,
   statSync,
@@ -63,7 +63,11 @@ import { getWorktrees } from "./adapters/worktrees.mjs";
 import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
 import { getSessionTrace } from "./adapters/session-trace.mjs";
-import { pruneSessionRecords } from "./adapters/telemetry-live.mjs";
+import {
+  pruneSessionRecords,
+  getLiveTelemetry,
+} from "./adapters/telemetry-live.mjs";
+import { recordBurnSample } from "./core/telemetry/burn.mjs";
 import { getForgeStatus, newMrUrl } from "./forge/index.mjs";
 
 const HOST = "127.0.0.1";
@@ -200,9 +204,21 @@ try {
   /* the UI will surface a 401 rather than fail silently */
 }
 
+/**
+ * Constant-time bearer check. Both sides are hashed to fixed-length digests
+ * first, so timingSafeEqual never sees variable-length input (it throws on
+ * length mismatch, and a length-gated compare leaks the length).
+ */
+function tokenMatches(supplied, expected) {
+  if (typeof supplied !== "string" || supplied.length === 0) return false;
+  const a = createHash("sha256").update(supplied, "utf8").digest();
+  const b = createHash("sha256").update(expected, "utf8").digest();
+  return timingSafeEqual(a, b);
+}
+
 /** Bearer check for privileged routes. */
 function hasPanelToken(request) {
-  return request.headers["x-panel-token"] === PANEL_TOKEN;
+  return tokenMatches(request.headers["x-panel-token"], PANEL_TOKEN);
 }
 
 /** Roots holding statusline session records: this checkout and its worktrees. */
@@ -423,6 +439,21 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  // One read-auth policy, applied in one place: every /api route needs the
+  // panel bearer. The exceptions are each a different trust story - /health
+  // and /api/version are liveness, ingest carries its own token, and
+  // /events is the one tokenless stream because EventSource cannot send
+  // headers (its payload scope is documented in docs/SECURITY.md).
+  const TOKENLESS_API = new Set(["/api/version", "/api/ingest/event"]);
+  if (
+    path.startsWith("/api/") &&
+    !TOKENLESS_API.has(path) &&
+    !hasPanelToken(request)
+  ) {
+    sendJson(response, 401, { error: "Missing or invalid panel token" });
+    return;
+  }
+
   try {
     // ── Mutating actions ──
     if (path.startsWith("/api/actions/")) {
@@ -461,7 +492,7 @@ const server = http.createServer(async (request, response) => {
 
     // ── Event ingest (the emitter hook, not a browser: bearer token, no Origin) ──
     if (path === "/api/ingest/event" && method === "POST") {
-      if (request.headers["x-panel-token"] !== INGEST_TOKEN)
+      if (!tokenMatches(request.headers["x-panel-token"], INGEST_TOKEN))
         return sendJson(response, 401, { error: "Invalid ingest token" });
       let evt = null;
       try {
@@ -1159,6 +1190,20 @@ const rotateTick = setInterval(
 );
 rotateTick.unref();
 
+// Burn sampler: independent of the SSE tick (which is skipped with no browser
+// open) so cost history keeps accruing while the bridge writes records. Deltas
+// key on each record's own ts, so an unchanged minute appends nothing.
+const burnTick = setInterval(async () => {
+  try {
+    const worktrees = await getWorktrees(ctx).catch(() => []);
+    const telemetry = getLiveTelemetry(ctx, worktrees || []);
+    recordBurnSample(ctx.runtimeDir, telemetry.sessions);
+  } catch {
+    /* next minute retries */
+  }
+}, 60000);
+burnTick.unref();
+
 // Periodic refresh keeps Clawd + views truthful without any filesystem watcher.
 // Skipped entirely when no browser is connected, so an idle panel spawns nothing.
 const tick = setInterval(() => {
@@ -1208,6 +1253,7 @@ function shutdown() {
   clearInterval(heartbeat);
   clearInterval(promoteTick);
   clearInterval(rotateTick);
+  clearInterval(burnTick);
   try {
     if (writerLock.ok) spoolLib.releaseWriterLock(sharedEventsDir, process.pid);
   } catch {

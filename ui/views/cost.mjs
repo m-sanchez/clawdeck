@@ -1,5 +1,6 @@
 // @ts-check
 import { el, card, pill, emptyState } from "../lib/dom.mjs";
+import { sparkline } from "../lib/charts.mjs";
 
 const usd = (n) => "$" + (Number(n) || 0).toFixed(2);
 const pct = (n) => Math.round((Number(n) || 0) * 100) + "%";
@@ -94,6 +95,124 @@ function historyCard(app, otel) {
   });
 }
 
+function countdownTo(iso) {
+  if (!iso) return null;
+  const ms = Date.parse(iso) - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  if (ms <= 0) return "now";
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h ${m % 60}m`;
+  return `${Math.floor(h / 24)}d ${h % 24}h`;
+}
+
+function burnKpis(burn) {
+  const b = burn || {};
+  const rate = kpi(
+    "Burn rate",
+    b.perHourUsd != null ? `${usd(b.perHourUsd)}/h` : "unknown",
+    b.stale
+      ? "no fresh samples"
+      : `last ${b.windowMinutes || 30}m · estimate`,
+  );
+  const fh = b.fiveHour || {};
+  let etaValue = "unknown";
+  let etaSub = "no rate-limit data";
+  let tone = null;
+  if (fh.etaToLimit) {
+    etaValue = countdownTo(fh.etaToLimit) || "soon";
+    etaSub = `to 5h limit at ${fh.burnPctPerHour}%/h`;
+    tone = "warn";
+  } else if (fh.usedPct != null) {
+    etaValue = `${Math.round(fh.usedPct)}%`;
+    etaSub = fh.resetsAt
+      ? `5h window · resets in ${countdownTo(fh.resetsAt)}`
+      : "5h window used";
+  }
+  return [rate, kpi("5h limit", etaValue, etaSub, tone)];
+}
+
+/** Forecast card: burn sparkline + window slopes + monthly projection. */
+function forecastCard(burn) {
+  const b = burn || {};
+  const rows = [];
+  const winRow = (label, w) =>
+    el("div", { class: "cp-row" }, [
+      pill(label, "neutral"),
+      el("span", {
+        text: w.usedPct != null ? `${Math.round(w.usedPct)}% used` : "unknown",
+      }),
+      el("span", {
+        class: "muted small",
+        text:
+          w.burnPctPerHour != null
+            ? `${w.burnPctPerHour > 0 ? "+" : ""}${w.burnPctPerHour}%/h`
+            : "no slope",
+      }),
+      el("span", {
+        class: "muted small",
+        text: w.etaToLimit
+          ? `limit in ${countdownTo(w.etaToLimit)}`
+          : w.resetsAt
+            ? `resets in ${countdownTo(w.resetsAt)}`
+            : "",
+      }),
+    ]);
+  rows.push(winRow("5h", b.fiveHour || {}));
+  rows.push(winRow("7d", b.sevenDay || {}));
+  rows.push(
+    el("div", { class: "cp-row" }, [
+      pill("month", "neutral"),
+      el("span", {
+        text:
+          b.projectedMonthUsd != null
+            ? `~${usd(b.projectedMonthUsd)} projected`
+            : "projection needs more history",
+      }),
+      el("span", {
+        class: "muted small",
+        text:
+          b.projectedMonthUsd != null
+            ? `from ${b.coverageHours}h of samples · estimate`
+            : `${b.coverageHours || 0}h of 6h sampled`,
+      }),
+    ]),
+  );
+
+  const spark = el("div", { class: "burn-spark" });
+  const points = (b.samples || []).map((s) => s.usd);
+  if (points.length >= 2) {
+    requestAnimationFrame(() => {
+      try {
+        sparkline(spark, points, { tone: "brand", height: 42, unit: "USD" });
+      } catch {
+        /* chart helpers degrade on their own */
+      }
+    });
+  } else {
+    spark.append(
+      el("span", {
+        class: "muted small",
+        text: "Spend sparkline appears as samples accrue (1/min while sessions run).",
+      }),
+    );
+  }
+
+  const provenance = el("div", {
+    class: "muted small",
+    text: `$ from ${b.costSource || "statusline deltas"}; window slopes from ${b.quotaSource || "harness rate limits"}.`,
+  });
+
+  return card(
+    "Burn & forecast",
+    el("div", {}, [spark, el("div", { class: "cp-rows" }, rows), provenance]),
+    {
+      help: "Spend per hour from cumulative statusline cost deltas; 5h/7d depletion from the harness's own rate-limit percentages, sloped within one reset window. Everything is an estimate; unknowns stay unknown.",
+    },
+  );
+}
+
 function kpi(label, value, sub, tone) {
   return el("div", { class: `kpi-card ${tone ? `kpi-${tone}` : ""}` }, [
     el("div", { class: "kpi-label", text: label }),
@@ -134,12 +253,14 @@ export function render(app) {
   const gov = snap.governor || {};
   const fable = rollup.fable || { costUsd: 0, share: 0 };
 
+  const burn = cost.burn || {};
   const tiles = el("div", { class: "kpi-row" }, [
     kpi(
       "Est. live spend",
       usd(rollup.totalCostUsd),
       `${rollup.totalSubagents || 0} subagents · estimate`,
     ),
+    ...burnKpis(burn),
     kpi(
       "Est. Fable",
       usd(fable.costUsd),
@@ -252,6 +373,7 @@ export function render(app) {
       "div",
       { class: "cp-card-grid" },
       [
+        forecastCard(burn),
         warnings,
         historyCard(app, cost.otel),
         modelCard,

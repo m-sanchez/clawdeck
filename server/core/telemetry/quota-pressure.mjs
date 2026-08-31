@@ -16,7 +16,7 @@ export const QUOTA_TTL_MS = 15 * 60 * 1000;
 const GREEN_BELOW = 60;
 const RED_ABOVE = 85;
 
-export const QUOTA_SOURCE = "statusline rate_limits (heurística informativa)";
+export const QUOTA_SOURCE = "statusline rate_limits (informational heuristic)";
 
 /** A percentage in 0..100, or null. */
 function pct(value) {
@@ -25,7 +25,7 @@ function pct(value) {
 }
 
 /** Epoch SECONDS from the harness -> ISO-8601 UTC, or null. */
-function isoFromEpochSeconds(value) {
+export function isoFromEpochSeconds(value) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return null;
   const ms = n * 1000;

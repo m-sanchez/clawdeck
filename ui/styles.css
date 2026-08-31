@@ -3678,3 +3678,11 @@ kbd {
 .trace-nospans {
   padding: 2px 0;
 }
+
+/* ── Burn & forecast ── */
+.burn-spark {
+  min-height: 44px;
+  display: grid;
+  align-items: center;
+  margin-bottom: 6px;
+}

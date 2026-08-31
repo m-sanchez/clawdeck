@@ -54,10 +54,18 @@ export function sparkline(container, points, opts = {}) {
   const lib = d3();
   const width = Math.max(120, container.clientWidth || 240);
   if (!lib) {
+    // Text fallback: a real block-char profile of the series, unit-agnostic.
+    const peak = Math.max(1, ...points);
+    const blocks = "▁▂▃▄▅▆▇█";
+    const step = Math.max(1, Math.ceil(points.length / 40));
+    let profile = "";
+    for (let i = 0; i < points.length; i += step)
+      profile += blocks[Math.min(7, Math.round((points[i] / peak) * 7))];
+    const total = Math.round(points.reduce((a, b) => a + b, 0) * 1e4) / 1e4;
     container.append(
       el("span", {
         class: "mono small",
-        text: `▁▂▃▅▇ ${points.reduce((a, b) => a + b, 0)} events`,
+        text: `${profile} ${total} ${opts.unit || "total"}`,
       }),
     );
     return;

@@ -5,15 +5,9 @@
  * repository script/module with typed, validated params. Every action either
  * reuses an existing safe lifecycle script or a pure state writer.
  */
-import { spawn } from "node:child_process";
-import { join, resolve, sep } from "node:path";
-import {
-  existsSync,
-  writeFileSync,
-  renameSync,
-  readFileSync,
-  copyFileSync,
-} from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { join, relative, resolve, sep } from "node:path";
+import { existsSync, writeFileSync, renameSync, readFileSync } from "node:fs";
 import { loadEsm } from "./repo-modules.mjs";
 import { markSetup } from "./setup-state.mjs";
 import { runPolicyAction } from "./policy-actions.mjs";
@@ -246,35 +240,41 @@ export async function runAction(name, params, deps) {
     }
 
     case "editor.open": {
-      // Launch VS Code at a worktree (or a file:line). Fixed `code` binary; every
-      // path is validated and canonicalised under the worktree before launch.
+      // Launch VS Code at a worktree (or a file:line). Fixed binary, fixed
+      // argv - no shell anywhere, so there is no quoting layer to escape and
+      // no character blocklist to maintain. Paths are still validated and
+      // canonicalised under the worktree before launch.
       const target = params.worktreePath
         ? await deps.resolveWorktree(String(params.worktreePath))
         : { cwd: ctx.checkoutRoot, worktree: null };
       if (!target) return bad("Unknown or invalid worktree.");
-      // Reject chars dangerous inside a double-quoted shell arg; a newline is
-      // included because cmd.exe ends the command at a line break even inside
-      // quotes. Spaces and dashes are fine and common in real paths.
-      const unsafe = /["%$`\r\n]/;
-      if (unsafe.test(target.cwd)) return bad("Unsafe worktree path.");
       const root = resolve(target.cwd);
-      let cmd;
+      let argv;
       if (params.file != null) {
         const file = String(params.file);
-        if (file.includes("..") || /^[\\/]/.test(file) || unsafe.test(file))
+        if (file.includes("..") || /^[\\/]/.test(file))
           return bad("Invalid file path.");
         const line = Math.max(1, parseInt(String(params.line ?? "1"), 10) || 1);
         const abs = resolve(root, file);
         if (abs !== root && !abs.startsWith(root + sep))
           return bad("Path escapes the worktree.");
-        cmd = `code -g "${abs}:${line}"`;
+        argv = ["-g", `${abs}:${line}`];
       } else {
-        cmd = `code "${root}"`;
+        argv = [root];
       }
+      // On Windows, `code` is code.cmd, and node (post CVE-2024-27980)
+      // refuses to spawn .cmd files without a shell. The arguments stay a
+      // discrete argv - node quotes each element - but cmd.exe still expands
+      // %VAR% inside an argument and ends the command at a line break even
+      // inside quotes, so those characters are rejected outright.
+      const win = process.platform === "win32";
+      if (win && argv.some((a) => /["%\r\n]/.test(a)))
+        return bad("Unsafe path for the Windows editor launcher.");
+      const editorBin = win ? "cmd.exe" : "code";
+      const editorArgv = win ? ["/d", "/s", "/c", "code", ...argv] : argv;
       try {
         const launch = deps.spawn || spawn;
-        const child = launch(cmd, {
-          shell: true,
+        const child = launch(editorBin, editorArgv, {
           detached: true,
           stdio: "ignore",
           windowsHide: true,
@@ -490,9 +490,18 @@ function readEditableConfig(checkoutRoot) {
 }
 
 /**
- * Merge forge-token edits into the checkout's settings.local.json: back up
- * first, preserve keys we don't manage, and treat a blank value as
- * keep-existing so a token is never clobbered by an empty field.
+ * Merge forge-token edits into the checkout's settings.local.json,
+ * preserving keys we don't manage; a blank value means keep-existing so a
+ * token is never clobbered by an empty field.
+ *
+ * Secret-at-rest rules, in order of who they protect:
+ *  - refuse outright if the file is TRACKED by git: writing a PAT into a
+ *    versioned file is one commit away from publication, and no warning
+ *    banner survives that;
+ *  - make the secret's exclusion local (.git/info/exclude), never by
+ *    editing the user's committed .gitignore;
+ *  - no .bak copy on secret writes - a backup with a second copy of the
+ *    token, matching no ignore pattern, is how secrets outlive rotation.
  */
 function saveEditableConfig(checkoutRoot, params) {
   const gitlabToken =
@@ -502,11 +511,39 @@ function saveEditableConfig(checkoutRoot, params) {
 
   if (gitlabToken || githubToken) {
     const p = settingsPath(checkoutRoot);
+    const rel = relative(checkoutRoot, p).split(sep).join("/");
+    try {
+      const tracked = execFileSync(
+        "git",
+        ["-C", checkoutRoot, "ls-files", "--error-unmatch", rel],
+        { stdio: ["ignore", "ignore", "ignore"] },
+      );
+      void tracked;
+      return bad(
+        `${rel} is tracked by git; refusing to write a token into a versioned file. ` +
+          `Untrack it first (git rm --cached ${rel}).`,
+      );
+    } catch {
+      /* not tracked - the safe case */
+    }
+    try {
+      const excludePath = join(checkoutRoot, ".git", "info", "exclude");
+      const excludeBody = existsSync(excludePath)
+        ? readFileSync(excludePath, "utf8")
+        : "";
+      if (!excludeBody.split("\n").includes(rel)) {
+        writeFileSync(
+          excludePath,
+          `${excludeBody.replace(/\n?$/, "\n")}${rel}\n`,
+        );
+      }
+    } catch {
+      /* exclusion is belt-and-braces on top of the tracked-file refusal */
+    }
     const s = readSettings(checkoutRoot);
     s.env = s.env || {};
     if (gitlabToken) s.env.GITLAB_TOKEN = gitlabToken;
     if (githubToken) s.env.GITHUB_TOKEN = githubToken;
-    if (existsSync(p)) copyFileSync(p, p + ".bak");
     try {
       writeJsonAtomic(p, s);
     } catch (e) {

@@ -21,6 +21,7 @@ import {
   readFablePolicy,
 } from "../core/telemetry/governor.mjs";
 import { computeQuotaPressure } from "../core/telemetry/quota-pressure.mjs";
+import { computeBurn, readBurnHistory } from "../core/telemetry/burn.mjs";
 import { deriveDelivery } from "../core/delivery/lifecycle.mjs";
 import { findingId } from "../core/findings/model.mjs";
 import {
@@ -145,13 +146,17 @@ export async function buildSnapshot(ctx, cached) {
     commitActivity,
     authorBreakdown,
   ] = await Promise.all([
-    timed(perf, "checkout", () => getCheckout(ctx)),
-    timed(perf, "worktrees", () => getWorktrees(ctx)),
-    timed(perf, "runs", () => getRuns(ctx)),
-    timed(perf, "remoteBranches", () => getMergedRemoteBranches(ctx)),
-    timed(perf, "recentCommits", () => getRecentCommits(ctx)),
-    timed(perf, "commitActivity", () => getCommitActivity(ctx)),
-    timed(perf, "authorBreakdown", () => getAuthorBreakdown(ctx)),
+    // Each adapter is isolated: one that throws degrades its own section to
+    // a fallback instead of turning the whole snapshot (and every SSE tick)
+    // into a 500. The adapters usually never reject - git() swallows - but
+    // the snapshot's availability must not depend on that convention.
+    timed(perf, "checkout", () => getCheckout(ctx)).catch(() => null),
+    timed(perf, "worktrees", () => getWorktrees(ctx)).catch(() => []),
+    timed(perf, "runs", () => getRuns(ctx)).catch(() => []),
+    timed(perf, "remoteBranches", () => getMergedRemoteBranches(ctx)).catch(() => []),
+    timed(perf, "recentCommits", () => getRecentCommits(ctx)).catch(() => []),
+    timed(perf, "commitActivity", () => getCommitActivity(ctx)).catch(() => []),
+    timed(perf, "authorBreakdown", () => getAuthorBreakdown(ctx)).catch(() => []),
   ]);
   const reviews = cached.reviews ?? {
     status: "pending",
@@ -188,11 +193,15 @@ export async function buildSnapshot(ctx, cached) {
       a.rejected = pol.rejected === true;
     }
   }
+  // Plan pressure is read before cost so the burn forecast can lean on a
+  // fresh quota reading when one exists.
+  const quotaPressure = computeQuotaPressure(telemetry.sessions);
   const cost = {
     rollup: rollupCost(telemetry, events),
     // Historical windows come from the optional OTEL receiver; absent = the
     // Cost view shows its enable hint instead of the window tabs.
     otel: cached.otel ?? { enabled: false },
+    burn: computeBurn(readBurnHistory(ctx.runtimeDir), quotaPressure),
     findings: detectWaste(telemetry, events, {
       agentModelPins: readAgentModelPins(ctx.checkoutRoot),
     }),
@@ -201,9 +210,6 @@ export async function buildSnapshot(ctx, cached) {
     cost.rollup,
     readFablePolicy(ctx.checkoutRoot),
   );
-  // Plan pressure is a different axis from API-equivalent cost: it comes from
-  // the harness's own rate-limit windows and drives nothing automatically.
-  const quotaPressure = computeQuotaPressure(telemetry.sessions);
   // Durable Fix Station: reconcile the fresh scan against the persisted
   // lifecycle store (survives restart), persist only when it changed, and
   // decorate each finding with its lifecycle state for the view.

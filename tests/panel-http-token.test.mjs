@@ -9,6 +9,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import { request as httpRequest } from "node:http";
 import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
@@ -162,4 +163,69 @@ test("the token never reaches the HTML, an API body or the log", async () => {
       "token must not be logged",
     );
   }
+});
+
+test("a foreign Host header is refused as misdirected (anti-rebinding)", async () => {
+  // fetch() forbids overriding Host, so send the request raw over a socket.
+  const status = await new Promise((resolvePromise, reject) => {
+    const req = httpRequest(
+      {
+        host: "127.0.0.1",
+        port,
+        path: "/api/snapshot",
+        method: "GET",
+        headers: { host: "evil.example", "x-panel-token": token },
+      },
+      (res) => {
+        res.resume();
+        resolvePromise(res.statusCode);
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+  assert.equal(status, 421, "an unexpected Host must fail closed");
+});
+
+test("source-serving reads now require the token, matching the sensitive reads", async () => {
+  for (const path of [
+    "/api/diff?file=README.md",
+    "/api/working-tree",
+    "/api/reviews",
+    "/api/review-pack/preview",
+    "/api/logs",
+    "/api/snapshot",
+  ]) {
+    assert.equal((await get(path, null)).status, 401, `${path} without token`);
+    // and the right token is accepted (not 401), whatever the body turns out to be
+    assert.notEqual((await get(path, token)).status, 401, `${path} with token`);
+  }
+});
+
+test("a path-traversal request cannot escape the static root", async () => {
+  for (const attempt of [
+    "/../package.json",
+    "/..%2f..%2fpackage.json",
+    "/%2e%2e/%2e%2e/package.json",
+  ]) {
+    const r = await get(attempt, token);
+    assert.ok(r.status === 403 || r.status === 404, `${attempt} -> ${r.status}`);
+    if (r.ok) {
+      const body = await r.text();
+      assert.ok(!body.includes('"name": "clawdeck-panel"'), "must not leak package.json");
+    }
+  }
+});
+
+test("a cross-origin mutation is refused before the token is even checked", async () => {
+  const r = await fetch(`${origin()}/api/actions/config.read`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: "http://evil.example",
+      "x-panel-token": token,
+    },
+    body: "{}",
+  });
+  assert.equal(r.status, 403, "same-origin is required for writes");
 });
