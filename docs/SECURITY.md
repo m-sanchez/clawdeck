@@ -19,7 +19,7 @@ The panel hardens its **HTTP interface**. It is not a sandbox.
 
 ### Routes that require it
 
-Mutating: `POST /api/actions/*` (including the whole `policy.*` enforcement plane), `POST /api/jobs`, `POST /api/jobs/:id/cancel`. Ingest: `POST /v1/metrics` - an OTEL exporter must therefore send `x-panel-token`, or its metrics are refused. Sensitive reads: `/api/session-feed` and `/api/session-tasks`, which serve prompt text, command lines and tool-result previews verbatim.
+**Every `/api/*` route** requires the panel bearer - one uniform read-auth policy applied in one place, covering mutations (`POST /api/actions/*`, `POST /api/jobs*`), sensitive reads (`/api/session-feed`, `/api/session-tasks`, `/api/trace`, `/api/diff`, snapshots), and everything else under `/api/`. The documented exceptions each carry a different trust story: `/api/version` is liveness metadata, and `POST /api/ingest/event` + `POST /v1/metrics` carry their own per-launch ingest token. Token comparisons are constant-time over fixed-length digests.
 
 `/health` stays open: the lifecycle scripts poll it to prove ownership before stopping a pid. `/events` (SSE) stays open because `EventSource` cannot send headers; it carries the periodic snapshot (session state, counts, git and telemetry summaries, and worktree/commit paths) plus workflow event deltas - never prompt or command text. Treat everything on it as visible to anything that can reach the loopback port below the Host check.
 
@@ -54,6 +54,16 @@ Bind to `127.0.0.1` by default. Do not expose the panel on all interfaces withou
 - Do not forward secrets to the browser.
 - Return only the metadata needed for the UI.
 - Keep SSE streams scoped and bounded.
+
+## The Ask subprocess (`dash.ask`)
+
+The one place the panel starts a Claude session of its own. Its boundary is structural, not advisory:
+
+- The child is `claude -p` with a **fixed argv**: `--max-turns 1`, `--setting-sources ""` (no user or project instruction files), `--disallowedTools "*"` (no tools), `--strict-mcp-config` (no MCP servers). The question and the snapshot summary travel on **stdin only** - nothing user-controlled reaches the command line.
+- Its working directory is a sterile per-call directory under the OS temp root - outside both the observed checkout and Clawdeck itself, so ancestor discovery finds nothing.
+- Its environment is an **allowlist** (PATH, OS basics, the CLI's auth home); no `CLAUDE_*` or forge-token variables inherit.
+- The full outbound payload is **secret-scanned fail-closed** first: a scan hit, or an unavailable scanner, refuses the call before any process is spawned; refusals report pattern names, never values.
+- The prompt delimits the snapshot JSON as untrusted evidence and instructs the model to ignore directives inside it.
 
 ## Logs
 

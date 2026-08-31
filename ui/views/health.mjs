@@ -29,6 +29,56 @@ function shortPath(abs, root) {
 }
 
 /** Panel Health: the panel observing itself: process + runtime store sizes. */
+function meterRow(label, pct, detail) {
+  const tone =
+    pct == null
+      ? "neutral"
+      : pct > 92
+        ? "danger"
+        : pct > 80
+          ? "warn"
+          : "ok";
+  return el("div", { class: "host-meter" }, [
+    el("span", { class: "host-meter-label small", text: label }),
+    el("div", { class: "host-meter-track" }, [
+      el("div", {
+        class: `host-meter-fill tone-${tone}`,
+        style: `width:${pct == null ? 0 : Math.min(100, pct)}%`,
+      }),
+    ]),
+    el("span", {
+      class: "mono small",
+      text: pct == null ? "n/a" : `${pct}%`,
+    }),
+    detail ? el("span", { class: "muted small", text: detail }) : null,
+  ]);
+}
+
+function hostCard(host) {
+  const h = host || {};
+  return card(
+    "Host",
+    el("div", { class: "host-meters" }, [
+      meterRow("CPU", h.cpuPct, h.cores ? `${h.cores} cores` : null),
+      meterRow(
+        "Memory",
+        h.memUsedPct,
+        h.memTotalMB
+          ? `${Math.round((h.memTotalMB - (h.memFreeMB || 0)) / 1024)} / ${Math.round(h.memTotalMB / 1024)} GB`
+          : null,
+      ),
+      meterRow(
+        "Disk (checkout volume)",
+        h.disk?.usedPct ?? null,
+        h.disk ? `${h.disk.freeGB} GB free of ${h.disk.totalGB} GB` : null,
+      ),
+    ]),
+    {
+      help: "Machine vitals sampled with the snapshot: CPU busy since the previous sample, memory in use, and the volume holding the observed checkout. Unmeasurable values show n/a, never zero.",
+    },
+  );
+}
+
 export function render(app) {
   const s = app.snapshot || {};
   const p = s.panel || {};
@@ -104,6 +154,7 @@ export function render(app) {
 
   return el("div", { class: "view" }, [
     el("div", { class: "cp-cards cp-cards-3" }, [
+      hostCard(p.host),
       card("Panel process", rows(proc)),
       card("Performance (recent window)", rows(perfRows)),
       card("Runtime stores", rows(stores)),

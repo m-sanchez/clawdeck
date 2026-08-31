@@ -25,6 +25,13 @@ release closes them and pins each with a test against the real server.
   allowlisted environment and no settings/MCP loaded; the only context
   sent is a compact snapshot summary that is secret-scanned fail-closed.
 
+- **Live pulse strip** (Overview). The last five minutes of panel events
+  as breathing five-second bars, updated every second client-side.
+- **Host vitals** (Health). CPU (delta-sampled), memory, and the observed
+  checkout's disk volume as threshold-toned meters; unmeasurable values
+  report n/a, never zero.
+- **Collapsible cards**, persisted per browser.
+
 ### Security
 
 - **Uniform read-auth.** Every `/api/*` route now requires the panel

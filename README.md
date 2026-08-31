@@ -129,7 +129,6 @@ and never reach the browser.
 - More forge connectors (above).
 - Stale-while-revalidate snapshot refresh and dirty-section re-rendering.
 - Session → subagent hierarchy tree view.
-- Host metrics strip (CPU / RAM / disk) with per-metric thresholds.
 
 ## Architecture
 

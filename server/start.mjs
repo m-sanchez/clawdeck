@@ -68,6 +68,7 @@ import {
   getLiveTelemetry,
 } from "./adapters/telemetry-live.mjs";
 import { recordBurnSample } from "./core/telemetry/burn.mjs";
+import { sampleHostMetrics } from "./adapters/host-metrics.mjs";
 import { getForgeStatus, newMrUrl } from "./forge/index.mjs";
 
 const HOST = "127.0.0.1";
@@ -352,6 +353,7 @@ async function currentSnapshot() {
     events: eventStore.reconcile().snapshot(),
     perf,
     panel: {
+      host: sampleHostMetrics(checkoutRoot),
       pid: process.pid,
       port: PORT,
       uptimeSec: Math.round(process.uptime()),
