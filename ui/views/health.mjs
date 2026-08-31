@@ -34,12 +34,23 @@ function meterRow(label, pct, detail) {
     pct == null ? "neutral" : pct > 92 ? "danger" : pct > 80 ? "warn" : "ok";
   return el("div", { class: "host-meter" }, [
     el("span", { class: "host-meter-label small", text: label }),
-    el("div", { class: "host-meter-track" }, [
-      el("div", {
-        class: `host-meter-fill tone-${tone}`,
-        style: `width:${pct == null ? 0 : Math.min(100, pct)}%`,
-      }),
-    ]),
+    el(
+      "div",
+      {
+        class: "host-meter-track",
+        role: "meter",
+        "aria-label": label,
+        "aria-valuemin": "0",
+        "aria-valuemax": "100",
+        ...(pct == null ? {} : { "aria-valuenow": String(pct) }),
+      },
+      [
+        el("div", {
+          class: `host-meter-fill tone-${tone}`,
+          style: `width:${pct == null ? 0 : Math.min(100, pct)}%`,
+        }),
+      ],
+    ),
     el("span", {
       class: "mono small",
       text: pct == null ? "n/a" : `${pct}%`,

@@ -157,26 +157,35 @@ function turnBlock(app, t, open) {
   const key = t.startTs;
   const expanded = open.has(key) || t.open;
   const usage = t.usage;
-  const head = el("button", { class: "trace-turn-head", type: "button" }, [
-    el("span", { class: "trace-caret", text: expanded ? "▾" : "▸" }),
-    el("span", { class: "trace-turn-title", text: `Turn ${t.index + 1}` }),
-    t.model ? pill(t.model, "info") : null,
-    el("span", { class: "muted small", text: relTime(t.startTs) }),
-    el("span", {
-      class: "muted small",
-      text: t.durMs != null ? fmtMs(t.durMs) : t.open ? "in progress" : "",
-    }),
-    el("span", {
-      class: "mono small trace-tokens",
-      text: usage
-        ? `${compact(usage.input + usage.output)} tok · ${usage.requests} req`
-        : "tokens unknown",
-    }),
-    el("span", {
-      class: "muted small",
-      text: `${t.spans.length} span(s)${t.spansDropped ? ` (+${t.spansDropped} dropped)` : ""}`,
-    }),
-  ]);
+  const head = el(
+    "button",
+    {
+      class: "trace-turn-head",
+      type: "button",
+      "aria-expanded": String(expanded),
+      "aria-label": `Turn ${t.index + 1}: ${expanded ? "collapse" : "expand"} span details`,
+    },
+    [
+      el("span", { class: "trace-caret", text: expanded ? "▾" : "▸" }),
+      el("span", { class: "trace-turn-title", text: `Turn ${t.index + 1}` }),
+      t.model ? pill(t.model, "info") : null,
+      el("span", { class: "muted small", text: relTime(t.startTs) }),
+      el("span", {
+        class: "muted small",
+        text: t.durMs != null ? fmtMs(t.durMs) : t.open ? "in progress" : "",
+      }),
+      el("span", {
+        class: "mono small trace-tokens",
+        text: usage
+          ? `${compact(usage.input + usage.output)} tok · ${usage.requests} req`
+          : "tokens unknown",
+      }),
+      el("span", {
+        class: "muted small",
+        text: `${t.spans.length} span(s)${t.spansDropped ? ` (+${t.spansDropped} dropped)` : ""}`,
+      }),
+    ],
+  );
   head.addEventListener("click", () => {
     if (open.has(key)) open.delete(key);
     else open.add(key);

@@ -34,6 +34,12 @@ release closes them and pins each with a test against the real server.
 - **Forge connectors for Bitbucket Cloud, Gitea/Forgejo and Azure
   DevOps**, joining GitHub and GitLab behind the same auto-detected,
   read-only, normalized status shape.
+- **Keyboard & small-screen polish**. Hub tabs follow the WAI-ARIA tabs
+  pattern (arrow keys, Home/End, focus retained); trace turns and card
+  collapses announce their expanded state; host vitals are real meters to
+  assistive tech; a shared focus ring covers every control. The layout no
+  longer overflows narrow viewports (~420px): the single-column shell,
+  topbar and checkout pill all shrink instead of widening the page.
 - **Dirty-section re-render + snapshot revalidation**. The snapshot now
   carries per-section content hashes; auto-refreshing views declare which
   sections they read and skip the re-render when none changed (skip counts

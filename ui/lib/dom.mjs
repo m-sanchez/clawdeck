@@ -119,7 +119,7 @@ export function card(title, body, opts = {}) {
     class: "card-collapse",
     type: "button",
     "aria-expanded": String(!collapsed),
-    "aria-label": collapsed ? "Expand card" : "Collapse card",
+    "aria-label": `${collapsed ? "Expand" : "Collapse"} ${key}`,
     text: collapsed ? "▸" : "▾",
     onClick: () => {
       const set = collapsedSet();
@@ -127,6 +127,10 @@ export function card(title, body, opts = {}) {
       bodyEl.hidden = now;
       toggle.textContent = now ? "▸" : "▾";
       toggle.setAttribute("aria-expanded", String(!now));
+      toggle.setAttribute(
+        "aria-label",
+        `${now ? "Expand" : "Collapse"} ${key}`,
+      );
       if (now) set.add(key);
       else set.delete(key);
       saveCollapsed(set);

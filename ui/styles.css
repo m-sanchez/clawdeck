@@ -1553,7 +1553,9 @@ textarea.input {
 
 @media (max-width: 760px) {
   .shell {
-    grid-template-columns: 1fr;
+    /* minmax(0,1fr): a bare 1fr's auto minimum would let the widest row
+       inflate the single track past the viewport. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 52px auto minmax(0, 1fr);
     grid-template-areas: "top" "side" "main";
   }
@@ -1568,6 +1570,29 @@ textarea.input {
   }
   .nav-link span:not(.nav-icon) {
     display: none;
+  }
+  /* The topbar must never widen the layout viewport: drop the clock label
+     and the connection word (the dot still carries the state). */
+  .topbar {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .topbar-meta {
+    min-width: 0;
+    gap: 8px;
+  }
+  .updated,
+  .conn-label {
+    display: none;
+  }
+  .checkout-meta {
+    min-width: 0;
+  }
+  .checkout-id {
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -3778,6 +3803,19 @@ kbd {
 }
 .card-collapse:hover {
   color: var(--ink);
+}
+
+/* Shared keyboard-focus ring: every control gets a visible ring without
+   affecting mouse users (focus-visible only). */
+.tab:focus-visible,
+.btn:focus-visible,
+.card-collapse:focus-visible,
+.trace-turn-head:focus-visible,
+.pill-btn:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 /* ── Host meters ── */
