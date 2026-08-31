@@ -2,9 +2,28 @@
 
 ## 0.3.0
 
-Security and test-coverage hardening. Several boundaries the README named
-were previously unproven or inconsistent; this release closes them and
-pins each with a test against the real server.
+Three flagship features plus security and test-coverage hardening. Several
+boundaries the README named were previously unproven or inconsistent; this
+release closes them and pins each with a test against the real server.
+
+### Features
+
+- **Trace waterfall** (Activity > Trace). Every turn of a session rendered
+  as tool-call spans with real durations, paired from the transcript
+  (`tool_use` ↔ `tool_result`). Token counts are deduplicated per request;
+  human-wait spans (plan approval, questions) are width-capped and dashed;
+  a dead session's unfinished tools render as incomplete, never as
+  running. Bounded backward read (4 MB budget) keeps 200 MB transcripts
+  fast.
+- **Burn rate + limit forecast** (Cost). A one-minute sampler differences
+  each session's cumulative statusline cost into persisted history;
+  the Cost hub gains $/hour, 5h/7d depletion slopes with ETA (computed
+  within one reset epoch only), and a monthly projection gated on six
+  hours of coverage. Cost and quota provenance are reported separately.
+- **Ask Clawdeck** (Prompt). One-question chat answered by a local
+  `claude -p` child running tool-less in a sterile temp directory with an
+  allowlisted environment and no settings/MCP loaded; the only context
+  sent is a compact snapshot summary that is secret-scanned fail-closed.
 
 ### Security
 
@@ -19,7 +38,7 @@ pins each with a test against the real server.
 - **No shell in `editor.open`.** The editor launches through a fixed argv
   with no shell, replacing a `shell: true` spawn guarded by a character
   blocklist. On Windows it routes through `cmd /d /s /c` with a discrete
-  argv and a two-character expansion guard.
+  argv and an expansion/line-break guard (`"`, `%`, CR, LF rejected).
 - **Secrets at rest.** Writing a forge PAT now refuses outright if
   `settings.local.json` is tracked by git, adds the exclusion to
   `.git/info/exclude` (never the project's committed `.gitignore`), and no

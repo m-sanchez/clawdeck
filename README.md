@@ -19,6 +19,24 @@ reviews, and delivery state - in one local web UI.
 
 ![The Clawdeck overview dashboard, dark theme](docs/assets/dashboard.png)
 
+## Feature tour
+
+**Trace waterfall** - every turn of a session broken into tool-call spans
+with real durations: subagent tasks, failing commands, and human-wait spans
+(dashed, width-capped) at a glance.
+
+![Trace waterfall: turns with tool-call spans on a timeline](docs/assets/trace.png)
+
+**Burn rate & forecast** - $/hour from statusline cost deltas, 5h/7d
+depletion slopes with ETA, per-model token history over 7d/30d/all-time
+windows. Estimates are labelled as estimates; unknowns stay unknown.
+
+![Cost hub: burn KPIs, forecast card, per-model history](docs/assets/cost.png)
+
+**Ask Clawdeck** (Prompt hub) - ask questions about panel state, answered by
+a local `claude -p` child running tool-less in a sterile temp dir; the only
+context sent is a compact, secret-scanned snapshot summary.
+
 - **Zero dependencies.** Pure Node stdlib on the server, browser-native ES
   modules in the UI. No build step, no `node_modules`.
 - **Loopback-only.** Binds `127.0.0.1`, refuses foreign `Host` headers, gates

@@ -950,7 +950,8 @@ const server = http.createServer(async (request, response) => {
           });
         basePath = resolved.cwd;
       }
-      const turnsParam = Number(url.searchParams.get("turns"));
+      const turnsRaw = url.searchParams.get("turns");
+      const turnsParam = turnsRaw == null ? NaN : Number(turnsRaw);
       const maxTurns = Number.isInteger(turnsParam)
         ? Math.max(1, Math.min(50, turnsParam))
         : undefined;

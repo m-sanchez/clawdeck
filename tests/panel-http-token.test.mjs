@@ -135,6 +135,8 @@ test("/api/trace validates the session id and returns the trace shape", async ()
   assert.equal(body.missing, true);
   assert.deepEqual(body.turns, []);
   assert.equal(typeof body.sessionLive, "boolean");
+  // No `turns` param means the adapter default, never a clamp of Number(null)=0.
+  assert.equal(body.caps.maxTurns, 20);
 });
 
 test("the right token is accepted", async () => {
