@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clawd states gallery (dev)</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body {
+        padding: 18px;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .tile h3 {
+        margin: 0;
+        padding: 8px 12px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--line-soft);
+        display: flex;
+        justify-content: space-between;
+      }
+      .tile .stage {
+        position: relative;
+        height: 150px;
+        background: var(--surface-2);
+      }
+      .bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+    </style>
+    <script>
+      try {
+        var c = JSON.parse(localStorage.getItem("panelConfig") || "{}");
+        if (c.theme === "light" || c.theme === "dark")
+          document.documentElement.setAttribute("data-theme", c.theme);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <h1 style="margin: 0 0 6px">Clawd states gallery</h1>
+    <p class="muted small">
+      Development-only deterministic matrix of every production state for visual
+      regression. Production state is driven by real workflow data, never this
+      page.
+    </p>
+    <div class="bar">
+      <button class="chip" id="themeBtn">Toggle theme</button>
+      <button class="chip" id="motionBtn">Toggle reduced motion</button>
+      <button class="chip" id="patrolBtn">Toggle idle patrol</button>
+      <button class="chip" id="badgeBtn">Toggle badges</button>
+      <a class="chip" href="/clawd-playground" target="_blank" rel="noreferrer"
+        >Open canonical reference</a
+      >
+      <a class="chip" href="/">Back to dashboard</a>
+    </div>
+    <div class="gallery" id="gallery"></div>
+
+    <script type="module">
+      import "./clawd/clawd-element.mjs";
+      const STATES = [
+        "sleeping",
+        "thinking",
+        "idle",
+        "reading",
+        "coding",
+        "inspecting",
+        "reviewing",
+        "waiting",
+        "attention",
+        "blocked",
+        "success",
+      ];
+      const gallery = document.getElementById("gallery");
+      let patrol = "off";
+      let badges = "";
+      for (const state of STATES) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        const h = document.createElement("h3");
+        h.innerHTML = `<span>${state}</span><span class="muted small">data-cy=clawd-${state}</span>`;
+        const stage = document.createElement("div");
+        stage.className = "stage";
+        const clawd = document.createElement("clawd-assistant");
+        clawd.setAttribute("state", state);
+        clawd.setAttribute("patrol", patrol);
+        clawd.setAttribute("data-cy", `clawd-${state}`);
+        stage.append(clawd);
+        tile.append(h, stage);
+        gallery.append(tile);
+      }
+      const all = () => [...document.querySelectorAll("clawd-assistant")];
+      document.getElementById("themeBtn").onclick = () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        document.documentElement.setAttribute(
+          "data-theme",
+          cur === "dark" ? "light" : "dark",
+        );
+      };
+      let reduced = false;
+      document.getElementById("motionBtn").onclick = () => {
+        reduced = !reduced;
+        all().forEach((c) =>
+          c.setAttribute("motion", reduced ? "reduced" : "full"),
+        );
+      };
+      document.getElementById("patrolBtn").onclick = () => {
+        patrol = patrol === "off" ? "" : "off";
+        all().forEach((c) => c.setAttribute("patrol", patrol));
+      };
+      document.getElementById("badgeBtn").onclick = () => {
+        badges = badges === "off" ? "" : "off";
+        all().forEach((c) => c.setAttribute("badge", badges));
+      };
+    </script>
+  </body>
+</html>

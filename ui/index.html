@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clawdeck</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      // Pre-paint theme to avoid a flash before app.mjs loads.
+      try {
+        var c = JSON.parse(localStorage.getItem("panelConfig") || "{}");
+        if (c.theme === "light" || c.theme === "dark")
+          document.documentElement.setAttribute("data-theme", c.theme);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <img class="brand-mark" src="/logo.svg" alt="" aria-hidden="true" />
+          <span class="brand-name"
+            >Claw<span class="brand-accent">deck</span></span
+          >
+        </div>
+        <div class="topbar-meta">
+          <span id="checkout-meta" class="checkout-meta"></span>
+          <span class="topbar-actions">
+            <button
+              id="bell-btn"
+              class="icon-btn bell"
+              type="button"
+              data-tip="Notifications"
+              aria-label="Notifications"
+            >
+              🔔<span id="bell-badge" class="bell-badge" hidden></span>
+            </button>
+            <button
+              id="refresh-btn"
+              class="icon-btn"
+              type="button"
+              data-tip="Refresh now"
+              aria-label="Refresh now"
+            >
+              ⟳
+            </button>
+            <button
+              id="theme-btn"
+              class="icon-btn"
+              type="button"
+              data-tip="Toggle theme"
+              aria-label="Toggle theme"
+            >
+              ◐
+            </button>
+          </span>
+          <span
+            id="updated"
+            class="updated muted small"
+            data-tip="Last update"
+          ></span>
+          <span class="conn" data-tip="Live connection status">
+            <span id="conn-dot" class="conn-dot conn-connecting"></span>
+            <span id="conn-label" class="conn-label">Connecting…</span>
+          </span>
+        </div>
+      </header>
+
+      <nav class="sidebar" aria-label="Primary">
+        <a class="nav-link active" data-route="overview" href="#/overview">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+              <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+              <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+              <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+            </svg> </span
+          ><span>Overview</span>
+        </a>
+        <a class="nav-link" data-route="activity" href="#/activity">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg> </span
+          ><span>Activity</span>
+        </a>
+        <a class="nav-link" data-route="run" href="#/run">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 4.5l12 7.5-12 7.5z" />
+            </svg> </span
+          ><span>Run</span><span class="nav-count" data-count="run"></span>
+        </a>
+        <a class="nav-link" data-route="worktrees" href="#/worktrees">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <line x1="6" y1="3.5" x2="6" y2="15" />
+              <circle cx="6" cy="18" r="2.6" />
+              <circle cx="18" cy="6" r="2.6" />
+              <path d="M18 8.6a9 9 0 0 1-9 9" />
+            </svg> </span
+          ><span>Worktrees</span
+          ><span class="nav-count" data-count="worktrees"></span>
+        </a>
+        <a class="nav-link" data-route="review" href="#/review">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="6" y="4" width="12" height="17" rx="2" />
+              <path d="M9 4V3h6v1" />
+              <path d="M9 13l2 2 4-4" />
+            </svg> </span
+          ><span>Review</span>
+        </a>
+        <a class="nav-link" data-route="prompt" href="#/prompt">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M21 11.5a8.5 8.5 0 0 1-12 7.7L3 21l1.8-6A8.5 8.5 0 1 1 21 11.5z"
+              />
+              <line x1="8" y1="10" x2="16" y2="10" />
+              <line x1="8" y1="14" x2="13" y2="14" />
+            </svg> </span
+          ><span>Prompt</span>
+        </a>
+        <a class="nav-link" data-route="cost" href="#/cost">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg> </span
+          ><span>Cost</span>
+        </a>
+        <a class="nav-link" data-route="delivery" href="#/delivery">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+              />
+              <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" />
+            </svg> </span
+          ><span>Delivery</span>
+        </a>
+        <a class="nav-link" data-route="health" href="#/health">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"
+              />
+            </svg> </span
+          ><span>Health</span>
+        </a>
+        <a class="nav-link" data-route="config" href="#/config">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <line x1="4" y1="21" x2="4" y2="14" />
+              <line x1="4" y1="10" x2="4" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="3" />
+              <line x1="20" y1="21" x2="20" y2="16" />
+              <line x1="20" y1="12" x2="20" y2="3" />
+              <line x1="1.5" y1="14" x2="6.5" y2="14" />
+              <line x1="9.5" y1="8" x2="14.5" y2="8" />
+              <line x1="17.5" y1="16" x2="22.5" y2="16" />
+            </svg> </span
+          ><span>Configuration</span>
+        </a>
+      </nav>
+
+      <main
+        id="main"
+        class="main"
+        tabindex="-1"
+        role="main"
+        aria-live="polite"
+      ></main>
+
+      <footer class="footer" aria-label="Assistant">
+        <div id="clawd-swarm" class="clawd-swarm" aria-hidden="true"></div>
+        <clawd-assistant
+          id="clawd"
+          state="sleeping"
+          dock="off"
+          tooltip="off"
+        ></clawd-assistant>
+      </footer>
+      <button
+        id="clawd-toggle"
+        class="clawd-toggle"
+        type="button"
+        title="Hide assistant"
+        aria-label="Hide assistant"
+      >
+        ⌄
+      </button>
+    </div>
+
+    <div
+      id="toasts"
+      class="toasts"
+      aria-live="polite"
+      aria-atomic="false"
+    ></div>
+
+    <!-- d3 via the allowlisted vendor route. Optional: probe first so an
+         absent asset degrades silently; charts fall back to text/DOM. -->
+    <script>
+      fetch("/vendor/d3.js")
+        .then(function (r) {
+          var type = (r.headers.get("content-type") || "").toLowerCase();
+          if (!r.ok || type.indexOf("javascript") === -1) return;
+          var s = document.createElement("script");
+          s.src = "/vendor/d3.js";
+          document.body.appendChild(s);
+        })
+        .catch(function () {});
+    </script>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>

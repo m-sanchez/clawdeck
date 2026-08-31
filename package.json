@@ -1,0 +1,37 @@
+{
+  "name": "clawdeck",
+  "version": "0.1.0",
+  "description": "Unofficial local dashboard for Claude Code: sessions, events, cost, worktrees, reviews - zero dependencies, loopback-only.",
+  "license": "MIT",
+  "author": "Miguel Sanchez",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m-sanchez/clawdeck.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "clawdeck": "scripts/cli.mjs"
+  },
+  "files": [
+    "server",
+    "ui",
+    "scripts",
+    "hooks",
+    "contracts",
+    "schemas",
+    "command-templates",
+    "reference",
+    "docs",
+    "panel.config.json",
+    "ARCHITECTURE.md"
+  ],
+  "scripts": {
+    "start": "node scripts/panel-run.mjs",
+    "test": "node --test tests/",
+    "init": "node scripts/init.mjs",
+    "self-test": "node scripts/self-test.mjs"
+  },
+  "dependencies": {}
+}

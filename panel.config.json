@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "runtimeRoot": ".claude/.runtime/panel",
+  "ports": {
+    "preferredBase": 4318,
+    "searchSpan": 1200
+  },
+  "browser": {
+    "openByDefault": true
+  },
+  "services": [
+    {
+      "id": "panel",
+      "label": "Clawdeck starter",
+      "entry": "server/start.mjs",
+      "cwd": ".",
+      "healthPath": "/health",
+      "urlPath": "/",
+      "portEnv": "PANEL_PORT"
+    }
+  ],
+  "primaryService": "panel",
+  "claudeCommands": [],
+  "worktree": {
+    "setupCandidates": [
+      ".claude/scripts/wt-setup.mjs",
+      ".claude/scripts/worktree-setup.mjs",
+      ".claude/scripts/wt-setup.js",
+      ".claude/scripts/worktree-setup.js"
+    ],
+    "runCandidates": [
+      ".claude/scripts/wt-run.mjs",
+      ".claude/scripts/worktree-run.mjs",
+      ".claude/scripts/wt-run.js",
+      ".claude/scripts/worktree-run.js"
+    ]
+  }
+}
