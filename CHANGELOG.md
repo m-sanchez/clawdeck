@@ -31,6 +31,9 @@ release closes them and pins each with a test against the real server.
   checkout's disk volume as threshold-toned meters; unmeasurable values
   report n/a, never zero.
 - **Collapsible cards**, persisted per browser.
+- **MCP & skills analytics** (Cost). Which MCP servers and skills recent
+  sessions actually called - counts, error rates, median durations - from
+  bounded transcript tails. No other Claude Code tool reports this.
 
 ### Security
 

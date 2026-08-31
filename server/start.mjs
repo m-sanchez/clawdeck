@@ -69,6 +69,7 @@ import {
 } from "./adapters/telemetry-live.mjs";
 import { recordBurnSample } from "./core/telemetry/burn.mjs";
 import { sampleHostMetrics } from "./adapters/host-metrics.mjs";
+import { getMcpAnalytics } from "./adapters/mcp-analytics.mjs";
 import { getForgeStatus, newMrUrl } from "./forge/index.mjs";
 
 const HOST = "127.0.0.1";
@@ -978,6 +979,12 @@ const server = http.createServer(async (request, response) => {
       }
       const trace = getSessionTrace(file, { maxTurns, sessionLive });
       return sendJson(response, 200, { ...trace, sessionLive });
+    }
+
+    if (path === "/api/mcp") {
+      // Recent-session MCP/skill usage; adapter caches for a minute.
+      const worktrees = await getWorktrees(ctx).catch(() => []);
+      return sendJson(response, 200, getMcpAnalytics(ctx, worktrees || []));
     }
 
     if (path === "/api/mr-draft") {

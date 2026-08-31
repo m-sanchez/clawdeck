@@ -64,6 +64,7 @@ export const api = {
     fetch(`/api/session-tasks?session=${encodeURIComponent(session)}`).then(
       asJson,
     ),
+  mcp: () => fetch("/api/mcp").then(asJson),
   trace: (session, worktree, turns) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);

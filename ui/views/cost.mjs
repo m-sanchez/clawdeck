@@ -213,6 +213,86 @@ function forecastCard(burn) {
   );
 }
 
+/**
+ * MCP & skills usage from recent transcripts. Fetched once per view entry
+ * (the adapter caches server-side); module cache survives auto re-renders.
+ */
+let mcpCache = null;
+function mcpCard(app) {
+  const body = el("div", { class: "cp-rows" });
+  const renderRows = (data) => {
+    body.replaceChildren();
+    if (!data || (!data.servers?.length && !data.skills?.length)) {
+      body.append(
+        emptyState(
+          "No MCP or skill calls in recent sessions.",
+          "Calls appear as sessions use MCP servers or invoke skills.",
+        ),
+      );
+      return;
+    }
+    for (const srv of data.servers) {
+      body.append(
+        el("div", { class: "cp-row" }, [
+          pill(srv.server, srv.errors ? "warn" : "info"),
+          el("strong", { text: `${srv.calls} call(s)` }),
+          el("span", {
+            class: "muted small",
+            text:
+              (srv.errors ? `${srv.errors} error(s) · ` : "") +
+              (srv.p50Ms != null ? `p50 ${srv.p50Ms}ms · ` : "") +
+              (srv.topTools?.[0]
+                ? `top: ${srv.topTools[0].tool} (${srv.topTools[0].count})`
+                : ""),
+          }),
+        ]),
+      );
+    }
+    if (data.skills?.length)
+      body.append(
+        el("div", { class: "cp-row" }, [
+          pill("skills", "neutral"),
+          el("span", {
+            class: "muted small",
+            text: data.skills
+              .slice(0, 6)
+              .map((k) => `${k.skill} ×${k.count}`)
+              .join(" · "),
+          }),
+        ]),
+      );
+    body.append(
+      el("div", {
+        class: "muted small",
+        text: `${data.sessionsScanned} recent session(s) scanned`,
+      }),
+    );
+  };
+  if (mcpCache) renderRows(mcpCache);
+  else
+    body.append(
+      el("div", { class: "df-running" }, [
+        el("span", { class: "spinner-inline" }),
+        el("span", { class: "muted small", text: "Scanning transcripts…" }),
+      ]),
+    );
+  app.api
+    .mcp()
+    .then((d) => {
+      mcpCache = d;
+      if (body.isConnected) renderRows(d);
+    })
+    .catch(() => {
+      if (body.isConnected && !mcpCache)
+        body.replaceChildren(
+          emptyState("MCP analytics unavailable.", "Try again shortly."),
+        );
+    });
+  return card("MCP & skills", body, {
+    help: "Which MCP servers and skills recent sessions actually called - counts, error rates, and median durations from the transcripts. Evidence for whether a server earns its context cost.",
+  });
+}
+
 function kpi(label, value, sub, tone) {
   return el("div", { class: `kpi-card ${tone ? `kpi-${tone}` : ""}` }, [
     el("div", { class: "kpi-label", text: label }),
@@ -376,6 +456,7 @@ export function render(app) {
         forecastCard(burn),
         warnings,
         historyCard(app, cost.otel),
+        mcpCard(app),
         modelCard,
         agentCard,
         findings,
