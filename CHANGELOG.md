@@ -34,6 +34,11 @@ release closes them and pins each with a test against the real server.
 - **Forge connectors for Bitbucket Cloud, Gitea/Forgejo and Azure
   DevOps**, joining GitHub and GitLab behind the same auto-detected,
   read-only, normalized status shape.
+- **Config map with usage overlay** (Configuration). Everything the
+  checkout declares to Claude Code - rules, commands, skills, agents,
+  MCP servers, hooks - correlated with what recent sessions actually
+  invoked. Dead config renders dim; calls resolved from global/user/plugin
+  config are surfaced separately.
 - **MCP & skills analytics** (Cost). Which MCP servers and skills recent
   sessions actually called - counts, error rates, median durations - from
   bounded transcript tails. No other Claude Code tool reports this.

@@ -59,7 +59,9 @@ function tailLines(path) {
  * Aggregate one transcript's MCP/skill usage into the accumulators.
  * Exported for tests.
  */
-export function accumulateTranscript(lines, servers, skills) {
+export function accumulateTranscript(lines, servers, skills, extras = {}) {
+  const agents = extras.agents || new Map();
+  const commands = extras.commands || new Map();
   const pending = new Map(); // tool_use id -> { entry, ts }
   for (const line of lines) {
     if (!line) continue;
@@ -71,10 +73,21 @@ export function accumulateTranscript(lines, servers, skills) {
     }
     const ts = Date.parse(o.timestamp || "") || null;
     const blocks = o.message?.content;
+    if (o.type === "user" && typeof blocks === "string") {
+      // A typed prompt beginning "/name" is a slash-command invocation.
+      const m = /^\/([A-Za-z0-9:_-]+)/.exec(blocks.trim());
+      if (m) commands.set(m[1], (commands.get(m[1]) || 0) + 1);
+      continue;
+    }
     if (!Array.isArray(blocks)) continue;
     if (o.type === "assistant") {
       for (const b of blocks) {
         if (b?.type !== "tool_use") continue;
+        if (b.name === "Task" || b.name === "Agent") {
+          const type = String(b.input?.subagent_type || "").trim();
+          if (type) agents.set(type, (agents.get(type) || 0) + 1);
+          // fall through: Task is not an MCP tool, parseMcpName rejects it
+        }
         if (b.name === "Skill") {
           const skill = String(b.input?.skill || "").trim();
           if (skill) skills.set(skill, (skills.get(skill) || 0) + 1);
@@ -178,11 +191,18 @@ export function getMcpAnalytics(ctx, worktrees, opts = {}) {
 
   const servers = new Map();
   const skills = new Map();
+  const agents = new Map();
+  const commands = new Map();
   for (const f of picked)
-    accumulateTranscript(tailLines(f.full), servers, skills);
+    accumulateTranscript(tailLines(f.full), servers, skills, {
+      agents,
+      commands,
+    });
 
   const value = {
     ...project(servers, skills),
+    agents: Object.fromEntries(agents),
+    commands: Object.fromEntries(commands),
     sessionsScanned: picked.length,
     computedAt: new Date(now).toISOString(),
   };

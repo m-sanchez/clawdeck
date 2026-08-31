@@ -1,5 +1,5 @@
 // @ts-check
-import { el, card, pill, clear } from "../lib/dom.mjs";
+import { el, card, pill, clear, emptyState } from "../lib/dom.mjs";
 import { masonry } from "../lib/masonry.mjs";
 import { openWizard } from "../lib/wizard.mjs";
 
@@ -168,6 +168,7 @@ export function render(app) {
 
   const tiles = el("div", { class: "grid-tiles" }, [
     gettingStartedCard(app),
+    configMapCard(app),
     credentialsCard(app),
     presentation,
     behaviour,
@@ -178,6 +179,96 @@ export function render(app) {
   ]);
   requestAnimationFrame(() => masonry(tiles));
   return el("div", { class: "view view-config" }, [tiles]);
+}
+
+/**
+ * Declared Claude config with a usage overlay: bright chips were invoked in
+ * recent sessions, dim chips are declared but unused - dead config is visible.
+ */
+let configMapCache = null;
+function configMapCard(app) {
+  const body = el("div", { class: "cfgmap" });
+  const chip = (name, used, extra = "") =>
+    el("span", {
+      class: `cfgmap-chip ${used > 0 ? "used" : "dead"} ${extra}`,
+      text: used > 0 ? `${name} ×${used}` : name,
+      "data-tip": used > 0 ? `${used} call(s) in recent sessions` : "no calls in recent sessions",
+    });
+  const group = (label, items, mapper) =>
+    items.length
+      ? el("div", { class: "cfgmap-group" }, [
+          el("span", { class: "cfgmap-label muted small", text: label }),
+          el("div", { class: "cfgmap-chips" }, items.map(mapper)),
+        ])
+      : null;
+  const renderMap = (d) => {
+    body.replaceChildren();
+    const groups = [
+      group("MCP servers", d.mcpServers, (m) => chip(m.name, m.used)),
+      group("Skills", d.skills, (k) => chip(k.name, k.used)),
+      group("Commands", d.commands, (c) => chip(c.name, c.used)),
+      group("Agents", d.agents, (a) => chip(a.name, a.used)),
+      group("Rules", d.rules, (r) =>
+        el("span", {
+          class: "cfgmap-chip rule",
+          text: r.scoped ? `${r.name} (scoped)` : r.name,
+          "data-tip": r.scoped
+            ? "Loads only when matching files are touched"
+            : "Loaded every session",
+        }),
+      ),
+      group(
+        "Hooks",
+        d.hooks,
+        (h) => chip(`${h.event}`, 1, "hook"),
+      ),
+      d.observedUnknown &&
+      (d.observedUnknown.agents.length ||
+        d.observedUnknown.commands.length ||
+        d.observedUnknown.servers?.length)
+        ? group(
+            "Used but declared elsewhere (global/user/plugin config)",
+            [
+              ...d.observedUnknown.agents,
+              ...d.observedUnknown.commands,
+              ...(d.observedUnknown.servers || []),
+            ],
+            (name) => chip(name, 1, "external"),
+          )
+        : null,
+    ].filter(Boolean);
+    if (!groups.length) {
+      body.append(
+        emptyState(
+          "No Claude config declared in this checkout.",
+          "Rules, commands, skills, agents and MCP servers appear here.",
+        ),
+      );
+      return;
+    }
+    body.append(...groups);
+  };
+  if (configMapCache) renderMap(configMapCache);
+  else
+    body.append(
+      el("div", { class: "df-running" }, [
+        el("span", { class: "spinner-inline" }),
+        el("span", { class: "muted small", text: "Mapping config…" }),
+      ]),
+    );
+  app.api
+    .configMap()
+    .then((d) => {
+      configMapCache = d;
+      if (body.isConnected) renderMap(d);
+    })
+    .catch(() => {
+      if (body.isConnected && !configMapCache)
+        body.replaceChildren(emptyState("Config map unavailable."));
+    });
+  return card("Config map (usage overlay)", body, {
+    help: "Everything this checkout declares to Claude Code, correlated with what recent sessions actually invoked. Bright = used, dim = declared but never called recently; the last group shows calls whose definitions live outside this checkout.",
+  });
 }
 
 /** Re-open the first-run setup wizard (forge, preferences, a short tour). */

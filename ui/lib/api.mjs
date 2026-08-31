@@ -65,6 +65,7 @@ export const api = {
       asJson,
     ),
   mcp: () => fetch("/api/mcp").then(asJson),
+  configMap: () => fetch("/api/config-map").then(asJson),
   trace: (session, worktree, turns) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);
