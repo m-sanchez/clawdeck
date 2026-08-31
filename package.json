@@ -1,5 +1,5 @@
 {
-  "name": "clawdeck",
+  "name": "clawdeck-panel",
   "version": "0.1.0",
   "description": "Unofficial local dashboard for Claude Code: sessions, events, cost, worktrees, reviews - zero dependencies, loopback-only.",
   "license": "MIT",

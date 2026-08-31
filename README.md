@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/clawd.png" width="360" alt="Clawd, the Clawdeck mascot, coding at his laptop" />
+  <img src="docs/assets/clawd-states.gif" width="400" alt="Clawd, the Clawdeck mascot, cycling through his states: sleeping, thinking, reading, coding, inspecting, success" />
 </p>
 
 # Clawdeck
@@ -30,6 +30,12 @@ reviews, and delivery state - in one local web UI.
 ## Quickstart
 
 ```bash
+npx clawdeck-panel run --checkout /path/to/your/project
+```
+
+Or from a clone:
+
+```bash
 git clone https://github.com/m-sanchez/clawdeck.git
 cd clawdeck
 node scripts/panel-run.mjs --checkout /path/to/your/project
@@ -44,7 +50,7 @@ The event timeline, activity feed, and cost views are fed by a tiny hook +
 statusline bridge you install into the observed project:
 
 ```bash
-node scripts/init.mjs --target /path/to/your/project --statusline
+npx clawdeck-panel init --target /path/to/your/project --statusline
 ```
 
 `init` copies the emitter hook (and its lib) into the project's
@@ -80,7 +86,6 @@ and never reach the browser.
 ## Roadmap
 
 - More forge connectors (above).
-- `npx clawdeck` publishing to npm.
 - Time-window tabs (7d / 30d / all-time) on the Cost view, with per-model
   input/output/cache breakdowns.
 - Stale-while-revalidate snapshot refresh and dirty-section re-rendering.
