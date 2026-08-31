@@ -32,7 +32,7 @@ const TONE_VARS = {
   brand: "--brand",
 };
 function toneColor(tone) {
-  return cssVar(TONE_VARS[tone] || "--brand", "#0a7fc7");
+  return cssVar(TONE_VARS[tone] || "--brand", "#d5982e");
 }
 
 /**

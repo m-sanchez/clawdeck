@@ -9,11 +9,11 @@
  */
 export const CLAWD_CSS = /* css */ `
 :host {
-  --brand: #0a7fc7;
-  --brand-dark: #075b93;
-  --face: #0a2640;
-  --line: #d6e0e8;
-  --muted: #607789;
+  --brand: #d5982e;
+  --brand-dark: #a06a14;
+  --face: #2a1b05;
+  --line: #e6dcc6;
+  --muted: #93897a;
   display: block;
   position: relative;
   width: 100%;
@@ -39,8 +39,8 @@ export const CLAWD_CSS = /* css */ `
   right: 0;
   bottom: 0;
   height: 36px;
-  background: linear-gradient(to top, rgba(234,241,246,.98), rgba(234,241,246,.98) 20px, rgba(234,241,246,0) 20px);
-  border-top: 1px solid rgba(141,163,180,.22);
+  background: linear-gradient(to top, rgba(246,241,230,.98), rgba(246,241,230,.98) 20px, rgba(246,241,230,0) 20px);
+  border-top: 1px solid rgba(180,163,141,.22);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
   pointer-events: none;
 }
@@ -50,7 +50,7 @@ export const CLAWD_CSS = /* css */ `
   left: 14px;
   right: 14px;
   top: 12px;
-  border-top: 1px dashed rgba(126,153,176,.28);
+  border-top: 1px dashed rgba(176,153,126,.28);
 }
 
 .assistant.clawd-assistant {
@@ -79,7 +79,7 @@ export const CLAWD_CSS = /* css */ `
 .assistant.clawd-assistant.booting { opacity: 0; }
 .assistant.clawd-assistant.is-ready { opacity: 1; transition: opacity .08s linear; }
 .assistant.clawd-assistant:focus-visible {
-  outline: 3px solid rgba(0, 101, 166, .28);
+  outline: 3px solid rgba(160, 106, 20, .28);
   outline-offset: 4px;
   border-radius: 12px;
 }
@@ -99,7 +99,7 @@ export const CLAWD_CSS = /* css */ `
   bottom: 1px;
   width: 54px;
   height: 5px;
-  background: rgba(11, 39, 62, .13);
+  background: rgba(42, 27, 5, .13);
   clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 2px, calc(100% - 5px) 100%, 5px 100%, 0 2px);
   animation: clawdShadow 1.2s steps(2, end) infinite;
 }
@@ -120,14 +120,14 @@ export const CLAWD_CSS = /* css */ `
   height: 44px;
   background: var(--brand);
   clip-path: polygon(8px 0, 60px 0, 60px 7px, 68px 7px, 68px 37px, 60px 37px, 60px 44px, 8px 44px, 8px 37px, 0 37px, 0 7px, 8px 7px);
-  box-shadow: inset 0 -4px 0 rgba(7,91,147,.28);
+  box-shadow: inset 0 -4px 0 rgba(160,106,20,.28);
 }
 .clawd-arm, .clawd-leg {
   position: absolute;
   z-index: 1;
   display: block;
   background: var(--brand);
-  box-shadow: inset 0 -3px 0 rgba(7,91,147,.28);
+  box-shadow: inset 0 -3px 0 rgba(160,106,20,.28);
   transform-origin: 50% 4px;
 }
 .clawd-arm { top: 16px; width: 12px; height: 15px; }
@@ -166,34 +166,34 @@ export const CLAWD_CSS = /* css */ `
 .clawd-laptop { left: 1px; top: 22px; width: 66px; height: 44px; transform-origin: 50% 100%; }
 .clawd-laptop-screen {
   position: absolute; left: 12px; top: 0; width: 34px; height: 22px;
-  background: #eef7ff; border: 3px solid var(--face); box-shadow: inset 0 0 0 2px rgba(10, 127, 199, .10);
+  background: #fdf6e6; border: 3px solid var(--face); box-shadow: inset 0 0 0 2px rgba(213, 152, 46, .10);
 }
 .clawd-laptop-screen::before {
-  content: "</>"; position: absolute; left: 4px; top: 4px; color: rgba(10,127,199,.55);
+  content: "</>"; position: absolute; left: 4px; top: 4px; color: rgba(213,152,46,.55);
   font: 900 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -.08em;
 }
 .clawd-laptop-screen::after {
   content: ""; position: absolute; left: 6px; top: 13px; width: 16px; height: 2px;
-  background: rgba(10,127,199,.28); box-shadow: 0 5px 0 rgba(10,127,199,.18);
+  background: rgba(213,152,46,.28); box-shadow: 0 5px 0 rgba(213,152,46,.18);
 }
 .clawd-laptop-screen i {
-  position: absolute; right: 5px; top: 4px; width: 2px; height: 8px; background: rgba(10,38,64,.42); opacity: 0;
+  position: absolute; right: 5px; top: 4px; width: 2px; height: 8px; background: rgba(42,27,5,.42); opacity: 0;
 }
 .clawd-laptop-base {
-  position: absolute; left: 0; top: 23px; width: 56px; height: 11px; background: #b2daf4;
+  position: absolute; left: 0; top: 23px; width: 56px; height: 11px; background: #f2d49a;
   border-top: 3px solid var(--face); clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 100%, 0 100%);
-  box-shadow: inset 0 -2px 0 rgba(7,91,147,.15);
+  box-shadow: inset 0 -2px 0 rgba(160,106,20,.15);
 }
 .clawd-laptop-base::after {
   content: ""; position: absolute; left: 8px; top: 3px; width: 40px; height: 5px;
-  background-image: radial-gradient(circle, rgba(10,38,64,.45) 1px, transparent 1.2px);
+  background-image: radial-gradient(circle, rgba(42,27,5,.45) 1px, transparent 1.2px);
   background-size: 6px 5px; background-position: 0 0; opacity: .6;
 }
 
 .clawd-glass { right: -3px; top: 11px; width: 28px; height: 30px; transform-origin: 50% 80%; }
 .clawd-glass-lens {
   position: absolute; left: 0; top: 0; width: 16px; height: 16px; border: 4px solid var(--face);
-  background: rgba(232,244,255,.85); box-shadow: inset 0 0 0 2px rgba(10,127,199,.14); overflow: hidden;
+  background: rgba(253,246,232,.85); box-shadow: inset 0 0 0 2px rgba(213,152,46,.14); overflow: hidden;
 }
 .clawd-glass-lens::after {
   content: ""; position: absolute; left: -8px; top: 1px; width: 6px; height: 10px;
@@ -210,7 +210,7 @@ export const CLAWD_CSS = /* css */ `
 .clawd-thought-dot.dot-2 { left: 10px; top: 18px; width: 8px; height: 8px; border-radius: 50%; }
 .clawd-thought-cloud {
   left: 18px; top: 2px; width: 24px; height: 18px; display: grid; place-items: center; border-radius: 999px;
-  box-shadow: inset 0 -2px 0 rgba(10,127,199,.08);
+  box-shadow: inset 0 -2px 0 rgba(213,152,46,.08);
 }
 .clawd-thought-cloud::before, .clawd-thought-cloud::after { display: none; }
 .clawd-thought-cloud span {
@@ -227,40 +227,40 @@ export const CLAWD_CSS = /* css */ `
 .clawd-book {
   left: 10px; top: 30px; width: 50px; height: 29px; background: var(--face);
   clip-path: polygon(0 6px, 19px 1px, 25px 5px, 31px 1px, 50px 6px, 47px 28px, 31px 23px, 25px 27px, 19px 23px, 3px 28px);
-  filter: drop-shadow(0 2px 0 rgba(7,91,147,.12));
+  filter: drop-shadow(0 2px 0 rgba(160,106,20,.12));
 }
 .clawd-book-pages {
   position: absolute; left: 3px; top: 3px; width: 44px; height: 23px;
   background:
-    linear-gradient(rgba(10,127,199,.24), rgba(10,127,199,.24)) 7px 7px / 10px 2px no-repeat,
-    linear-gradient(rgba(10,127,199,.16), rgba(10,127,199,.16)) 6px 12px / 11px 2px no-repeat,
-    linear-gradient(rgba(10,127,199,.11), rgba(10,127,199,.11)) 7px 17px / 9px 2px no-repeat,
-    linear-gradient(rgba(10,127,199,.24), rgba(10,127,199,.24)) 27px 7px / 10px 2px no-repeat,
-    linear-gradient(rgba(10,127,199,.16), rgba(10,127,199,.16)) 27px 12px / 11px 2px no-repeat,
-    linear-gradient(rgba(10,127,199,.11), rgba(10,127,199,.11)) 28px 17px / 9px 2px no-repeat,
-    #f9fcff;
+    linear-gradient(rgba(213,152,46,.24), rgba(213,152,46,.24)) 7px 7px / 10px 2px no-repeat,
+    linear-gradient(rgba(213,152,46,.16), rgba(213,152,46,.16)) 6px 12px / 11px 2px no-repeat,
+    linear-gradient(rgba(213,152,46,.11), rgba(213,152,46,.11)) 7px 17px / 9px 2px no-repeat,
+    linear-gradient(rgba(213,152,46,.24), rgba(213,152,46,.24)) 27px 7px / 10px 2px no-repeat,
+    linear-gradient(rgba(213,152,46,.16), rgba(213,152,46,.16)) 27px 12px / 11px 2px no-repeat,
+    linear-gradient(rgba(213,152,46,.11), rgba(213,152,46,.11)) 28px 17px / 9px 2px no-repeat,
+    #fffdf7;
   clip-path: polygon(0 4px, 16px 0, 22px 4px, 28px 0, 44px 4px, 42px 21px, 28px 18px, 22px 21px, 16px 18px, 2px 21px);
-  box-shadow: inset 0 -2px 0 rgba(10,127,199,.08);
+  box-shadow: inset 0 -2px 0 rgba(213,152,46,.08);
 }
 .clawd-book-pages::after {
   content: ""; position: absolute; left: 21px; top: 3px; width: 2px; height: 17px;
-  background: rgba(10,38,64,.48); transform: skewY(-8deg);
+  background: rgba(42,27,5,.48); transform: skewY(-8deg);
 }
 .clawd-book-pages::before {
   content: ""; position: absolute; right: 4px; top: 4px; width: 6px; height: 8px;
-  border-top: 1px solid rgba(10,38,64,.16); transform: skewY(12deg); opacity: .55;
+  border-top: 1px solid rgba(42,27,5,.16); transform: skewY(12deg); opacity: .55;
 }
 
 .clawd-clipboard { left: 3px; top: 22px; width: 34px; height: 38px; transform-origin: 50% 80%; }
 .clawd-clipboard-board {
-  position: absolute; inset: 4px 0 0; background: #f9fcff; border: 3px solid var(--face); box-shadow: inset 0 -2px 0 rgba(10,127,199,.08);
+  position: absolute; inset: 4px 0 0; background: #fffdf7; border: 3px solid var(--face); box-shadow: inset 0 -2px 0 rgba(213,152,46,.08);
 }
 .clawd-clipboard-board::before {
-  content: ""; position: absolute; left: 7px; top: -7px; width: 14px; height: 7px; background: #b2daf4; border: 3px solid var(--face);
+  content: ""; position: absolute; left: 7px; top: -7px; width: 14px; height: 7px; background: #f2d49a; border: 3px solid var(--face);
 }
 .clawd-clipboard-board::after {
   content: "✓"; position: absolute; left: 8px; top: 6px; color: #238a4b;
-  font: 900 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-shadow: 0 8px 0 rgba(10,127,199,.22);
+  font: 900 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-shadow: 0 8px 0 rgba(213,152,46,.22);
 }
 
 .clawd-blocked-sign {
@@ -271,29 +271,29 @@ export const CLAWD_CSS = /* css */ `
 
 .clawd-wait-dots {
   right: -18px; top: 7px; width: 30px; height: 18px; display: flex; align-items: center; justify-content: center;
-  gap: 3px; padding: 4px; background: rgba(255,255,255,.96); border: 3px solid var(--face); border-radius: 8px;
-  box-shadow: 0 2px 0 rgba(7,91,147,.12);
+  gap: 3px; padding: 4px; background: rgba(255,253,247,.96); border: 3px solid var(--face); border-radius: 8px;
+  box-shadow: 0 2px 0 rgba(160,106,20,.12);
 }
 .clawd-wait-dot { width: 4px; height: 4px; background: var(--brand); border-radius: 1px; opacity: .28; }
 
 .clawd-state-badge {
   position: absolute; right: 2px; top: 1px; z-index: 5; min-width: 24px; height: 24px; display: grid; place-items: center;
   padding: 0 5px; border: 2px solid #fff; border-radius: 5px; color: #fff; background: var(--brand);
-  box-shadow: 0 3px 0 rgba(31,55,74,.10); font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  box-shadow: 0 3px 0 rgba(42,27,5,.10); font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   opacity: 0; transform: translateY(2px) scale(.94); transition: opacity .15s ease, transform .15s ease;
 }
 
 .assistant-status {
   position: absolute; left: var(--status-left); bottom: var(--status-bottom); z-index: 8; translate: -50% 0;
-  width: max-content; max-width: 190px; padding: 7px 10px; border: 1px solid #d9e1e7; border-radius: 8px 8px 8px 4px;
-  color: #365064; background: rgba(255,255,255,.98); box-shadow: 0 6px 16px rgba(38,60,77,.10);
+  width: max-content; max-width: 190px; padding: 7px 10px; border: 1px solid #e6dcc6; border-radius: 8px 8px 8px 4px;
+  color: #4e4739; background: rgba(255,253,247,.98); box-shadow: 0 6px 16px rgba(42,27,5,.10);
   font-size: 9px; font-weight: 750; letter-spacing: .01em; white-space: normal; text-align: center; line-height: 1.25;
   pointer-events: none; opacity: 0; transform: translateY(4px);
   transition: opacity .18s ease, transform .18s ease, translate .18s ease;
 }
 .assistant-status::after {
   content: ""; position: absolute; left: var(--status-tail-left); bottom: -5px; width: 8px; height: 8px;
-  background: rgba(255,255,255,.98); border-right: 1px solid #d9e1e7; border-bottom: 1px solid #d9e1e7;
+  background: rgba(255,253,247,.98); border-right: 1px solid #e6dcc6; border-bottom: 1px solid #e6dcc6;
   transform: translateX(-50%) rotate(45deg);
 }
 .assistant.message-visible .assistant-status,
@@ -337,8 +337,8 @@ export const CLAWD_CSS = /* css */ `
 
 .assistant-tooltip {
   position: absolute; left: var(--tooltip-left); bottom: var(--tooltip-bottom); translate: -50% 0; max-width: 220px;
-  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.98);
-  box-shadow: 0 6px 18px rgba(38,60,77,.09); color: var(--muted); font-size: 10px; line-height: 1.35;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,253,247,.98);
+  box-shadow: 0 6px 18px rgba(42,27,5,.09); color: var(--muted); font-size: 10px; line-height: 1.35;
   opacity: 0; pointer-events: none; transition: opacity .16s ease;
 }
 .assistant:hover .assistant-tooltip, .assistant:focus-visible .assistant-tooltip { opacity: 1; }
@@ -375,7 +375,7 @@ export const CLAWD_CSS = /* css */ `
 .assistant[data-state="validating"] .clawd-glass-lens::after { opacity: 1; animation: clawdLensSweep 1.4s steps(4, end) infinite; }
 
 .assistant[data-state="thinking"] .clawd-stage { animation: clawdThink 2.3s steps(3, end) infinite; }
-.assistant[data-state="thinking"] .clawd-state-badge { background: #5a8fb6; }
+.assistant[data-state="thinking"] .clawd-state-badge { background: #b6935a; }
 .assistant[data-state="thinking"] .clawd-shell { transform: rotate(-2deg) translateY(1px); }
 .assistant[data-state="thinking"] .clawd-face { transform: translateY(-1px); }
 .assistant[data-state="thinking"] .clawd-eye { top: 13px; height: 11px; animation: clawdThinkLook 2.3s steps(3, end) infinite, clawdBlink 4.8s steps(1, end) infinite; }
@@ -385,7 +385,7 @@ export const CLAWD_CSS = /* css */ `
 .assistant[data-state="thinking"] .clawd-thought { opacity: 1; }
 
 .assistant[data-state="reading"] .clawd-stage { animation: clawdRead 1.8s steps(3, end) infinite; }
-.assistant[data-state="reading"] .clawd-state-badge { background: #4b82a8; }
+.assistant[data-state="reading"] .clawd-state-badge { background: #a8824b; }
 .assistant[data-state="reading"] .clawd-eye { top: 18px; height: 9px; animation: clawdReadEyes 1.8s steps(3, end) infinite, clawdBlink 5s steps(1, end) infinite; }
 .assistant[data-state="reading"] .clawd-arm.left { transform: translate(8px, 10px) rotate(74deg); }
 .assistant[data-state="reading"] .clawd-arm.right { transform: translate(-8px, 10px) rotate(-74deg); }
@@ -421,7 +421,7 @@ export const CLAWD_CSS = /* css */ `
 .assistant[data-state="blocked"] .clawd-blocked-sign { opacity: 1; animation: clawdBlockedWobble 4.2s steps(7, end) infinite; }
 
 .assistant[data-state="sleeping"] .clawd-stage { animation: clawdSleep 3.2s steps(2, end) infinite; }
-.assistant[data-state="sleeping"] .clawd-state-badge { background: #8798a6; }
+.assistant[data-state="sleeping"] .clawd-state-badge { background: #a69887; }
 .assistant[data-state="sleeping"] .clawd-eye { top: 23px; width: 9px; height: 3px; animation: none; }
 .assistant[data-state="sleeping"] .clawd-eye.left { transform: rotate(4deg); }
 .assistant[data-state="sleeping"] .clawd-eye.right { transform: rotate(-4deg); }
@@ -458,7 +458,7 @@ export const CLAWD_CSS = /* css */ `
 .assistant[data-state="idle"] .clawd-body { animation: clawdDirection var(--travel-duration, 36s) steps(1, end) infinite; }
 .assistant[data-state="idle"] .clawd-eye.left { animation: clawdLook 6s steps(1, end) infinite, clawdIdleBlink 7.4s steps(1, end) infinite, clawdTurnLook var(--travel-duration, 36s) linear infinite; }
 .assistant[data-state="idle"] .clawd-eye.right { animation: clawdLook 6s steps(1, end) infinite, clawdIdleBlink 7.4s steps(1, end) .04s infinite, clawdTurnLook var(--travel-duration, 36s) linear infinite; }
-.assistant[data-state="idle"] .clawd-state-badge { background: #6f8291; }
+.assistant[data-state="idle"] .clawd-state-badge { background: #91826f; }
 .assistant[data-state="idle"] .clawd-shadow { animation: clawdIdleShadow 1.02s steps(4, end) infinite; }
 .assistant[data-state="idle"] .clawd-arm.left { animation: clawdIdleArmLeft 1.02s steps(4, end) infinite; }
 .assistant[data-state="idle"] .clawd-arm.right { animation: clawdIdleArmRight 1.02s steps(4, end) infinite; }

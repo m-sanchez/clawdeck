@@ -1,9 +1,21 @@
+<p align="center">
+  <img src="docs/assets/clawd.png" width="360" alt="Clawd, the Clawdeck mascot, coding at his laptop" />
+</p>
+
 # Clawdeck
+
+[![CI](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml/badge.svg)](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-f0ad3d)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-2f6f3f)](package.json)
+[![Dependencies](https://img.shields.io/badge/dependencies-0-f0ad3d)](package.json)
+[![GitHub stars](https://img.shields.io/github/stars/m-sanchez/clawdeck?style=social)](https://github.com/m-sanchez/clawdeck/stargazers)
 
 An **unofficial local dashboard for Claude Code**. Point it at any project you
 work on with Claude Code and it shows what is actually happening: live
 sessions, an event timeline, cost and context telemetry, git worktrees,
 reviews, and delivery state - in one local web UI.
+
+![The Clawdeck overview dashboard, dark theme](docs/assets/dashboard.png)
 
 - **Zero dependencies.** Pure Node stdlib on the server, browser-native ES
   modules in the UI. No build step, no `node_modules`.

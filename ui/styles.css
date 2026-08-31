@@ -1,86 +1,93 @@
-/* Claude Panel dashboard styles. Framework-independent, theme via CSS variables. */
+/* Clawdeck dashboard styles. Framework-independent, theme via CSS variables. Warm paper/amber palette. */
 :root {
-  --brand: #0a7fc7;
-  --brand-dark: #075b93;
-  --bg: #eef3f7;
-  --bg-2: #f7fafc;
-  --surface: #ffffff;
-  --surface-2: #f3f7fa;
-  --ink: #16303f;
-  --muted: #5d7585;
-  --line: #d9e3ea;
-  --line-soft: #e9f0f4;
-  --ok: #1f8a4c;
-  --ok-bg: #e6f4ec;
-  --warn: #b9770c;
-  --warn-bg: #fbf0db;
-  --danger: #cf3b3b;
-  --danger-bg: #fbe7e7;
-  --info: #0a7fc7;
-  --info-bg: #e4f1fa;
-  --neutral: #6a7c8a;
-  --neutral-bg: #eef2f5;
-  --shadow: 0 12px 32px rgba(33, 57, 78, 0.1);
+  --brand: #8a5a0e;
+  --brand-dark: #6d4708;
+  --brand-ink: #fffdf7;
+  --bg: #f6f1e6;
+  --bg-2: #fcf8ef;
+  --surface: #fffdf7;
+  --surface-2: #f1ebdd;
+  --ink: #201c14;
+  --muted: #655c4a;
+  --line: #ded4bd;
+  --line-soft: #ece4d1;
+  --ok: #4d7c3f;
+  --ok-bg: #e8efdc;
+  --warn: #9c4a2e;
+  --warn-bg: #f6e3d8;
+  --danger: #b3261e;
+  --danger-bg: #f8ddd8;
+  --info: #8a5a0e;
+  --info-bg: #f6e8cd;
+  --neutral: #93897a;
+  --neutral-bg: #efe9db;
+  --shadow: 0 10px 30px rgba(24, 18, 8, 0.08);
   --radius: 14px;
   --radius-md: 11px;
   --radius-sm: 9px;
   /* Tooltip tokens mirror the main app's ng-zorro theme (light). */
-  --tip-bg: #ffffff;
-  --tip-fg: #1f1f1f;
-  --tip-border: #d9d9d9;
+  --tip-bg: #fffdf7;
+  --tip-fg: #201c14;
+  --tip-border: #ded4bd;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0d1922;
-  --bg-2: #112230;
-  --surface: #13242f;
-  --surface-2: #102029;
-  --ink: #dce8f0;
-  --muted: #8aa0ae;
-  --line: #21353f;
-  --line-soft: #1a2c36;
-  --ok: #4cc47e;
-  --ok-bg: #133024;
-  --warn: #e0a23c;
-  --warn-bg: #33280f;
-  --danger: #e86a6a;
-  --danger-bg: #341a1a;
-  --info: #4aa6e0;
-  --info-bg: #112a3a;
-  --neutral: #8095a3;
-  --neutral-bg: #1a2a34;
-  --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
-  --tip-bg: #2c2f33;
-  --tip-fg: rgba(255, 255, 255, 0.88);
-  --tip-border: #26262c;
+  --brand: #f0ad3d;
+  --brand-dark: #d5982e;
+  --brand-ink: #2a1b05;
+  --bg: #12100c;
+  --bg-2: #191511;
+  --surface: #1c1814;
+  --surface-2: #241f19;
+  --ink: #ece7dd;
+  --muted: #a89e8c;
+  --line: #2e281e;
+  --line-soft: #221d16;
+  --ok: #7bb662;
+  --ok-bg: #22301b;
+  --warn: #d98a6a;
+  --warn-bg: #33211a;
+  --danger: #e26d5a;
+  --danger-bg: #341d18;
+  --info: #f0ad3d;
+  --info-bg: #33280f;
+  --neutral: #93897a;
+  --neutral-bg: #241f19;
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  --tip-bg: #241f19;
+  --tip-fg: rgba(236, 231, 221, 0.92);
+  --tip-border: #2e281e;
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #0d1922;
-    --bg-2: #112230;
-    --surface: #13242f;
-    --surface-2: #102029;
-    --ink: #dce8f0;
-    --muted: #8aa0ae;
-    --line: #21353f;
-    --line-soft: #1a2c36;
-    --ok: #4cc47e;
-    --ok-bg: #133024;
-    --warn: #e0a23c;
-    --warn-bg: #33280f;
-    --danger: #e86a6a;
-    --danger-bg: #341a1a;
-    --info: #4aa6e0;
-    --info-bg: #112a3a;
-    --neutral: #8095a3;
-    --neutral-bg: #1a2a34;
-    --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
-    --tip-bg: #2c2f33;
-    --tip-fg: rgba(255, 255, 255, 0.88);
-    --tip-border: #26262c;
+    --brand: #f0ad3d;
+    --brand-dark: #d5982e;
+    --brand-ink: #2a1b05;
+    --bg: #12100c;
+    --bg-2: #191511;
+    --surface: #1c1814;
+    --surface-2: #241f19;
+    --ink: #ece7dd;
+    --muted: #a89e8c;
+    --line: #2e281e;
+    --line-soft: #221d16;
+    --ok: #7bb662;
+    --ok-bg: #22301b;
+    --warn: #d98a6a;
+    --warn-bg: #33211a;
+    --danger: #e26d5a;
+    --danger-bg: #341d18;
+    --info: #f0ad3d;
+    --info-bg: #33280f;
+    --neutral: #93897a;
+    --neutral-bg: #241f19;
+    --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+    --tip-bg: #241f19;
+    --tip-fg: rgba(236, 231, 221, 0.92);
+    --tip-border: #2e281e;
     color-scheme: dark;
   }
 }
@@ -617,7 +624,7 @@ body {
 .btn-primary {
   background: var(--brand);
   border-color: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
 }
 .btn-primary:hover {
   background: var(--brand-dark);
@@ -1896,7 +1903,7 @@ textarea.input {
 .slot-cell.current {
   background: var(--brand);
   border-color: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
 }
 .slot-cell.running {
   box-shadow: inset 0 0 0 2px var(--ok);

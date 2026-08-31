@@ -1,11 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" color="#0a7fc7">
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="none" stroke="currentColor" stroke-width="5" />
-  <g stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none">
-    <path d="M18 44 C 18 26, 30 22, 32 14" />
-    <path d="M32 44 C 32 30, 38 27, 41 20" />
-    <path d="M46 44 C 46 34, 49 32, 50 27" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Pixel Clawd: eye stalks, dome shell, screen, legs -->
+  <g fill="#f0ad3d">
+    <rect x="18" y="6" width="7" height="10" />
+    <rect x="39" y="6" width="7" height="10" />
+    <rect x="11" y="14" width="42" height="8" />
+    <rect x="5" y="22" width="54" height="16" />
+    <rect x="8" y="38" width="48" height="6" />
+    <rect x="11" y="44" width="7" height="10" />
+    <rect x="24" y="44" width="7" height="10" />
+    <rect x="37" y="44" width="7" height="10" />
+    <rect x="50" y="44" width="7" height="10" />
   </g>
-  <circle fill="currentColor" cx="32" cy="12" r="4" />
-  <circle fill="currentColor" cx="42" cy="18" r="3.2" />
-  <circle fill="currentColor" cx="51" cy="25" r="2.6" />
+  <rect x="22" y="24" width="20" height="12" fill="#2a1b05" />
+  <g fill="#f0ad3d">
+    <rect x="25" y="27" width="6" height="2" />
+    <rect x="25" y="31" width="10" height="2" />
+  </g>
 </svg>
