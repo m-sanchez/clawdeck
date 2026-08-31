@@ -10,6 +10,7 @@ import {
 } from "../lib/dom.mjs";
 import { sparkline, donut, lines } from "../lib/charts.mjs";
 import { masonry } from "../lib/masonry.mjs";
+import { pulseStrip } from "../lib/pulse.mjs";
 
 function agentsCard(s, app) {
   const sess = s?.sessions ?? { agents: [], activeCount: 0 };
@@ -477,6 +478,7 @@ export function render(app) {
 
   return el("div", { class: "view view-overview" }, [
     kpiRow(s, app),
+    pulseStrip(app),
     attentionCard(attention, app),
     liveActivityCard(s, app),
     tiles,

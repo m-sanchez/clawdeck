@@ -790,6 +790,7 @@ function pushEvent(event) {
     }
     return;
   }
+  event._at = Date.now();
   store.recentEvents.push(event);
   if (store.recentEvents.length > 600)
     store.recentEvents.splice(0, store.recentEvents.length - 600);
