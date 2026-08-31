@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/clawd-states.gif" width="400" alt="Clawd, the Clawdeck mascot, cycling through his states: sleeping, thinking, reading, coding, inspecting, success" />
+  <img src="docs/assets/social-preview.png" width="640" alt="Clawdeck: a local dashboard for Claude Code - sessions, events, cost, worktrees and reviews. Zero dependencies, loopback-only, MIT." />
 </p>
 
 # Clawdeck
