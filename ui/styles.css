@@ -3764,3 +3764,18 @@ kbd {
 .pulse-label {
   white-space: nowrap;
 }
+
+/* ── Collapsible cards ── */
+.card-collapse {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+  line-height: 1;
+}
+.card-collapse:hover {
+  color: var(--ink);
+}

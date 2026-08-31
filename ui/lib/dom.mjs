@@ -90,18 +90,57 @@ export function statusTone(status) {
 }
 
 /** A labelled section card. `opts.help` adds a "?" tooltip next to the title. */
+/** Collapsed-card state, persisted per browser. Storage failures degrade to open. */
+function collapsedSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem("panelCollapsed") || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+function saveCollapsed(set) {
+  try {
+    localStorage.setItem("panelCollapsed", JSON.stringify([...set]));
+  } catch {
+    /* storage unavailable: state lives for this page only */
+  }
+}
+
 export function card(title, body, opts = {}) {
+  // Persist by the title's stable text (titles are fixed per card).
+  const key = typeof title === "string" ? title : String(opts.class || "card");
+  const collapsed = collapsedSet().has(key);
+  const bodyEl = el(
+    "div",
+    { class: "card-body", hidden: collapsed || null },
+    body,
+  );
+  const toggle = el("button", {
+    class: "card-collapse",
+    type: "button",
+    "aria-expanded": String(!collapsed),
+    "aria-label": collapsed ? "Expand card" : "Collapse card",
+    text: collapsed ? "▸" : "▾",
+    onClick: () => {
+      const set = collapsedSet();
+      const now = !bodyEl.hidden;
+      bodyEl.hidden = now;
+      toggle.textContent = now ? "▸" : "▾";
+      toggle.setAttribute("aria-expanded", String(!now));
+      if (now) set.add(key);
+      else set.delete(key);
+      saveCollapsed(set);
+    },
+  });
   const head = el("div", { class: "card-head" }, [
     el("div", { class: "card-title-row" }, [
+      toggle,
       el("h2", { class: "card-title" }, title),
       opts.help ? helpIcon(opts.help) : null,
     ]),
     opts.aside || null,
   ]);
-  return el("section", { class: `card ${opts.class || ""}` }, [
-    head,
-    el("div", { class: "card-body" }, body),
-  ]);
+  return el("section", { class: `card ${opts.class || ""}` }, [head, bodyEl]);
 }
 
 /** Empty-state placeholder. */
