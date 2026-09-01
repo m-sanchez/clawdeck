@@ -187,6 +187,28 @@ test("/api/snapshot answers 304 to a matching If-None-Match", async () => {
   assert.ok(got304, "an idle snapshot pair must revalidate as unchanged");
 });
 
+test("the review inbox routes join the token gate, and no write route exists", async () => {
+  for (const path of ["/api/review-inbox", "/api/review-inbox/thread?id=rt_" + "a".repeat(24)])
+    assert.equal((await get(path, null)).status, 401, `${path} must require the bearer`);
+
+  const assist = await post("/api/actions/reviewInbox.assist", null, {
+    id: "rt_" + "a".repeat(24),
+    kind: "explain",
+  });
+  assert.equal(assist.status, 401, "the assist action joins the 401 loop");
+
+  // The Workbench has no forge-write action, so its name is not routable.
+  const reply = await post("/api/actions/reviewInbox.reply", token, {
+    id: "rt_" + "a".repeat(24),
+    body: "posted from the panel",
+  });
+  assert.equal(reply.status, 404, "a write action must not exist to be called");
+
+  // A malformed id is rejected before anything reads it.
+  const bad = await get("/api/review-inbox/thread?id=../../etc/passwd", token);
+  assert.equal(bad.status, 400);
+});
+
 test("a foreign Host header is refused as misdirected (anti-rebinding)", async () => {
   // fetch() forbids overriding Host, so send the request raw over a socket.
   const status = await new Promise((resolvePromise, reject) => {

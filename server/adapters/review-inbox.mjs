@@ -125,6 +125,7 @@ export async function getReviewInbox(ctx, input, opts = {}) {
     observedAt,
     freshness: freshness(observedAt, now, STALE_AFTER_MS),
     coverage: fetched.coverage || {},
+    capabilities: fetched.capabilities ?? null,
     degraded: fetched.degraded || [],
     noteCount: notes.length,
     items,
@@ -165,6 +166,7 @@ export function summarizeInbox(inbox) {
       resolution: inbox.coverage?.resolution ?? { complete: false },
     },
     degraded: inbox.degraded ?? [],
+    capabilities: inbox.capabilities ?? null,
     noteCount: inbox.noteCount ?? 0,
     counts: inbox.counts,
     // Enough to point at a thread, never enough to leak what it says.

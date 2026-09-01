@@ -3911,3 +3911,16 @@ textarea:focus-visible {
   color: var(--ink);
   opacity: 0.8;
 }
+
+/* ── Review inbox: draft editor ── */
+.ri-draft-wrap {
+  margin: 8px 0 4px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ri-draft {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+}

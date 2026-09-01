@@ -33,6 +33,8 @@ export function render(app) {
   if (!store.inboxFilter) store.inboxFilter = "unresolved";
   if (!store.inboxAssists) store.inboxAssists = {};
   if (!store.inboxOpen) store.inboxOpen = new Set();
+  if (!store.inboxDraftOpen) store.inboxDraftOpen = new Set();
+  if (!store.inboxDrafts) store.inboxDrafts = {};
 
   const host = el("div", { class: "view cp-view" });
   const body = el("div", {});
@@ -230,6 +232,7 @@ function threadRow(app, item, reload) {
   li.append(whyBlock(rows));
   li.append(actions(app, item, assist, reload));
   if (assist) li.append(assistBlock(assist));
+  li.append(draftEditor(app, item, assist, reload));
   return li;
 }
 
@@ -288,6 +291,16 @@ function actions(app, item, assist, reload) {
     btn("investigate", "Investigate"),
     btn("draft-reply", "Draft reply"),
     btn("draft-pushback", "Draft pushback"),
+    el("button", {
+      class: "btn btn-sm",
+      type: "button",
+      text: item.local?.draftChars ? "Edit draft" : "Write reply",
+      onClick: () => {
+        if (!app.store.inboxDraftOpen) app.store.inboxDraftOpen = new Set();
+        app.store.inboxDraftOpen.add(id);
+        app.rerender();
+      },
+    }),
     el("button", {
       class: "btn btn-sm",
       type: "button",
@@ -359,6 +372,77 @@ function assistBlock(assist) {
     );
   }
   return block;
+}
+
+/**
+ * Editing and saving a reply. Saving is a human act, and it is what moves a
+ * thread to REPLY_DRAFTED - the model's text only ever pre-fills the box.
+ * Nothing here reaches the provider; copying is how a reply gets posted.
+ */
+function draftEditor(app, item, assist, reload) {
+  const id = item.thread.id;
+  const suggested =
+    assist?.status === "done" && /^draft-/.test(assist.kind)
+      ? assist.answer
+      : "";
+  const existing = app.store.inboxDrafts?.[id];
+  const open = app.store.inboxDraftOpen?.has(id);
+  if (!open && !item.local?.draftChars && !suggested) return null;
+
+  const box = el("textarea", {
+    class: "input mono ri-draft",
+    rows: "5",
+    placeholder: "Your reply. Saved locally; Clawdeck never posts it.",
+  });
+  box.value = existing ?? suggested ?? "";
+
+  const status = el("span", {
+    class: "muted small",
+    text: item.local?.draftChars
+      ? `${item.local.draftChars} characters saved locally · not posted`
+      : "not saved yet",
+  });
+
+  const save = async (body) => {
+    const r = await app.api.action("reviewInbox.draft", { id, body });
+    if (r?.ok === false) {
+      app.toast(r.error, "danger");
+      return;
+    }
+    app.store.inboxDrafts = { ...(app.store.inboxDrafts || {}), [id]: body };
+    app.toast(body ? "Draft saved locally." : "Draft cleared.", "ok");
+    reload(false);
+  };
+
+  return el("div", { class: "ri-draft-wrap" }, [
+    box,
+    el("div", { class: "btn-row" }, [
+      el("button", {
+        class: "btn btn-sm btn-primary",
+        type: "button",
+        text: "Save draft",
+        onClick: () => save(box.value),
+      }),
+      el("button", {
+        class: "btn btn-sm",
+        type: "button",
+        text: "Copy",
+        onClick: () => {
+          navigator.clipboard?.writeText(box.value);
+          app.toast("Copied. Paste it into the review to post it.", "info");
+        },
+      }),
+      item.local?.draftChars
+        ? el("button", {
+            class: "btn btn-sm",
+            type: "button",
+            text: "Clear",
+            onClick: () => save(""),
+          })
+        : null,
+      status,
+    ]),
+  ]);
 }
 
 async function runAssist(app, item, kind) {

@@ -11,13 +11,17 @@
  * head-sha comparison is recorded separately as a heuristic.
  */
 import { makeThread, makeNote, coverage } from "../core/review-inbox/model.mjs";
+import {
+  capabilitiesFromObservations,
+  headerOf,
+} from "./capabilities.mjs";
 
 const TIMEOUT_MS = 8000;
 const PER_PAGE = 100;
 const MAX_PAGES = 5;
 
 /** Pages are constructed locally; a `next` link from the response is ignored. */
-async function getAll(fetchImpl, apiBase, path, token, signal) {
+async function getAll(fetchImpl, apiBase, path, token, signal, obs) {
   const items = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const sep = path.includes("?") ? "&" : "?";
@@ -26,6 +30,12 @@ async function getAll(fetchImpl, apiBase, path, token, signal) {
       headers: { "PRIVATE-TOKEN": token },
       signal,
     });
+    if (obs) {
+      obs.restStatus = res.status ?? (res.ok ? 200 : null);
+      obs.rateLimitRemaining =
+        headerOf(res, "ratelimit-remaining") ?? obs.rateLimitRemaining;
+      obs.rateLimitReset = headerOf(res, "ratelimit-reset") ?? obs.rateLimitReset;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const batch = await res.json();
     if (!Array.isArray(batch)) throw new Error("unexpected payload");
@@ -85,6 +95,9 @@ export async function gitlabReviewThreads(forge, token, mr, opts = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   const project = encodeURIComponent(forge.project);
+  // Scopes are never probed on the poll, so write capability stays unknown
+  // until an explicit probe says otherwise.
+  const obs = { authenticated: true, now, scopes: null };
   try {
     const { items, complete } = await getAll(
       fetchImpl,
@@ -92,6 +105,7 @@ export async function gitlabReviewThreads(forge, token, mr, opts = {}) {
       `/projects/${project}/merge_requests/${iid}/discussions`,
       token,
       ctrl.signal,
+      obs,
     );
 
     const threads = [];
@@ -173,9 +187,13 @@ export async function gitlabReviewThreads(forge, token, mr, opts = {}) {
       );
     }
 
+    obs.restComplete = complete;
+    // A discussion carries its own resolution, so listing is knowing.
+    obs.resolutionInPayload = threads.length > 0;
     return {
       ok: true,
       provider: "gitlab",
+      capabilities: capabilitiesFromObservations("gitlab", obs),
       changeId: String(iid),
       threads,
       notes,
@@ -195,6 +213,7 @@ export async function gitlabReviewThreads(forge, token, mr, opts = {}) {
       ok: false,
       reason: "fetch-failed",
       provider: "gitlab",
+      capabilities: capabilitiesFromObservations("gitlab", obs),
       error: String(error?.message || error),
       threads: [],
       notes: [],

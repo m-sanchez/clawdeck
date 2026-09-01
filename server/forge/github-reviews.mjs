@@ -13,6 +13,11 @@
  */
 import { makeThread, makeNote, coverage } from "../core/review-inbox/model.mjs";
 import { GITHUB_REVIEW_THREADS } from "./graphql-queries.mjs";
+import {
+  capabilitiesFromObservations,
+  headerOf,
+  parseScopeHeader,
+} from "./capabilities.mjs";
 
 const TIMEOUT_MS = 8000;
 const PER_PAGE = 100;
@@ -31,12 +36,20 @@ function headers(token) {
  * Paginate a REST collection. Page URLs are always constructed here from
  * `apiBase`; a `Link` header from the response is never followed.
  */
-async function getAll(fetchImpl, apiBase, path, token, signal) {
+async function getAll(fetchImpl, apiBase, path, token, signal, obs) {
   const items = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const sep = path.includes("?") ? "&" : "?";
     const url = `${apiBase}${path}${sep}per_page=${PER_PAGE}&page=${page}`;
     const res = await fetchImpl(url, { headers: headers(token), signal });
+    if (obs) {
+      obs.restStatus = res.status ?? (res.ok ? 200 : null);
+      obs.scopes =
+        parseScopeHeader(headerOf(res, "x-oauth-scopes")) ?? obs.scopes ?? null;
+      obs.rateLimitRemaining =
+        headerOf(res, "x-ratelimit-remaining") ?? obs.rateLimitRemaining;
+      obs.rateLimitReset = headerOf(res, "x-ratelimit-reset") ?? obs.rateLimitReset;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const batch = await res.json();
     if (!Array.isArray(batch)) throw new Error("unexpected payload");
@@ -47,7 +60,7 @@ async function getAll(fetchImpl, apiBase, path, token, signal) {
 }
 
 /** Resolution/outdated per root comment id. Requires a token by construction. */
-async function graphqlThreads(fetchImpl, forge, token, number, signal) {
+async function graphqlThreads(fetchImpl, forge, token, number, signal, obs) {
   const [owner, name] = forge.project.split("/");
   const byRootId = new Map();
   let after = null;
@@ -62,6 +75,7 @@ async function graphqlThreads(fetchImpl, forge, token, number, signal) {
       }),
       signal,
     });
+    if (obs) obs.graphqlStatus = res.status ?? (res.ok ? 200 : null);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     if (json?.errors?.length) throw new Error("graphql error");
@@ -126,6 +140,9 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   const degraded = [];
+  // Capabilities are derived from what the provider actually answered, so the
+  // observations are collected as the calls happen.
+  const obs = { authenticated: Boolean(token), now };
   try {
     const [reviewComments, issueComments] = await Promise.all([
       getAll(
@@ -134,6 +151,7 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
         `/repos/${forge.project}/pulls/${number}/comments`,
         token,
         ctrl.signal,
+        obs,
       ),
       getAll(
         fetchImpl,
@@ -156,6 +174,7 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
           token,
           number,
           ctrl.signal,
+          obs,
         );
         resolutionComplete = enrichment.complete === true;
       } catch {
@@ -231,9 +250,15 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
     const enrichedAll = threads.every(
       (t) => t.remote.source === "graphql" || t.remote.resolved !== null,
     );
+    obs.restComplete = reviewComments.complete;
+    obs.resolutionInPayload = enrichment.byRootId.size > 0;
+    obs.outdatedInPayload = [...enrichment.byRootId.values()].some(
+      (v) => typeof v.outdated === "boolean",
+    );
     return {
       ok: true,
       provider: "github",
+      capabilities: capabilitiesFromObservations("github", obs),
       changeId: String(number),
       reviewDecision: enrichment.reviewDecision ?? null,
       threads,
@@ -263,6 +288,7 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
       ok: false,
       reason: "fetch-failed",
       provider: "github",
+      capabilities: capabilitiesFromObservations("github", obs),
       error: String(error?.message || error),
       threads: [],
       notes: [],
