@@ -359,6 +359,8 @@ export interface PanelSnapshot {
     } | null;
     failures?: Array<{
       name: string;
+      /** Provider job id, when the job's log is one Clawdeck can fetch. */
+      jobId: string | null;
       source: string | null;
       detailsUrl: string | null;
       inspectable: boolean;

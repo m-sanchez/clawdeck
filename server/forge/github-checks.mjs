@@ -60,6 +60,16 @@ function statusState(state) {
 }
 
 /**
+ * The Actions job id, from a check-run's details URL
+ * (.../actions/runs/<run>/job/<job>). Logs are fetched per JOB and a check-run
+ * id is not a job id, so a check whose URL carries none is not inspectable.
+ */
+export function jobIdFromDetailsUrl(url) {
+  const m = /\/job\/(\d+)(?:[?#]|$)/.exec(String(url || ""));
+  return m ? m[1] : null;
+}
+
+/**
  * @param {{apiBase:string, webBase:string, project:string}} forge
  * @param {string|null} token
  * @param {string} ref the head SHA of the change
@@ -97,19 +107,22 @@ export async function githubChecks(forge, token, ref, opts = {}) {
       const runs = checkRuns.value?.check_runs ?? [];
       checksComplete =
         runs.length >= (checkRuns.value?.total_count ?? runs.length);
-      for (const run of runs)
+      for (const run of runs) {
+        const jobId = jobIdFromDetailsUrl(run.details_url ?? run.html_url);
         contexts.push({
           name: run.name,
           state: checkState(run),
           source: "check-run",
           id: run.id,
+          jobId,
           detailsUrl: run.details_url ?? run.html_url ?? null,
           // Only Actions runs have logs Clawdeck can fetch; an external app's
           // check has a URL and nothing more.
-          inspectable: Boolean(run.app?.slug === "github-actions"),
+          inspectable: Boolean(run.app?.slug === "github-actions" && jobId),
           startedAt: run.started_at ?? null,
           completedAt: run.completed_at ?? null,
         });
+      }
     }
 
     let statusesComplete = false;

@@ -209,6 +209,23 @@ test("the review inbox routes join the token gate, and no write route exists", a
   assert.equal(bad.status, 400);
 });
 
+test("CI routes join the token gate, and job output is never served blind", async () => {
+  for (const path of ["/api/ci", "/api/ci/log?job=123"])
+    assert.equal(
+      (await get(path, null)).status,
+      401,
+      `${path} must require the bearer`,
+    );
+
+  // A job id that is not part of the CI read for this commit is refused: the
+  // route is not a generic proxy to the provider's log storage.
+  const unknown = await get("/api/ci/log?job=999999", token);
+  assert.equal(unknown.status, 404);
+
+  const malformed = await get("/api/ci/log?job=../../secrets", token);
+  assert.equal(malformed.status, 400);
+});
+
 test("a foreign Host header is refused as misdirected (anti-rebinding)", async () => {
   // fetch() forbids overriding Host, so send the request raw over a socket.
   const status = await new Promise((resolvePromise, reject) => {

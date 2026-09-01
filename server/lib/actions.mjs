@@ -14,7 +14,11 @@ import { mkdirSync, rmSync } from "node:fs";
 import { loadEsm } from "./repo-modules.mjs";
 import { buildDashContext } from "./dash-context.mjs";
 import { ASSIST_KINDS, buildAssistPacket } from "./assist-packet.mjs";
-import { buildTaskPacket, taskLinkPrompt } from "./task-packet.mjs";
+import {
+  buildCiTaskPacket,
+  buildTaskPacket,
+  taskLinkPrompt,
+} from "./task-packet.mjs";
 import { makeTask } from "../core/tasks/model.mjs";
 import {
   newMarker,
@@ -597,6 +601,115 @@ export async function runAction(name, params, deps) {
       };
     }
 
+    case "ci.fix": {
+      // Hand ONE failing check to Claude, with the same containment the review
+      // path uses: brief in a file, job output inside a nonced untrusted block,
+      // secret scan before anything is written, and nothing launched.
+      const job = String(params.job ?? "");
+      if (!/^[0-9]{1,20}$/.test(job)) return bad("A job id is required.");
+
+      const ci = deps.ci ? await deps.ci() : null;
+      const failure = (ci?.failures || []).find(
+        (f) => String(f.jobId ?? f.id) === job,
+      );
+      if (!failure)
+        return bad("That job is not among the failing checks for this commit.");
+
+      const target = params.worktreePath
+        ? await deps.resolveWorktree(String(params.worktreePath))
+        : { cwd: ctx.checkoutRoot, worktree: null };
+      if (!target) return bad("Unknown or invalid worktree.");
+
+      // The log is fetched through the adapter, so a secret in job output
+      // refuses here rather than reaching the brief.
+      const log = deps.ciLog ? await deps.ciLog(job) : null;
+      if (log?.refused)
+        return {
+          ok: true,
+          refused: true,
+          stage: "log",
+          reason: log.reason,
+          patterns: log.patterns ?? [],
+        };
+
+      const taskId = newTaskId();
+      const marker = newMarker(taskId);
+      const built = buildCiTaskPacket({
+        taskId,
+        marker,
+        nonce: randomBytes(8).toString("hex"),
+        failure,
+        ref: ci?.ref ?? null,
+        logTail: log?.text ?? null,
+        truncated: Boolean(log?.truncated),
+        code: params.code || [],
+      });
+      if (!built.ok) return bad(built.error);
+
+      const scanner = deps.secretScan
+        ? { scanText: deps.secretScan }
+        : await import("./secret-scan.mjs");
+      if (!scanner || typeof scanner.scanText !== "function")
+        return {
+          ok: true,
+          refused: true,
+          stage: "scanner-missing",
+          reason: "Secret scanner unavailable; refused to write a task brief.",
+        };
+      const hits = scanner.scanText(built.body) || [];
+      if (hits.length)
+        return {
+          ok: true,
+          refused: true,
+          stage: "packet",
+          reason:
+            "The task brief contains suspected secret material; refused to write it.",
+          patterns: [...new Set(hits.map((h) => h.pattern))].sort(),
+        };
+
+      const written = writePacket(ctx.runtimeDir, taskId, built.body);
+      if (!written.ok) return bad(written.error);
+
+      const task = {
+        ...makeTask({
+          id: taskId,
+          source: { kind: "ci", id: job },
+          intent: "fix",
+          worktree: target.worktree,
+          marker,
+          now: Date.now(),
+        }),
+        packetPath: written.path,
+      };
+      writeTasks(ctx.runtimeDir, upsertTask(readTasks(ctx.runtimeDir), task));
+
+      const { buildClaudeDeepLink } = await import(
+        "../../ui/lib/open-in-claude.mjs"
+      );
+      const link = buildClaudeDeepLink({
+        cwd: target.cwd,
+        prompt: taskLinkPrompt({ taskId, packetPath: written.path, marker }),
+      });
+      hub?.broadcast?.("panel", {
+        type: "task.created",
+        taskId,
+        job,
+        emittedAt: new Date().toISOString(),
+      });
+      return {
+        ok: true,
+        taskId,
+        job,
+        url: link.url,
+        cwd: target.cwd,
+        packetPath: written.path,
+        packetChars: written.chars,
+        packetDropped: built.dropped,
+        lifecycle: task.lifecycle,
+        launched: false,
+      };
+    }
+
     case "reviewInbox.assist": {
       // Advisory only: a tool-less `claude -p` reads one thread and answers.
       // It cannot edit code, cannot reach the provider, and its output never
@@ -833,6 +946,7 @@ export const ACTION_NAMES = [
   "reviewInbox.mark",
   "reviewInbox.draft",
   "reviewInbox.fix",
+  "ci.fix",
   "reviewInbox.assist",
   "reviewInbox.assist.cancel",
   "config.read",

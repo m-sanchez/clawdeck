@@ -9,7 +9,7 @@
  * log text at all: `/events` is tokenless, so job output stays behind the
  * token-gated route.
  */
-import { getChecks } from "../forge/index.mjs";
+import { getChecks, getCiLog } from "../forge/index.mjs";
 import { freshness } from "../core/review-inbox/model.mjs";
 
 const STALE_AFTER_MS = 300000;
@@ -82,10 +82,55 @@ export function summarizeCi(ci, opts = {}) {
     // Names and links only: a failing job's log lives behind /api/ci.
     failures: (ci.failures || []).slice(0, TOP_FAILURES).map((f) => ({
       name: f.name,
+      jobId: f.jobId ?? null,
       source: f.source ?? null,
       detailsUrl: f.detailsUrl ?? null,
       inspectable: Boolean(f.inspectable),
     })),
     failureCount: (ci.failures || []).length,
+  };
+}
+
+/**
+ * One failed job's log tail, secret-scanned before anyone sees it.
+ *
+ * The scan is fail-closed in both directions: a hit refuses the text, and a
+ * scanner that cannot be loaded refuses too. A CI log is a place secrets end up
+ * by accident, and the panel is not the place to find that out.
+ *
+ * @param {string} checkoutRoot
+ * @param {string|number} jobId
+ * @param {{fetchImpl?:Function, secretScan?:Function}} [opts]
+ */
+export async function getCiLogTail(checkoutRoot, jobId, opts = {}) {
+  const result = await getCiLog(checkoutRoot, jobId, opts);
+  if (!result?.ok) return { ok: false, reason: result?.reason ?? "unavailable" };
+
+  const scanner = opts.secretScan
+    ? { scanText: opts.secretScan }
+    : await import("../lib/secret-scan.mjs").catch(() => null);
+  if (!scanner || typeof scanner.scanText !== "function")
+    return {
+      ok: true,
+      refused: true,
+      reason: "Secret scanner unavailable; refused to show job output.",
+    };
+  const hits = scanner.scanText(result.text) || [];
+  if (hits.length)
+    return {
+      ok: true,
+      refused: true,
+      reason: "This job's output contains suspected secret material.",
+      patterns: [...new Set(hits.map((h) => h.pattern))].sort(),
+    };
+
+  return {
+    ok: true,
+    refused: false,
+    provider: result.provider,
+    jobId: result.jobId,
+    text: result.text,
+    truncated: result.truncated,
+    totalChars: result.totalChars,
   };
 }

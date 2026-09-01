@@ -17,6 +17,7 @@ import { githubReviewThreads } from "./github-reviews.mjs";
 import { gitlabReviewThreads } from "./gitlab-reviews.mjs";
 import { githubChecks } from "./github-checks.mjs";
 import { gitlabChecks } from "./gitlab-checks.mjs";
+import { githubJobLog, gitlabJobLog } from "./ci-logs.mjs";
 
 const DETECT_TTL_MS = 60000;
 const detectCache = new Map();
@@ -115,6 +116,25 @@ export async function getChecks(checkoutRoot, ref, opts = {}) {
   if (forge.provider === "github")
     return githubChecks(forge, token, ref?.sha ?? null, opts);
   if (forge.provider === "gitlab") return gitlabChecks(forge, token, ref, opts);
+  return { ok: false, reason: "unsupported", provider: forge.provider };
+}
+
+/**
+ * The tail of one failed job's log. Read-only, bounded, and only for the two
+ * providers whose logs Clawdeck can fetch - anything else keeps its link.
+ *
+ * @param {string} checkoutRoot
+ * @param {string|number} jobId
+ * @param {{fetchImpl?:Function}} [opts]
+ */
+export async function getCiLog(checkoutRoot, jobId, opts = {}) {
+  const forge = await forgeFor(checkoutRoot);
+  if (!forge) return { ok: false, reason: "no-remote" };
+  const token = forgeToken(checkoutRoot, forge.provider);
+  if (forge.provider === "github")
+    return githubJobLog(forge, token, jobId, opts);
+  if (forge.provider === "gitlab")
+    return gitlabJobLog(forge, token, jobId, opts);
   return { ok: false, reason: "unsupported", provider: forge.provider };
 }
 

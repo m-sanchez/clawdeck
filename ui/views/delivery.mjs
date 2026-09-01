@@ -118,6 +118,95 @@ function blockerRow(b) {
   ]);
 }
 
+/**
+ * A failing check, with the two things an engineer wants next: what it printed,
+ * and a scoped task to work on it. The log is fetched on demand - it is
+ * unbounded third-party text and never rides the snapshot.
+ */
+function ciFailureRow(app, ci, f) {
+  const out = el("div", { class: "cp-log" });
+  const load = async () => {
+    const job = f.jobId ?? f.id;
+    out.replaceChildren(el("div", { class: "muted small", text: "Loading…" }));
+    const r = await app.api.ciLog(job);
+    if (r?.refused) {
+      out.replaceChildren(
+        el("div", { class: "small", text: `Withheld: ${r.reason}` }),
+      );
+      return;
+    }
+    if (!r?.ok) {
+      out.replaceChildren(
+        el("div", {
+          class: "small",
+          text: `Log unavailable: ${r?.reason ?? "unknown"}`,
+        }),
+      );
+      return;
+    }
+    const attribution = r.attribution?.attributed
+      ? `Likely from task ${r.attribution.taskId} (${r.attribution.sharedFiles.join(", ")})`
+      : (r.attribution?.reason ?? "No reliable attribution.");
+    out.replaceChildren(
+      el("div", { class: "muted small", text: attribution }),
+      el("pre", { class: "cp-pre", text: r.text }),
+      el("div", {
+        class: "muted small",
+        text: r.truncated
+          ? `tail of ${r.totalChars} characters`
+          : `${r.totalChars} characters`,
+      }),
+    );
+  };
+
+  return el("div", { class: "cp-blocker" }, [
+    el("div", { class: "cp-row" }, [
+      pill("failing", "danger"),
+      el("strong", { text: f.name }),
+      el("span", { class: "muted small", text: f.source ?? "" }),
+    ]),
+    el("div", { class: "cp-row" }, [
+      f.inspectable
+        ? el("button", {
+            class: "btn btn-sm",
+            type: "button",
+            text: "View output",
+            onClick: load,
+          })
+        : el("span", {
+            class: "muted small",
+            text: "no log Clawdeck can fetch for this check",
+          }),
+      f.inspectable
+        ? el("button", {
+            class: "btn btn-sm",
+            type: "button",
+            text: "Fix locally",
+            onClick: async () => {
+              const r = await app.api.action("ci.fix", {
+                job: String(f.jobId ?? f.id),
+              });
+              if (r?.refused) return app.toast(`Refused: ${r.reason}`, "danger");
+              if (r?.ok === false) return app.toast(r.error, "danger");
+              app.toast(`Task ${r.taskId} ready; submit the prompt to start.`);
+              if (r.url) window.open(r.url, "_blank", "noopener");
+            },
+          })
+        : null,
+      f.detailsUrl
+        ? el("a", {
+            class: "btn btn-sm",
+            href: f.detailsUrl,
+            target: "_blank",
+            rel: "noopener",
+            text: "Open on provider",
+          })
+        : null,
+    ]),
+    out,
+  ]);
+}
+
 /** Delivery Readiness: two axes, the blockers behind them, and the lifecycle. */
 export function render(app) {
   const d = app.snapshot?.delivery || {
@@ -155,6 +244,17 @@ export function render(app) {
       )
     : null;
 
+  const failing = (ci?.failures || []).length
+    ? card(
+        `Failing checks (${ci.failureCount ?? ci.failures.length})`,
+        el(
+          "div",
+          { class: "cp-rows" },
+          ci.failures.map((f) => ciFailureRow(app, ci, f)),
+        ),
+      )
+    : null;
+
   const blockers = r?.blockers?.length
     ? card(
         `Blockers (${r.blockers.length})`,
@@ -182,6 +282,7 @@ export function render(app) {
     [
       banner,
       axes,
+      failing,
       blockers,
       card("Delivery lifecycle", [
         el("div", { class: "cp-steps" }, d.stages.map(stageBox)),

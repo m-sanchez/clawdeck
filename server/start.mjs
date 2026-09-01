@@ -92,7 +92,8 @@ import {
   getReviewInbox,
   summarizeInbox,
 } from "./adapters/review-inbox.mjs";
-import { getCi, summarizeCi } from "./adapters/ci.mjs";
+import { getCi, getCiLogTail, summarizeCi } from "./adapters/ci.mjs";
+import { attributeFailure } from "./core/tasks/attribution.mjs";
 import { readDraft } from "./core/review-inbox/store.mjs";
 
 const HOST = "127.0.0.1";
@@ -710,6 +711,11 @@ const server = http.createServer(async (request, response) => {
         resolveWorktree: resolveJobCwd,
         snapshot: currentSnapshot,
         reviewInbox: async () => inboxCache,
+        ci: async () => {
+          if (!ciCache) await refreshCi();
+          return ciCache;
+        },
+        ciLog: (job) => getCiLogTail(checkoutRoot, job),
       });
       return sendJson(response, result.ok === false ? 400 : 200, result);
     }
@@ -964,6 +970,41 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, {
         item,
         draft: readDraft(runtimeDir, id),
+      });
+    }
+
+    if (path === "/api/ci") {
+      if (!ciCache) await refreshCi();
+      return sendJson(
+        response,
+        200,
+        ciCache ?? { available: false, reason: "no-head-commit" },
+      );
+    }
+
+    if (path === "/api/ci/log") {
+      // Job output is the one CI payload that never rides the snapshot: it is
+      // unbounded third-party text, so it is fetched on demand, per job, here.
+      const job = String(url.searchParams.get("job") || "");
+      if (!/^[0-9]{1,20}$/.test(job))
+        return sendJson(response, 400, { error: "Bad job id" });
+      const known = (ciCache?.contexts || []).some(
+        (c) => String(c.jobId ?? c.id) === job,
+      );
+      if (!known)
+        return sendJson(response, 404, {
+          error: "That job is not part of the CI read for this commit.",
+        });
+      const tail = await getCiLogTail(checkoutRoot, job);
+      if (!tail.ok || tail.refused) return sendJson(response, 200, tail);
+      // Attribution is computed here, next to the log that justifies it, and
+      // defaults to "no reliable attribution" when the evidence does not line up.
+      return sendJson(response, 200, {
+        ...tail,
+        attribution: attributeFailure(
+          { name: job, jobId: job },
+          { logText: tail.text, tasks: readTasks(runtimeDir)?.tasks ?? [] },
+        ),
       });
     }
 
