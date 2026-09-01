@@ -30,17 +30,29 @@ export const ASK_ARGS = [
   "--strict-mcp-config",
 ];
 
-/** Windows-safe resolution of the claude CLI: absolute .exe, else shell string. */
-export function resolveClaudeInvocation() {
-  const exe = join(homedir(), ".local", "bin", "claude.exe");
-  if (existsSync(exe)) return { file: exe, argv: ASK_ARGS, shell: false };
-  if (process.platform === "win32") {
-    for (const dir of String(process.env.PATH || "").split(";")) {
+/**
+ * Windows-safe resolution of the claude CLI: absolute .exe, else shell string.
+ *
+ * The isolation flags reach the child by argv in the first case and inside the
+ * command string in the second, so a caller must check the effective
+ * invocation, not one branch of it. `seams` exists so both branches can be
+ * exercised on any machine.
+ * @param {{existsSync?: Function, platform?: string, path?: string, home?: string}} [seams]
+ */
+export function resolveClaudeInvocation(seams = {}) {
+  const exists = seams.existsSync || existsSync;
+  const platform = seams.platform || process.platform;
+  const pathVar = seams.path ?? process.env.PATH ?? "";
+  const home = seams.home || homedir();
+
+  const exe = join(home, ".local", "bin", "claude.exe");
+  if (exists(exe)) return { file: exe, argv: ASK_ARGS, shell: false };
+  if (platform === "win32") {
+    for (const dir of String(pathVar).split(";")) {
       if (!dir) continue;
       const cand = join(dir, "claude.exe");
       try {
-        if (existsSync(cand))
-          return { file: cand, argv: ASK_ARGS, shell: false };
+        if (exists(cand)) return { file: cand, argv: ASK_ARGS, shell: false };
       } catch {
         /* skip unreadable PATH entry */
       }

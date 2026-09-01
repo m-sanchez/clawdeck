@@ -100,13 +100,22 @@ test("the payload travels on stdin, tool-less, with an allowlisted env", async (
   const call = rec[0];
   assert.ok(call.input.includes("Why compare the token directly?"));
   assert.equal(
-    JSON.stringify(call.argv).includes("Why compare"),
+    JSON.stringify([call.file, ...call.argv]).includes("Why compare"),
     false,
-    "the packet must never reach argv",
+    "the packet must never reach the command line",
   );
-  assert.ok(call.argv.includes("--disallowedTools"));
-  assert.ok(call.argv.includes("--strict-mcp-config"));
-  assert.ok(call.argv.includes("--setting-sources"));
+  // Where the isolation flags sit depends on how the CLI resolved: an absolute
+  // .exe takes them as argv, while npm's claude.cmd needs a constant shell
+  // string. Both are in play (Windows CI hits the second), so assert the
+  // effective invocation rather than one branch of it.
+  const invocation = [call.file, ...call.argv].join(" ");
+  for (const flag of [
+    "--disallowedTools",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "--max-turns",
+  ])
+    assert.ok(invocation.includes(flag), `${flag} must be in the invocation`);
   for (const key of Object.keys(call.opts.env))
     assert.equal(
       /TOKEN|CLAUDE_/.test(key),
