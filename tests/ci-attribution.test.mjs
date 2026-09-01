@@ -47,6 +47,17 @@ test("runner and dependency paths are not evidence about this branch", () => {
   assert.deepEqual(paths, ["server/lib/git.mjs"]);
 });
 
+test("toolchain binaries in a Windows trace are not repo evidence", () => {
+  const paths = pathsFromLog(
+    [
+      "C:/Program Files/PowerShell/7/pwsh.EXE",
+      "C:/Program Files/Git/bin/git.exe",
+      "scripts/self-test.mjs",
+    ].join("\n"),
+  );
+  assert.deepEqual(paths, ["scripts/self-test.mjs"]);
+});
+
 test("one bound task sharing a named file is attributed, as likely", () => {
   const r = attributeFailure(FAILURE, { logText: LOG, tasks: [boundTask()] });
   assert.equal(r.attributed, true);

@@ -69,7 +69,11 @@ pre-existing `remote.deleteBranch` and `policy.approve` actions are outside this
 boundary and unchanged.
 
 **Tokens stay in `server/forge/*`.** A forge token never reaches the browser,
-the SSE stream, a Claude prompt, a log line, or a stored review record. The
+the SSE stream, a Claude prompt, a log line, or a stored review record. They are
+read from the environment or the checkout's `settings.local.json`; for GitHub
+only, and only when neither holds one, the already-authenticated `gh` CLI is
+asked (cached, and skipped entirely with `CLAWDECK_NO_GH_CLI`). No process is
+spawned when a token is configured. The
 assist child's environment allowlist contains no `*_TOKEN` (the one credential
 carve-out, `CLAUDE_CODE_OAUTH_TOKEN`, is documented under the Ask subprocess).
 

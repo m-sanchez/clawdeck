@@ -159,8 +159,11 @@ export OTEL_EXPORTER_OTLP_HEADERS=x-panel-token=<panel-token>
 Clawdeck auto-detects the project's git host from `origin` and speaks to it
 read-only:
 
-- **GitHub** (github.com + GHES) - PRs and Actions runs. `GITHUB_TOKEN`
-  optional for public repos.
+- **GitHub** (github.com + GHES) - PRs, review threads, and checks.
+  `GITHUB_TOKEN` optional for reading a public repo's status; needed for review
+  resolution and job logs. If the `gh` CLI is signed in, Clawdeck uses that
+  credential rather than asking you to configure a second one
+  (`CLAWDECK_NO_GH_CLI=1` turns that off).
 - **GitLab** (gitlab.com + self-hosted) - MRs and pipelines. Needs
   `GITLAB_TOKEN`.
 - **Bitbucket Cloud** - PRs and Pipelines. Needs `BITBUCKET_TOKEN` (a
@@ -169,8 +172,8 @@ read-only:
 - **Gitea / Forgejo** - PRs and commit status. Self-hosted hosts are
   anonymous, so opt in with `GITEA_URL` (+ `GITEA_TOKEN` for private repos).
 
-Tokens live in the observed project's `.claude/settings.local.json` (or env)
-and never reach the browser.
+Tokens live in the observed project's `.claude/settings.local.json` (or env),
+or come from the signed-in `gh` CLI for GitHub, and never reach the browser.
 
 ## Roadmap
 

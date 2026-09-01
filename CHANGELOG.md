@@ -39,6 +39,11 @@ do about it - without Clawdeck ever writing to a forge.
   mechanical overlap and show the overlap; waits are measured between recorded
   transitions, so thinking time is never reported as waste.
 
+- **GitHub credentials from the `gh` CLI.** When neither the environment nor
+  `settings.local.json` holds a `GITHUB_TOKEN`, Clawdeck asks the already
+  signed-in `gh` CLI, cached, GitHub-only, and skippable with
+  `CLAWDECK_NO_GH_CLI`. Without it, job-log reads answer 403 for most people.
+
 ### Fixed
 
 - The uncommitted-file count read the dirty flag rather than the count, so any

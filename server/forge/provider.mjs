@@ -2,14 +2,15 @@
 /**
  * Forge detection: which git hosting provider the observed checkout talks to,
  * derived from `git remote get-url origin` with env overrides. Tokens are read
- * server-side only (env or the checkout's settings.local.json) and never reach
- * the browser.
+ * server-side only - env, the checkout's settings.local.json, or (GitHub only,
+ * last resort) the gh CLI already authenticated on this machine - and never
+ * reach the browser.
  *
  * Providers: github, gitlab, bitbucket (Cloud), gitea/forgejo (env-forced,
  * since a self-hosted host name reveals nothing), azuredevops. Unknown hosts
  * default to gitlab, whose API shape most self-hosted forges follow.
  */
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -63,9 +64,54 @@ const TOKEN_VARS = {
   azuredevops: "AZURE_DEVOPS_TOKEN",
 };
 
-/** Provider token for this checkout. Never logged or returned to the client. */
-export function forgeToken(checkoutRoot, provider) {
-  return settingsEnv(checkoutRoot, TOKEN_VARS[provider] || "GITLAB_TOKEN");
+// The gh CLI already holds a GitHub credential on this machine, and most
+// people never set GITHUB_TOKEN as well. Asking it is the last resort, cached
+// so a poll does not spawn a process every time, and skippable.
+const GH_CLI_TTL_MS = 300000;
+let ghCliCache = { at: 0, token: null };
+
+function ghCliToken(runner) {
+  if (process.env.CLAWDECK_NO_GH_CLI) return null;
+  const now = Date.now();
+  if (now - ghCliCache.at < GH_CLI_TTL_MS) return ghCliCache.token;
+  let token = null;
+  try {
+    const run = runner || execFileSync;
+    token =
+      String(
+        run("gh", ["auth", "token"], {
+          encoding: "utf8",
+          timeout: 3000,
+          windowsHide: true,
+          stdio: ["ignore", "pipe", "ignore"],
+        }),
+      ).trim() || null;
+  } catch {
+    token = null;
+  }
+  ghCliCache = { at: now, token };
+  return token;
+}
+
+/**
+ * Provider token for this checkout. Never logged or returned to the client.
+ *
+ * @param {string} checkoutRoot
+ * @param {string} provider
+ * @param {{ghRunner?:Function}} [opts] test seam for the CLI fallback
+ */
+export function forgeToken(checkoutRoot, provider, opts = {}) {
+  const configured = settingsEnv(
+    checkoutRoot,
+    TOKEN_VARS[provider] || "GITLAB_TOKEN",
+  );
+  if (configured) return configured;
+  return provider === "github" ? ghCliToken(opts.ghRunner) : null;
+}
+
+/** Test seam: forget any cached CLI answer. */
+export function resetGhCliCache() {
+  ghCliCache = { at: 0, token: null };
 }
 
 /**

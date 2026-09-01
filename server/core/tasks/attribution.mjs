@@ -27,8 +27,11 @@ export function pathsFromLog(text) {
   const out = new Set();
   for (const m of normalized.matchAll(PATH_RE)) {
     const p = m[0].replace(/^\.\//, "");
-    // Runner and dependency paths say nothing about this branch.
+    // Runner, toolchain and dependency paths say nothing about this branch:
+    // a stack trace naming pwsh.EXE is not evidence about anyone's change.
     if (/(?:^|\/)(?:home|usr|opt)\//i.test(p)) continue;
+    if (/(?:^|\/)Program Files/i.test(p)) continue;
+    if (/\.(?:exe|dll|cmd|bat|msi|sys|so|dylib)$/i.test(p)) continue;
     if (p.includes("node_modules/")) continue;
     out.add(p);
     if (out.size >= MAX_PATHS) break;
