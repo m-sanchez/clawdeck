@@ -113,6 +113,7 @@ export function makeTask({ id, source, intent, worktree, marker, now }) {
         cause: "created",
       },
     ],
+    baselineSha: null,
     evidence: { files: [], commit: null, tests: [] },
     reconciliation: "unknown",
     packetPath: null,
@@ -165,7 +166,7 @@ export function transition(task, to, opts = {}) {
  * this task minted: a session that merely started nearby in time is a
  * candidate, never a binding.
  */
-export function bindSession(task, { sessionId, marker, now }) {
+export function bindSession(task, { sessionId, marker, now, baselineSha }) {
   if (!sessionId) return { ok: false, error: "A session id is required." };
   if (!marker || marker !== task.correlationMarker)
     return {
@@ -179,7 +180,16 @@ export function bindSession(task, { sessionId, marker, now }) {
   if (!started.ok) return started;
   return {
     ok: true,
-    task: { ...started.task, sessionId, reconciliation: "bound" },
+    task: {
+      ...started.task,
+      sessionId,
+      reconciliation: "bound",
+      // The commit HEAD sat on when the work began. Evidence is later drawn
+      // from `baseline..HEAD`, which is exact, rather than from a timestamp
+      // window - git's own `--since` has one-second granularity and would
+      // sweep in a commit made in the same second.
+      baselineSha: baselineSha ?? null,
+    },
   };
 }
 
