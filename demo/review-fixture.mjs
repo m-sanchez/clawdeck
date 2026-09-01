@@ -1,3 +1,6 @@
+// Reviewed in PR #1; a later commit shifts the lines below.
+import { strict as assert } from "node:assert";
+
 // Fixture for verifying Clawdeck's Review Inbox against a real PR.
 // Not merged: this branch exists so review threads can be imported and
 // their anchors checked against later commits.
@@ -21,7 +24,7 @@ const cache = new Map();
 
 /** Read a value, caching it for DEFAULT_TTL_MS. */
 export function readCached(key, compute, now = Date.now()) {
-  const hit = cache.get(key);
+  const hit = cache.get(String(key));
   if (hit && now - hit.at < DEFAULT_TTL_MS) return hit.value;
   const value = compute();
   cache.set(key, { value, at: now });
