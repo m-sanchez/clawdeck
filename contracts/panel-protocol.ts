@@ -322,6 +322,37 @@ export interface PanelSnapshot {
       certainty: "known" | "likely" | "unknown";
     }>;
   };
+  /**
+   * Assisted Claude work, as counts and identities. A task's brief lives in a
+   * file and its evidence can list dozens of paths; neither belongs in a
+   * payload the tokenless SSE stream carries. Full records: GET /api/tasks.
+   */
+  tasks: {
+    counts: {
+      total: number;
+      open: number;
+      awaitingLaunch: number;
+      running: number;
+      needsHuman: number;
+      stalled: number;
+      settled: number;
+      failed: number;
+      cancelled: number;
+      unboundSessions: number;
+    } | null;
+    recent: Array<{
+      id: string;
+      source: { kind: string | null; id: string | null };
+      intent: string;
+      lifecycle: string;
+      outcome: string | null;
+      sessionId: string | null;
+      commit: string | null;
+      fileCount: number;
+      reconciliation: "bound" | "unknown";
+      createdAt: string;
+    }>;
+  };
   clawd: unknown;
   /**
    * Per-section FNV-1a content hashes. `version` doubles as the /api/snapshot

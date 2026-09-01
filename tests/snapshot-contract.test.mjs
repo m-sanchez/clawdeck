@@ -46,6 +46,7 @@ const EXPECTED = [
   "panel",
   "forge",
   "reviewInbox",
+  "tasks",
   "delivery",
   "perf",
   "clawd",

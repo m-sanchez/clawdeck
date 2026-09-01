@@ -64,6 +64,21 @@ import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
 import { getSessionTrace } from "./adapters/session-trace.mjs";
 import { getSubagentTree } from "./adapters/subagent-tree.mjs";
+import { bindSession } from "./core/tasks/model.mjs";
+import {
+  openTasks,
+  readTasks,
+  sweepStalled,
+  reconcileTasks,
+  upsertTask,
+  writeTasks,
+} from "./core/tasks/store.mjs";
+import {
+  candidateTranscripts,
+  findMarkers,
+} from "./core/tasks/correlate.mjs";
+import { collectTaskEvidence } from "./core/tasks/evidence.mjs";
+import { summarizeTasks } from "./core/tasks/summary.mjs";
 import {
   pruneSessionRecords,
   getLiveTelemetry,
@@ -386,6 +401,100 @@ function reviewInboxEnabled() {
   }
 }
 
+// Assisted tasks: bind the ones whose marker has appeared, notice the ones that
+// went quiet, and refresh what each has actually changed. Nothing here launches
+// anything - a task the human never submitted simply stays in CREATED.
+let taskCache = /** @type {any} */ ({ counts: null, recent: [] });
+let tasksInFlight = false;
+let tasksAt = 0;
+const TASK_POLL_MS = 30000;
+
+async function refreshTasks(worktrees = []) {
+  if (tasksInFlight) return;
+  tasksInFlight = true;
+  try {
+    let store = readTasks(runtimeDir);
+    let changed = false;
+
+    const pending = openTasks(store).filter((t) => !t.sessionId);
+    if (pending.length) {
+      const transcripts = candidateTranscripts(ctx, worktrees, {
+        now: Date.now(),
+      });
+      const found = findMarkers(
+        pending.map((t) => t.correlationMarker),
+        transcripts,
+      );
+      for (const task of pending) {
+        const sessionId = found.get(task.correlationMarker);
+        if (!sessionId) continue;
+        // The baseline is HEAD as it stands when the work is first observed,
+        // so evidence later comes from an exact range rather than a clock.
+        const baselineSha = await git(["rev-parse", "HEAD"], ctx.checkoutRoot);
+        const bound = bindSession(task, {
+          sessionId,
+          marker: task.correlationMarker,
+          now: Date.now(),
+          baselineSha: baselineSha || null,
+        });
+        if (!bound.ok) continue;
+        store = upsertTask(store, bound.task);
+        changed = true;
+        hub.broadcast("panel", {
+          type: "task.bound",
+          taskId: task.id,
+          sessionId,
+          emittedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    for (const task of openTasks(store)) {
+      if (!task.startedAt) continue;
+      const evidence = await collectTaskEvidence(ctx.checkoutRoot, task);
+      const next = {
+        files: evidence.files,
+        commit: evidence.commit,
+        tests: task.evidence?.tests ?? [],
+      };
+      if (JSON.stringify(next) === JSON.stringify(task.evidence)) continue;
+      store = upsertTask(store, { ...task, evidence: next });
+      changed = true;
+    }
+
+    const swept = sweepStalled(store);
+    store = swept.store;
+    changed = changed || swept.changed;
+
+    if (changed) writeTasks(runtimeDir, store);
+    taskCache = summarizeTasks(store);
+  } catch {
+    /* tasks are supporting evidence; a failure here must not break the tick */
+  } finally {
+    tasksInFlight = false;
+    tasksAt = Date.now();
+  }
+}
+
+/** On boot, re-check every open task against the sessions that exist now. */
+function reconcileTasksOnBoot() {
+  try {
+    const store = readTasks(runtimeDir);
+    // Summarize even an empty store, so the snapshot's shape is the same from
+    // the very first tick rather than filling in once a poll has run.
+    taskCache = summarizeTasks(store);
+    if (!store.tasks.length) return;
+    const live = new Set(
+      candidateTranscripts(ctx, [], { now: Date.now() }).map((t) => t.sessionId),
+    );
+    const result = reconcileTasks(store, { liveSessionIds: live });
+    if (result.changed) writeTasks(runtimeDir, result.store);
+    taskCache = summarizeTasks(result.store);
+  } catch {
+    /* an unreadable task store degrades to an empty summary */
+  }
+}
+
 /** Recursive byte size of this panel's runtime dir (logs + artifacts). Small + own. */
 function dirSize(dir) {
   let total = 0;
@@ -415,6 +524,7 @@ async function currentSnapshot() {
     jobs: jobs.list(),
     forge: forgeCache,
     reviewInbox: summarizeInbox(inboxCache),
+    tasks: taskCache,
     otel: otelStore.summary(),
     events: eventStore.reconcile().snapshot(),
     perf,
@@ -439,6 +549,8 @@ async function currentSnapshot() {
   if (snapshot.checkout?.branch) ctx.branch = snapshot.checkout.branch;
   if (ctx.branch && Date.now() - forgeAt > 60000) void refreshForge();
   if (Date.now() - inboxAt > INBOX_POLL_MS) void refreshReviewInbox();
+  if (Date.now() - tasksAt > TASK_POLL_MS)
+    void refreshTasks(snapshot.worktrees || []);
   return snapshot;
 }
 
@@ -1073,6 +1185,20 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 200, { ...trace, sessionLive });
     }
 
+    if (path === "/api/tasks") {
+      // Full task records: briefs live in files, but evidence paths and session
+      // ids are still local detail, so this stays behind the bearer.
+      if (!hasPanelToken(request))
+        return sendJson(response, 401, {
+          error: "Missing or invalid panel token",
+        });
+      const store = readTasks(runtimeDir);
+      return sendJson(response, 200, {
+        tasks: store.tasks,
+        summary: summarizeTasks(store),
+      });
+    }
+
     if (path === "/api/subagents") {
       // The session's subagent tree. Token-gated like the trace: an agent's
       // closing report carries file paths and command output verbatim.
@@ -1298,6 +1424,9 @@ server.listen(PORT, HOST, async () => {
   } catch {
     /* leave the pending placeholder */
   }
+  // Tasks outlive this process, so re-check every open one against the sessions
+  // that exist now. A link we cannot prove again becomes unknown, never failed.
+  reconcileTasksOnBoot();
   // Promote anything the spool captured while the panel was down, plus (once)
   // any pre-federation legacy spool this checkout still holds locally.
   try {

@@ -289,6 +289,9 @@ export async function buildSnapshot(ctx, cached) {
   snapshot.forge = cached.forge ?? { configured: false };
   // Counts only: bodies stay behind the token-gated route, and the delivery
   // stage below reads this summary rather than the provider payload.
+  // Assisted tasks: counts and identities only; briefs and evidence paths stay
+  // behind the token-gated route.
+  snapshot.tasks = cached.tasks ?? { counts: null, recent: [] };
   snapshot.reviewInbox = cached.reviewInbox ?? {
     configured: false,
     available: false,
