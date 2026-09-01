@@ -1,5 +1,6 @@
 // @ts-check
 import { el, card, emptyState } from "../lib/dom.mjs";
+import { masonry } from "../lib/masonry.mjs";
 
 function fmtDur(s) {
   s = Number(s) || 0;
@@ -165,18 +166,18 @@ export function render(app) {
       : null,
   ]);
 
-  return el("div", { class: "view" }, [
-    el("div", { class: "cp-cards cp-cards-3" }, [
-      hostCard(p.host),
-      card("Panel process", rows(proc)),
-      card("Performance (recent window)", rows(perfRows)),
-      card("Runtime stores", rows(stores)),
-    ]),
-    el("div", { class: "cp-cards cp-cards-2" }, [
-      budgetCard,
-      card("Observed instruction loads", observedBlock(ib.observed, root)),
-    ]),
+  // Masonry-packed like Overview: these cards have very different heights,
+  // and a fixed-column grid leaves holes under the short ones.
+  const tiles = el("div", { class: "grid-tiles" }, [
+    hostCard(p.host),
+    card("Panel process", rows(proc)),
+    card("Performance (recent window)", rows(perfRows)),
+    card("Runtime stores", rows(stores)),
+    budgetCard,
+    card("Observed instruction loads", observedBlock(ib.observed, root)),
   ]);
+  requestAnimationFrame(() => masonry(tiles));
+  return el("div", { class: "view" }, [tiles]);
 }
 
 /** Real runtime evidence: the files the InstructionsLoaded hook reported loading

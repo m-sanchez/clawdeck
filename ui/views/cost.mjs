@@ -1,6 +1,7 @@
 // @ts-check
 import { el, card, pill, emptyState } from "../lib/dom.mjs";
 import { sparkline } from "../lib/charts.mjs";
+import { masonry } from "../lib/masonry.mjs";
 
 const usd = (n) => "$" + (Number(n) || 0).toFixed(2);
 const pct = (n) => Math.round((Number(n) || 0) * 100) + "%";
@@ -112,9 +113,7 @@ function burnKpis(burn) {
   const rate = kpi(
     "Burn rate",
     b.perHourUsd != null ? `${usd(b.perHourUsd)}/h` : "unknown",
-    b.stale
-      ? "no fresh samples"
-      : `last ${b.windowMinutes || 30}m · estimate`,
+    b.stale ? "no fresh samples" : `last ${b.windowMinutes || 30}m · estimate`,
   );
   const fh = b.fiveHour || {};
   let etaValue = "unknown";
@@ -446,21 +445,21 @@ export function render(app) {
         ),
       ]);
 
-  return el("div", { class: "view cp-view" }, [
-    tiles,
-    provenance,
-    el(
-      "div",
-      { class: "cp-card-grid" },
-      [
-        forecastCard(burn),
-        warnings,
-        historyCard(app, cost.otel),
-        mcpCard(app),
-        modelCard,
-        agentCard,
-        findings,
-      ].filter(Boolean),
-    ),
-  ]);
+  // Masonry-packed: chart and table cards vary a lot in height, and a
+  // fixed grid leaves holes under the short ones.
+  const cardTiles = el(
+    "div",
+    { class: "grid-tiles" },
+    [
+      forecastCard(burn),
+      warnings,
+      historyCard(app, cost.otel),
+      mcpCard(app),
+      modelCard,
+      agentCard,
+      findings,
+    ].filter(Boolean),
+  );
+  requestAnimationFrame(() => masonry(cardTiles, { minCol: 380 }));
+  return el("div", { class: "view cp-view" }, [tiles, provenance, cardTiles]);
 }

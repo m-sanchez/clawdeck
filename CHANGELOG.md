@@ -34,6 +34,10 @@ release closes them and pins each with a test against the real server.
 - **Forge connectors for Bitbucket Cloud, Gitea/Forgejo and Azure
   DevOps**, joining GitHub and GitLab behind the same auto-detected,
   read-only, normalized status shape.
+- **Layout pass across the hubs**. Health, Cost and Prompt now masonry-pack
+  their cards, so short cards stop leaving holes under tall ones; delivery
+  stages and prompt context toggles keep even widths when they wrap; card
+  grids wrap instead of stretching before layout runs.
 - **Trace span tooltips**. Hover or keyboard-focus a span row to see the
   full story: tool, status, duration, subagent description or input
   summary. Escape dismisses.

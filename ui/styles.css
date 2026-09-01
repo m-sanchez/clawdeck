@@ -498,6 +498,16 @@ body {
   display: flex;
   align-items: stretch;
   gap: 16px;
+  /* Before masonry runs (or if rAF never fires) the raw card list must wrap
+     instead of stretching the page. */
+  flex-wrap: wrap;
+}
+.grid-tiles > .card {
+  flex: 1 1 330px;
+  min-width: 0;
+}
+.grid-tiles > .masonry-col {
+  flex: 1 1 0;
 }
 .masonry-col {
   flex: 1 1 0;
@@ -1061,9 +1071,10 @@ body {
 
 /* Prompt composer */
 .prompt-toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
+  /* Even columns: wrapped flex left ragged holes at narrow card widths. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 6px 16px;
   margin: 4px 0 10px;
 }
 .prompt-toggle {
@@ -2309,14 +2320,14 @@ textarea.input {
   overflow: auto;
 }
 .cp-steps {
-  display: flex;
+  /* Grid, not wrapped flex: a stage that wraps onto the last row must keep
+     the same width as the others instead of stretching across the card. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
   align-items: stretch;
 }
 .cp-stage {
-  flex: 1;
-  min-width: 118px;
   display: flex;
   flex-direction: column;
   gap: 5px;

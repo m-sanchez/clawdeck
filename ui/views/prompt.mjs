@@ -7,6 +7,7 @@
  */
 import { el, card, clear, pill } from "../lib/dom.mjs";
 import { buildClaudeCommand } from "../lib/open-in-claude.mjs";
+import { masonry } from "../lib/masonry.mjs";
 
 export function render(app) {
   const s = app.snapshot || {};
@@ -60,7 +61,9 @@ export function render(app) {
 
   rebuild();
 
-  return el("div", { class: "view view-prompt" }, [
+  // Two masonry columns on wide screens: the tall composer on one side, the
+  // Claude cards on the other, instead of three page-wide stacked forms.
+  const tiles = el("div", { class: "grid-tiles" }, [
     card("Prompt composer", [
       el("p", {
         class: "muted small",
@@ -81,6 +84,8 @@ export function render(app) {
     openInClaude(app, s, preview),
     askCard(app),
   ]);
+  requestAnimationFrame(() => masonry(tiles, { minCol: 420 }));
+  return el("div", { class: "view view-prompt" }, [tiles]);
 }
 
 /**
@@ -106,13 +111,19 @@ function askCard(app) {
     for (const m of app.store.askThread) {
       const row = el("div", { class: `ask-msg ask-${m.role}` });
       row.append(
-        el("span", { class: "ask-role mono small", text: m.role === "user" ? ">" : "●" }),
+        el("span", {
+          class: "ask-role mono small",
+          text: m.role === "user" ? ">" : "●",
+        }),
         el("div", { class: "ask-text", text: m.text }),
       );
       if (m.patterns?.length)
         row.append(
-          el("div", { class: "ask-patterns" },
-            m.patterns.map((pat) => pill(pat, "warn"))),
+          el(
+            "div",
+            { class: "ask-patterns" },
+            m.patterns.map((pat) => pill(pat, "warn")),
+          ),
         );
       thread.append(row);
     }
@@ -157,7 +168,10 @@ function askCard(app) {
           patterns: r.patterns || [],
         });
       } else {
-        app.store.askThread.push({ role: "assistant", text: r.answer || "(no answer)" });
+        app.store.askThread.push({
+          role: "assistant",
+          text: r.answer || "(no answer)",
+        });
       }
     } catch (e) {
       app.store.askThread.push({
