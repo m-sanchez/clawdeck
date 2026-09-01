@@ -131,17 +131,51 @@ async function startGitStatus(label) {
   }
 }
 
+/** Every `event: job` frame's payload, parsed. The structural check below is
+ * the real invariant: a phrase check alone is brittle, because the snapshot
+ * legitimately contains prose ("working tree clean" from the delivery
+ * lifecycle) that also appears in a command's output. */
+function jobPayloads(stream) {
+  const out = [];
+  for (const frame of stream.split("\n\n")) {
+    if (!/^event: job$/m.test(frame)) continue;
+    const data = frame.match(/^data: (.*)$/m)?.[1];
+    if (!data) continue;
+    try {
+      out.push(JSON.parse(data));
+    } catch {
+      /* partial frame at the abort boundary */
+    }
+  }
+  return out;
+}
+
 test("a job's output never rides the tokenless stream", async () => {
   const stream = await readEvents(3500, () => startGitStatus("payload scope probe"));
+  const payloads = jobPayloads(stream);
 
-  // `git status` prints this on every branch; it stands in for whatever a
-  // command actually emits, which on a real run can include secrets.
-  for (const leaked of ["On branch", "Changes not staged", "working tree"]) {
-    assert.ok(
-      !stream.includes(leaked),
-      `a job's stdout ("${leaked}") reached an unauthenticated /events listener, which docs/SECURITY.md says never happens`,
+  assert.ok(payloads.length > 0, "the probe job produced no job events at all");
+
+  for (const payload of payloads) {
+    assert.notEqual(
+      payload.type,
+      "job.log",
+      "job.log carries command output and must not exist on the open stream",
     );
+    for (const field of ["line", "lines", "text", "output", "stdout", "stderr"]) {
+      assert.ok(
+        !(field in payload),
+        `a job event carried "${field}" on the tokenless stream: ${JSON.stringify(payload).slice(0, 160)}`,
+      );
+    }
   }
+
+  // Belt and braces: a phrase only `git status` stdout produces. The snapshot
+  // describes the working tree, but it never prints git's own report.
+  assert.ok(
+    !stream.includes("On branch"),
+    "git status stdout reached an unauthenticated /events listener",
+  );
 });
 
 test("the stream still reports that the job is progressing", async () => {
