@@ -187,6 +187,13 @@ export interface SessionTrace {
   sessionLive: boolean;
 }
 
+/** One axis of delivery readiness, with the reasons behind the verdict. */
+export interface ReadinessAxis {
+  state: "READY" | "BLOCKED" | "UNKNOWN";
+  blocking: Array<{ id: string; title: string; reason?: string }>;
+  unknown: Array<{ id: string; title: string; reason?: string }>;
+}
+
 export interface PanelSnapshot {
   checkout: { id: string; root: string; branch?: string; isWorktree: boolean };
   runs: RunSummary[];
@@ -321,6 +328,92 @@ export interface PanelSnapshot {
       authority: string;
       certainty: "known" | "likely" | "unknown";
     }>;
+  };
+  /**
+   * CI for the commit the change is on, never for "the latest run". Job logs
+   * stay behind the token-gated route; only names and links ride here.
+   *
+   * `state: "missing"` means no check context exists; `"unknown"` means one
+   * could not be read. They are different answers and neither is a pass.
+   */
+  ci: {
+    configured: boolean;
+    available: boolean;
+    provider?: "github" | "gitlab" | null;
+    ref?: string | null;
+    reason?: string | null;
+    observedAt?: string | null;
+    freshness?: "fresh" | "stale" | "unknown";
+    summary: {
+      state: "passing" | "failing" | "pending" | "missing" | "unknown";
+      authority: "ci";
+      native: boolean;
+      observedAt: string;
+      coverage: { complete: boolean; reason?: string };
+      counts: {
+        total: number;
+        passing: number;
+        failing: number;
+        pending: number;
+      };
+    } | null;
+    failures?: Array<{
+      name: string;
+      source: string | null;
+      detailsUrl: string | null;
+      inspectable: boolean;
+    }>;
+    failureCount?: number;
+  };
+  /**
+   * Both delivery axes and the blockers behind them. Separate from `readiness`
+   * (the local /pre-mr push marker), and separate per axis because a dirty
+   * worktree must never read as "the provider refuses to merge".
+   */
+  deliveryReadiness: {
+    headline: "READY" | "BLOCKED" | "UNKNOWN";
+    remoteMerge: ReadinessAxis;
+    localDelivery: ReadinessAxis;
+    blockers: Array<{
+      id: string;
+      kind: string;
+      title: string;
+      detail: string | null;
+      authority: string;
+      blocking: {
+        remoteMerge: boolean | "unknown";
+        localDelivery: boolean | "unknown";
+      };
+      blockingReason: { remoteMerge?: string; localDelivery?: string };
+      evidence: Array<{ kind: string; note: string; ref?: string | null }>;
+      needsHuman: boolean;
+      freshness: string;
+      coverage?: { complete: boolean; reason?: string };
+      links: Record<string, unknown>;
+    }>;
+  };
+  /**
+   * What needs a person. Distinct from `attention` (run/validation nags) and
+   * from delivery blocking: a mechanical blocker like an unpushed commit never
+   * appears here, and no advisory suggestion can enter without a human click.
+   */
+  attentionInbox: {
+    items: Array<{
+      id: string;
+      kind: string;
+      severity: "blocking" | "attention" | "warning";
+      title: string;
+      detail: string | null;
+      authority: string;
+      link: string | null;
+      evidence: Array<{ kind: string; note: string }>;
+    }>;
+    counts: {
+      total: number;
+      blocking: number;
+      attention: number;
+      warning: number;
+    };
   };
   /**
    * Assisted Claude work, as counts and identities. A task's brief lives in a

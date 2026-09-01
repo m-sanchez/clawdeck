@@ -23,6 +23,9 @@ import {
 import { computeQuotaPressure } from "../core/telemetry/quota-pressure.mjs";
 import { computeBurn, readBurnHistory } from "../core/telemetry/burn.mjs";
 import { deriveDelivery } from "../core/delivery/lifecycle.mjs";
+import { deriveReadiness } from "../core/blockers/project.mjs";
+import { projectAttention } from "../core/attention/project.mjs";
+import { readPromotions } from "../core/attention/store.mjs";
 import { findingId } from "../core/findings/model.mjs";
 import {
   readFindingStore,
@@ -299,7 +302,17 @@ export async function buildSnapshot(ctx, cached) {
     counts: null,
     top: [],
   };
+  snapshot.ci = cached.ci ?? { configured: false, available: false };
   snapshot.delivery = deriveDelivery(snapshot);
+  // Both delivery axes, plus the blockers behind them. Derived last: it reads
+  // the checkout, forge, inbox and CI keys assembled above. Distinct from
+  // `readiness`, which is the local /pre-mr push marker.
+  snapshot.deliveryReadiness = deriveReadiness(snapshot);
+  // Who needs a person, as opposed to what blocks shipping. Advisory
+  // suggestions are not passed in: only a human promotion reaches this list.
+  snapshot.attentionInbox = projectAttention(snapshot, {
+    promotions: readPromotions(ctx.runtimeDir),
+  });
   // Record this build's wall-clock and expose the panel's self-perf summary.
   if (perf) {
     perf.recordSnapshot(Date.now() - t0);

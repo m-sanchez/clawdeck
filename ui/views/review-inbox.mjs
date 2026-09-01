@@ -234,7 +234,7 @@ function threadRow(app, item, reload) {
   for (const block of [
     whyBlock(rows),
     actions(app, item, assist, reload),
-    assist ? assistBlock(assist) : null,
+    assist ? assistBlock(assist, app, item) : null,
     draftEditor(app, item, assist, reload),
     traceability(item),
   ])
@@ -354,7 +354,7 @@ function actions(app, item, assist, reload) {
 }
 
 /** Model output: indented, labelled, and never styled like a fact or a pill. */
-function assistBlock(assist) {
+function assistBlock(assist, app, item) {
   const block = el("div", { class: "assist-out" });
   block.append(
     el("div", { class: "assist-head" }, [
@@ -387,6 +387,29 @@ function assistBlock(assist) {
         }),
       ]),
     );
+    // The only route from advice into the Attention Inbox. What lands there is
+    // recorded as the engineer's decision, with this assist kept as provenance.
+    if (app && item)
+      block.append(
+        el("button", {
+          class: "btn btn-sm",
+          type: "button",
+          text: "Add to attention",
+          onClick: async () => {
+            const where = item.thread.file
+              ? `${item.thread.file}${item.thread.line ? `:${item.thread.line}` : ""}`
+              : "conversation";
+            await app.api.action("attention.add", {
+              id: item.thread.id,
+              title: `Review thread on ${where}`,
+              kind: "review-thread",
+              link: "#/delivery/inbox",
+              origin: `assist:${assist.kind}`,
+            });
+            app.toast("Added to the Attention Inbox.", "ok");
+          },
+        }),
+      );
   }
   return block;
 }

@@ -80,6 +80,9 @@ export async function githubStatus(forge, token, branch) {
       mr: pr
         ? {
             iid: pr.number,
+            // The commit the change is on: CI is read for THIS sha, not for
+            // whatever HEAD happens to be locally.
+            headSha: pr.head?.sha ?? null,
             title: pr.title,
             state: prState(pr),
             draft: Boolean(pr.draft),

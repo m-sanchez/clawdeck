@@ -15,6 +15,8 @@ import { giteaStatus, giteaNewMrUrl } from "./gitea.mjs";
 import { azureStatus, azureNewMrUrl } from "./azure.mjs";
 import { githubReviewThreads } from "./github-reviews.mjs";
 import { gitlabReviewThreads } from "./gitlab-reviews.mjs";
+import { githubChecks } from "./github-checks.mjs";
+import { gitlabChecks } from "./gitlab-checks.mjs";
 
 const DETECT_TTL_MS = 60000;
 const detectCache = new Map();
@@ -95,6 +97,25 @@ export async function getReviewThreads(checkoutRoot, mr, opts = {}) {
 
   const token = forgeToken(checkoutRoot, forge.provider);
   return impl(forge, token, mr, opts);
+}
+
+/**
+ * CI state for a commit, read-only. Only GitHub and GitLab are implemented;
+ * anything else degrades to unsupported so the UI can say which case it is
+ * rather than showing an absence that looks like a pass.
+ *
+ * @param {string} checkoutRoot
+ * @param {{sha:string|null, pipelineId?:number|string|null}} ref
+ * @param {{fetchImpl?:Function, now?:number}} [opts]
+ */
+export async function getChecks(checkoutRoot, ref, opts = {}) {
+  const forge = await forgeFor(checkoutRoot);
+  if (!forge) return { ok: false, reason: "no-remote", provider: null };
+  const token = forgeToken(checkoutRoot, forge.provider);
+  if (forge.provider === "github")
+    return githubChecks(forge, token, ref?.sha ?? null, opts);
+  if (forge.provider === "gitlab") return gitlabChecks(forge, token, ref, opts);
+  return { ok: false, reason: "unsupported", provider: forge.provider };
 }
 
 /** Web URL that opens a new MR/PR for the branch, or null when undetected. */

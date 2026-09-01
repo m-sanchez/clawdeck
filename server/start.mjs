@@ -92,6 +92,7 @@ import {
   getReviewInbox,
   summarizeInbox,
 } from "./adapters/review-inbox.mjs";
+import { getCi, summarizeCi } from "./adapters/ci.mjs";
 import { readDraft } from "./core/review-inbox/store.mjs";
 
 const HOST = "127.0.0.1";
@@ -401,6 +402,44 @@ function reviewInboxEnabled() {
   }
 }
 
+// CI is read for the commit the change is on, not for whatever ran last. Its
+// own cadence sits between the forge poll and the inbox poll: checks move while
+// you watch them, but every read costs two requests.
+let ciCache = /** @type {any} */ (null);
+let ciInFlight = false;
+let ciAt = 0;
+const CI_POLL_MS = 60000;
+
+async function refreshCi() {
+  if (ciInFlight) return;
+  const mr = forgeCache?.configured ? forgeCache.mr : null;
+  const sha = mr?.headSha ?? null;
+  if (!sha) {
+    ciCache = null;
+    return;
+  }
+  ciInFlight = true;
+  try {
+    ciCache = await getCi(
+      checkoutRoot,
+      { sha, pipelineId: forgeCache?.pipeline?.id ?? null },
+      { enabled: reviewInboxEnabled() },
+    );
+  } catch (e) {
+    ciCache = {
+      available: false,
+      reason: String((e && e.message) || e),
+      provider: forgeCache?.provider ?? null,
+      ref: sha,
+      failures: [],
+      observedAt: new Date().toISOString(),
+    };
+  } finally {
+    ciInFlight = false;
+    ciAt = Date.now();
+  }
+}
+
 // Assisted tasks: bind the ones whose marker has appeared, notice the ones that
 // went quiet, and refresh what each has actually changed. Nothing here launches
 // anything - a task the human never submitted simply stays in CREATED.
@@ -524,6 +563,7 @@ async function currentSnapshot() {
     jobs: jobs.list(),
     forge: forgeCache,
     reviewInbox: summarizeInbox(inboxCache),
+    ci: summarizeCi(ciCache),
     tasks: taskCache,
     otel: otelStore.summary(),
     events: eventStore.reconcile().snapshot(),
@@ -549,6 +589,7 @@ async function currentSnapshot() {
   if (snapshot.checkout?.branch) ctx.branch = snapshot.checkout.branch;
   if (ctx.branch && Date.now() - forgeAt > 60000) void refreshForge();
   if (Date.now() - inboxAt > INBOX_POLL_MS) void refreshReviewInbox();
+  if (Date.now() - ciAt > CI_POLL_MS) void refreshCi();
   if (Date.now() - tasksAt > TASK_POLL_MS)
     void refreshTasks(snapshot.worktrees || []);
   return snapshot;

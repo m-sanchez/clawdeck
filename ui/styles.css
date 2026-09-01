@@ -2349,6 +2349,68 @@ textarea.input {
 .cp-stage.state-skipped {
   opacity: 0.5;
 }
+/* Two readiness axes side by side: they are peers, so neither is nested under
+   the other and a wide screen shows both without scrolling. */
+.cp-axes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+.cp-axis {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.cp-axis.state-ready {
+  border-left-color: var(--ok);
+}
+.cp-axis.state-blocked {
+  border-left-color: var(--danger);
+}
+.cp-axis.state-unknown {
+  border-left-color: var(--warn);
+}
+.cp-axis-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cp-reasons {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cp-reasons > li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.cp-blocker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.cp-why > summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.cp-why[open] > summary {
+  margin-bottom: 5px;
+}
 .cp-finding + .cp-finding {
   margin-top: 10px;
 }

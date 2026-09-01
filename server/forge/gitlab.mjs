@@ -62,6 +62,7 @@ export async function gitlabStatus(forge, token, branch) {
       mr: mr
         ? {
             iid: mr.iid,
+      headSha: mr.sha ?? null,
             title: mr.title,
             state: mr.state,
             draft: Boolean(mr.draft || mr.work_in_progress),

@@ -33,6 +33,7 @@ import {
   writeDraft,
   writeInboxStore,
 } from "../core/review-inbox/store.mjs";
+import { promote, dismiss } from "../core/attention/store.mjs";
 import { markSetup } from "./setup-state.mjs";
 import { runPolicyAction } from "./policy-actions.mjs";
 import { getWorktrees } from "../adapters/worktrees.mjs";
@@ -439,6 +440,29 @@ export async function runAction(name, params, deps) {
       return result;
     }
 
+    case "attention.add": {
+      // Promotion is the ONLY way anything reaches the authoritative Attention
+      // Inbox from an advisory suggestion, and it is a click. The stored record
+      // is the human's, with the suggestion kept as provenance.
+      const record = promote(ctx.runtimeDir, {
+        id: String(params.id ?? ""),
+        title: String(params.title ?? ""),
+        kind: params.kind ? String(params.kind) : undefined,
+        detail: params.detail ? String(params.detail) : undefined,
+        link: params.link ? String(params.link) : undefined,
+        origin: params.origin ? String(params.origin) : undefined,
+      });
+      if (!record) return bad("An id and a title are required.");
+      await deps.refresh?.();
+      return { ok: true, item: record };
+    }
+
+    case "attention.dismiss": {
+      const removed = dismiss(ctx.runtimeDir, String(params.id ?? ""));
+      if (removed) await deps.refresh?.();
+      return { ok: true, removed };
+    }
+
     case "reviewInbox.mark": {
       // An explicit human decision about a thread. Model output can never
       // reach this path; only a click does.
@@ -607,7 +631,8 @@ export async function runAction(name, params, deps) {
           ok: true,
           refused: true,
           stage: "scanner-missing",
-          reason: "Secret scanner unavailable; refused to send the review packet.",
+          reason:
+            "Secret scanner unavailable; refused to send the review packet.",
         };
       const hits = scanner.scanText(built.payload) || [];
       if (hits.length)
@@ -803,6 +828,8 @@ export const ACTION_NAMES = [
   "policy.grantCapability",
   "policy.revokeCapability",
   "dash.ask",
+  "attention.add",
+  "attention.dismiss",
   "reviewInbox.mark",
   "reviewInbox.draft",
   "reviewInbox.fix",
