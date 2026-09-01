@@ -247,29 +247,55 @@ function spanRow(s, turnStart, total) {
           : s.isTask
             ? "task"
             : "ok";
-  return el("div", { class: "trace-span-row" }, [
-    el("div", { class: "trace-span-label" }, [
-      el("span", { class: "trace-tool", text: s.tool }),
-      s.agent
-        ? el("span", {
-            class: "muted small",
-            text: ` ${s.agent.agentType}: ${s.agent.description}`,
-          })
-        : s.summary
-          ? el("span", { class: "mono small muted", text: ` ${s.summary}` })
-          : null,
-    ]),
-    el("div", { class: "trace-track" }, [
-      el("div", {
-        class: `trace-bar trace-${tone}`,
-        style: `left:${leftPct}%;width:${widthPct}%`,
-      }),
-      el("span", {
-        class: "trace-dur mono small",
-        text: s.running ? `▶ ${fmtMs(s.durMs)}` : label,
-      }),
-    ]),
-  ]);
+  const status = s.running
+    ? "running"
+    : s.incomplete
+      ? "incomplete (no result recorded)"
+      : s.wait
+        ? "waiting on a human"
+        : s.ok === false
+          ? "error"
+          : "ok";
+  const tip = [
+    `${s.tool} - ${status}`,
+    s.durMs != null ? `duration ${fmtMs(s.durMs)}` : null,
+    s.agent ? `subagent ${s.agent.agentType}: ${s.agent.description}` : null,
+    s.agent ? null : s.summary || null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return el(
+    "div",
+    {
+      class: "trace-span-row",
+      tabindex: "0",
+      "data-tip": tip,
+      "aria-label": tip,
+    },
+    [
+      el("div", { class: "trace-span-label" }, [
+        el("span", { class: "trace-tool", text: s.tool }),
+        s.agent
+          ? el("span", {
+              class: "muted small",
+              text: ` ${s.agent.agentType}: ${s.agent.description}`,
+            })
+          : s.summary
+            ? el("span", { class: "mono small muted", text: ` ${s.summary}` })
+            : null,
+      ]),
+      el("div", { class: "trace-track" }, [
+        el("div", {
+          class: `trace-bar trace-${tone}`,
+          style: `left:${leftPct}%;width:${widthPct}%`,
+        }),
+        el("span", {
+          class: "trace-dur mono small",
+          text: s.running ? `▶ ${fmtMs(s.durMs)}` : label,
+        }),
+      ]),
+    ],
+  );
 }
 
 function ruler(totalMs) {

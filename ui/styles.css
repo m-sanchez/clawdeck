@@ -2573,6 +2573,9 @@ textarea.input {
 .panel-tip-text {
   position: relative;
   z-index: 1;
+  /* Multi-line tips (trace spans) join facts with \n. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 .panel-tip-arrow {
   position: absolute;
@@ -3811,6 +3814,7 @@ kbd {
 .btn:focus-visible,
 .card-collapse:focus-visible,
 .trace-turn-head:focus-visible,
+.trace-span-row:focus-visible,
 .pill-btn:focus-visible,
 select:focus-visible,
 textarea:focus-visible {

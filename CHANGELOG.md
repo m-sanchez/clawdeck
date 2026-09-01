@@ -34,6 +34,9 @@ release closes them and pins each with a test against the real server.
 - **Forge connectors for Bitbucket Cloud, Gitea/Forgejo and Azure
   DevOps**, joining GitHub and GitLab behind the same auto-detected,
   read-only, normalized status shape.
+- **Trace span tooltips**. Hover or keyboard-focus a span row to see the
+  full story: tool, status, duration, subagent description or input
+  summary. Escape dismisses.
 - **Keyboard & small-screen polish**. Hub tabs follow the WAI-ARIA tabs
   pattern (arrow keys, Home/End, focus retained); trace turns and card
   collapses announce their expanded state; host vitals are real meters to
