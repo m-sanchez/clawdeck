@@ -65,6 +65,17 @@ The one place the panel starts a Claude session of its own. Its boundary is stru
 - The full outbound payload is **secret-scanned fail-closed** first: a scan hit, or an unavailable scanner, refuses the call before any process is spawned; refusals report pattern names, never values.
 - The prompt delimits the snapshot JSON as untrusted evidence and instructs the model to ignore directives inside it.
 
+**Verified, not assumed** (Claude Code 2.1.252, 2026-09-01). The isolation was measured through the shipped invocation path, each probe planting a unique marker:
+
+| Probe | Result |
+| --- | --- |
+| Child run inside a tree with `CLAUDE.md` at two ancestor levels plus `.claude/settings.json` | answered `NONE`; no marker returned |
+| User-global `~/.claude/CLAUDE.md` planted (restored afterwards) | answered `NONE`; no marker returned |
+| A file planted in the child's own working directory, asked for by name | the model emitted a read call, nothing executed it, the contents never came back |
+| **Negative control**: same tree, same question, isolation arguments removed | the marker came back quoted verbatim |
+
+The control is what makes the rest meaningful: without those arguments the instructions are plainly visible, so their absence with them is the arguments doing the work rather than there being nothing to find. Re-run the probes when the CLI's major version changes - this is a property of that binary, not a guarantee Clawdeck can enforce alone.
+
 ## Logs
 
 - Redact known secret patterns where feasible.
