@@ -13,6 +13,8 @@ import { githubStatus, githubNewMrUrl } from "./github.mjs";
 import { bitbucketStatus, bitbucketNewMrUrl } from "./bitbucket.mjs";
 import { giteaStatus, giteaNewMrUrl } from "./gitea.mjs";
 import { azureStatus, azureNewMrUrl } from "./azure.mjs";
+import { githubReviewThreads } from "./github-reviews.mjs";
+import { gitlabReviewThreads } from "./gitlab-reviews.mjs";
 
 const DETECT_TTL_MS = 60000;
 const detectCache = new Map();
@@ -35,7 +37,8 @@ export async function getForgeStatus(checkoutRoot, branch) {
   const token = forgeToken(checkoutRoot, forge.provider);
   // GitHub and Gitea answer unauthenticated for public repos; the others
   // effectively never do, so tokenless there reads as unconfigured.
-  const tokenOptional = forge.provider === "github" || forge.provider === "gitea";
+  const tokenOptional =
+    forge.provider === "github" || forge.provider === "gitea";
   if (!token && !tokenOptional) return { configured: false };
   if (!branch)
     return {
@@ -53,6 +56,45 @@ export async function getForgeStatus(checkoutRoot, branch) {
     azuredevops: azureStatus,
   }[forge.provider];
   return impl ? impl(forge, token, branch) : { configured: false };
+}
+
+/**
+ * Review discussions for an open change, read-only. Only GitHub and GitLab are
+ * implemented; every other provider degrades to `unsupported` so the UI can say
+ * which case it is rather than showing an empty list.
+ *
+ * The token's lexical scope ends here: nothing downstream takes one.
+ *
+ * @param {string} checkoutRoot
+ * @param {{iid:number|string}|null} mr
+ * @param {{fetchImpl?:Function, now?:number}} [opts]
+ */
+export async function getReviewThreads(checkoutRoot, mr, opts = {}) {
+  const forge = await forgeFor(checkoutRoot);
+  if (!forge)
+    return {
+      ok: false,
+      reason: "no-remote",
+      provider: null,
+      threads: [],
+      notes: [],
+    };
+
+  const impl = {
+    github: githubReviewThreads,
+    gitlab: gitlabReviewThreads,
+  }[forge.provider];
+  if (!impl)
+    return {
+      ok: false,
+      reason: "unsupported",
+      provider: forge.provider,
+      threads: [],
+      notes: [],
+    };
+
+  const token = forgeToken(checkoutRoot, forge.provider);
+  return impl(forge, token, mr, opts);
 }
 
 /** Web URL that opens a new MR/PR for the branch, or null when undetected. */

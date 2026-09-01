@@ -72,6 +72,11 @@ import { sampleHostMetrics } from "./adapters/host-metrics.mjs";
 import { getMcpAnalytics } from "./adapters/mcp-analytics.mjs";
 import { discoverConfig, overlayUsage } from "./adapters/config-map.mjs";
 import { getForgeStatus, newMrUrl } from "./forge/index.mjs";
+import {
+  getReviewInbox,
+  summarizeInbox,
+} from "./adapters/review-inbox.mjs";
+import { readDraft } from "./core/review-inbox/store.mjs";
 
 const HOST = "127.0.0.1";
 const PORT = Number(
@@ -323,6 +328,63 @@ async function refreshForge() {
   }
 }
 
+// Review threads move slower than pipelines and cost more requests, so they get
+// their own, slower poll. Nothing is fetched until a forge and an open change
+// exist, and the config toggle stops it entirely.
+let inboxCache = /** @type {any} */ (null);
+let inboxInFlight = false;
+let inboxAt = 0;
+const INBOX_POLL_MS = 120000;
+
+async function refreshReviewInbox() {
+  if (inboxInFlight) return;
+  const mr = forgeCache?.configured ? forgeCache.mr : null;
+  if (!mr?.iid) {
+    inboxCache = null;
+    return;
+  }
+  inboxInFlight = true;
+  try {
+    inboxCache = await getReviewInbox(ctx, {
+      mr,
+      enabled: reviewInboxEnabled(),
+    });
+  } catch (e) {
+    inboxCache = {
+      available: false,
+      reason: "fetch-failed",
+      detail: String((e && e.message) || e),
+      provider: forgeCache?.provider ?? null,
+      items: [],
+      notes: [],
+    };
+  } finally {
+    inboxInFlight = false;
+    inboxAt = Date.now();
+  }
+}
+
+/**
+ * Opt-out for the review poll: `PANEL_REVIEW_INBOX=off`, or `reviewInbox:false`
+ * in the checkout's .claude/settings.local.json. Absent means on; off means the
+ * poller issues no requests at all.
+ */
+function reviewInboxEnabled() {
+  if (String(process.env.PANEL_REVIEW_INBOX || "").toLowerCase() === "off")
+    return false;
+  try {
+    const settings = JSON.parse(
+      readFileSync(
+        join(checkoutRoot, ".claude", "settings.local.json"),
+        "utf8",
+      ),
+    );
+    return settings?.reviewInbox !== false;
+  } catch {
+    return true;
+  }
+}
+
 /** Recursive byte size of this panel's runtime dir (logs + artifacts). Small + own. */
 function dirSize(dir) {
   let total = 0;
@@ -351,6 +413,7 @@ async function currentSnapshot() {
     validation: readValidationCache(),
     jobs: jobs.list(),
     forge: forgeCache,
+    reviewInbox: summarizeInbox(inboxCache),
     otel: otelStore.summary(),
     events: eventStore.reconcile().snapshot(),
     perf,
@@ -374,6 +437,7 @@ async function currentSnapshot() {
   // it at most once a minute (fire-and-forget; never blocks the snapshot).
   if (snapshot.checkout?.branch) ctx.branch = snapshot.checkout.branch;
   if (ctx.branch && Date.now() - forgeAt > 60000) void refreshForge();
+  if (Date.now() - inboxAt > INBOX_POLL_MS) void refreshReviewInbox();
   return snapshot;
 }
 
@@ -726,6 +790,25 @@ const server = http.createServer(async (request, response) => {
         },
         node: process.version,
         runtimeDir,
+      });
+    }
+
+    if (path === "/api/review-inbox") {
+      if (!inboxCache) await refreshReviewInbox();
+      const inbox = inboxCache;
+      if (!inbox) return sendJson(response, 200, { available: false, reason: "no-change", items: [] });
+      return sendJson(response, 200, inbox);
+    }
+
+    if (path === "/api/review-inbox/thread") {
+      const id = String(url.searchParams.get("id") || "");
+      if (!/^rt_[0-9a-f]{24}$/.test(id))
+        return sendJson(response, 400, { error: "Bad thread id" });
+      const item = (inboxCache?.items || []).find((i) => i.thread.id === id);
+      if (!item) return sendJson(response, 404, { error: "Unknown thread" });
+      return sendJson(response, 200, {
+        item,
+        draft: readDraft(runtimeDir, id),
       });
     }
 

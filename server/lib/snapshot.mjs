@@ -287,6 +287,15 @@ export async function buildSnapshot(ctx, cached) {
     ? { ...cached.panel, historyPoints: snapshot.history.length }
     : null;
   snapshot.forge = cached.forge ?? { configured: false };
+  // Counts only: bodies stay behind the token-gated route, and the delivery
+  // stage below reads this summary rather than the provider payload.
+  snapshot.reviewInbox = cached.reviewInbox ?? {
+    configured: false,
+    available: false,
+    reason: "not-polled",
+    counts: null,
+    top: [],
+  };
   snapshot.delivery = deriveDelivery(snapshot);
   // Record this build's wall-clock and expose the panel's self-perf summary.
   if (perf) {

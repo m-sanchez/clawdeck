@@ -97,6 +97,43 @@ export function deriveDelivery(snapshot) {
     else push("ci", "CI green", "pending", "no pipeline");
   }
 
+  // Remote review threads. Only resolvable ones count: a PR conversation
+  // comment has no resolution state and would otherwise block forever. And
+  // "done" needs positive evidence - complete coverage, fresh data, every
+  // thread resolved - because an empty page and a clean review look identical.
+  const ri = snapshot?.reviewInbox;
+  if (!gl.configured || !ri?.configured) {
+    push("reviewthreads", "Review threads", "skipped", "No open change");
+  } else if (!ri.available || !ri.counts) {
+    push(
+      "reviewthreads",
+      "Review threads",
+      "pending",
+      ri.detail || "not fetched yet",
+    );
+  } else if (ri.counts.remoteUnresolved > 0) {
+    push(
+      "reviewthreads",
+      "Review threads",
+      "blocked",
+      `${ri.counts.remoteUnresolved} unresolved`,
+    );
+    blockers.push(`${ri.counts.remoteUnresolved} unresolved review thread(s)`);
+  } else if (ri.counts.resolutionUnknown > 0) {
+    push(
+      "reviewthreads",
+      "Review threads",
+      "current",
+      `${ri.counts.resolutionUnknown} of unknown resolution`,
+    );
+  } else if (ri.coverage?.threads?.complete !== true) {
+    push("reviewthreads", "Review threads", "current", "partial data");
+  } else if (ri.freshness === "stale") {
+    push("reviewthreads", "Review threads", "current", "provider unavailable");
+  } else {
+    push("reviewthreads", "Review threads", "done", "all resolved");
+  }
+
   // Merged derives ONLY from the SELECTED MR's real state. On a reused branch a
   // historical merged MR (gl.merged) with an open OR closed selected MR must
   // not read "Merged done"; the adapter always populates gl.mr when gl.merged

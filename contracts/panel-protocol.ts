@@ -276,6 +276,52 @@ export interface PanelSnapshot {
   };
   /** Panel self-performance (p50/p95 snapshot + adapter latency, counters). */
   perf: unknown;
+  /**
+   * Remote review threads, counts only. Comment bodies never ride here: the
+   * SSE stream that carries the snapshot is the one route without a bearer,
+   * and hashing large churning text every tick is waste. Full data comes from
+   * the token-gated GET /api/review-inbox.
+   *
+   * `coverage` has two axes because listing every thread is not the same as
+   * knowing every resolution (GitHub reports resolution only via GraphQL).
+   * An empty result under incomplete coverage is unknown, never "clear".
+   */
+  reviewInbox: {
+    configured: boolean;
+    available: boolean;
+    provider?: "github" | "gitlab" | null;
+    mrIid?: number | string | null;
+    reviewDecision?: string | null;
+    reason?: string | null;
+    detail?: string | null;
+    fetchedAt?: string | null;
+    freshness?: "fresh" | "stale" | "unknown";
+    coverage: {
+      threads: { complete: boolean; reason?: string };
+      resolution: { complete: boolean; reason?: string };
+    };
+    degraded?: string[];
+    noteCount?: number;
+    counts: {
+      total: number;
+      remoteResolved: number;
+      remoteUnresolved: number;
+      resolutionUnknown: number;
+      unread: number;
+      needsHuman: number;
+      replyDrafted: number;
+      likelyAddressed: number;
+      locallyChanged: number;
+    } | null;
+    top: Array<{
+      id: string;
+      file: string | null;
+      line: number | null;
+      state: string;
+      authority: string;
+      certainty: "known" | "likely" | "unknown";
+    }>;
+  };
   clawd: unknown;
   /**
    * Per-section FNV-1a content hashes. `version` doubles as the /api/snapshot
