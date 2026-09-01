@@ -14,6 +14,16 @@ import { mkdirSync, rmSync } from "node:fs";
 import { loadEsm } from "./repo-modules.mjs";
 import { buildDashContext } from "./dash-context.mjs";
 import { ASSIST_KINDS, buildAssistPacket } from "./assist-packet.mjs";
+import { buildTaskPacket, taskLinkPrompt } from "./task-packet.mjs";
+import { makeTask } from "../core/tasks/model.mjs";
+import {
+  newMarker,
+  newTaskId,
+  readTasks,
+  upsertTask,
+  writePacket,
+  writeTasks,
+} from "../core/tasks/store.mjs";
 import {
   clearDraft,
   markThread,
@@ -460,6 +470,109 @@ export async function runAction(name, params, deps) {
       return { ok: true, id, chars: body.length, posted: false };
     }
 
+    case "reviewInbox.fix": {
+      // Hand one review thread to Claude as a scoped task. The brief - review,
+      // diff, code context, local facts - is written to a FILE; the deep link
+      // carries only the task id, that path and a correlation marker, because a
+      // URL is retained by browser and OS history and a review brief has no
+      // business being there.
+      //
+      // Nothing is launched: the link prefills a prompt the human still submits,
+      // so the task waits in CREATED with no watchdog until the marker is seen.
+      const id = String(params.id ?? "");
+      if (!/^rt_[0-9a-f]{24}$/.test(id)) return bad("Unknown thread id.");
+
+      const inbox = deps.reviewInbox ? await deps.reviewInbox() : null;
+      const item = (inbox?.items || []).find((i) => i.thread.id === id);
+      if (!item) return bad("That thread is not in the current inbox.");
+
+      const target = params.worktreePath
+        ? await deps.resolveWorktree(String(params.worktreePath))
+        : { cwd: ctx.checkoutRoot, worktree: null };
+      if (!target) return bad("Unknown or invalid worktree.");
+
+      const taskId = newTaskId();
+      const marker = newMarker(taskId);
+      const built = buildTaskPacket({
+        taskId,
+        marker,
+        nonce: randomBytes(8).toString("hex"),
+        thread: item.thread,
+        derived: item.derived,
+        facts: item.facts,
+        code: params.code || [],
+      });
+      if (!built.ok) return bad(built.error);
+
+      // Fail-closed before anything is written: a brief that carries secret
+      // material must not reach the disk or the link.
+      const scanner = deps.secretScan
+        ? { scanText: deps.secretScan }
+        : await import("./secret-scan.mjs");
+      if (!scanner || typeof scanner.scanText !== "function")
+        return {
+          ok: true,
+          refused: true,
+          stage: "scanner-missing",
+          reason: "Secret scanner unavailable; refused to write a task brief.",
+        };
+      const hits = scanner.scanText(built.body) || [];
+      if (hits.length)
+        return {
+          ok: true,
+          refused: true,
+          stage: "packet",
+          reason:
+            "The task brief contains suspected secret material; refused to write it.",
+          patterns: [...new Set(hits.map((h) => h.pattern))].sort(),
+        };
+
+      const written = writePacket(ctx.runtimeDir, taskId, built.body);
+      if (!written.ok) return bad(written.error);
+
+      const task = {
+        ...makeTask({
+          id: taskId,
+          source: { kind: "review", id },
+          intent: "fix",
+          worktree: target.worktree,
+          marker,
+          now: Date.now(),
+        }),
+        packetPath: written.path,
+      };
+      const store = upsertTask(readTasks(ctx.runtimeDir), task);
+      writeTasks(ctx.runtimeDir, store);
+
+      const { buildClaudeDeepLink } = await import(
+        "../../ui/lib/open-in-claude.mjs"
+      );
+      const prompt = taskLinkPrompt({
+        taskId,
+        packetPath: written.path,
+        marker,
+      });
+      const link = buildClaudeDeepLink({ cwd: target.cwd, prompt });
+      deps.hub?.broadcast?.("panel", {
+        type: "task.created",
+        taskId,
+        threadId: id,
+        emittedAt: new Date().toISOString(),
+      });
+      return {
+        ok: true,
+        taskId,
+        threadId: id,
+        url: link.url,
+        cwd: target.cwd,
+        packetPath: written.path,
+        packetChars: written.chars,
+        packetDropped: built.dropped,
+        lifecycle: task.lifecycle,
+        launched: false,
+      };
+    }
+
     case "reviewInbox.assist": {
       // Advisory only: a tool-less `claude -p` reads one thread and answers.
       // It cannot edit code, cannot reach the provider, and its output never
@@ -692,6 +805,7 @@ export const ACTION_NAMES = [
   "dash.ask",
   "reviewInbox.mark",
   "reviewInbox.draft",
+  "reviewInbox.fix",
   "reviewInbox.assist",
   "reviewInbox.assist.cancel",
   "config.read",
