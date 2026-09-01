@@ -93,6 +93,7 @@ import {
   summarizeInbox,
 } from "./adapters/review-inbox.mjs";
 import { getCi, getCiLogTail, summarizeCi } from "./adapters/ci.mjs";
+import { getMergeability } from "./forge/index.mjs";
 import { attributeFailure } from "./core/tasks/attribution.mjs";
 import { readDraft } from "./core/review-inbox/store.mjs";
 
@@ -441,6 +442,37 @@ async function refreshCi() {
   }
 }
 
+// Whether the provider will merge, asked of the provider. Slower than CI: the
+// answer changes on a push or an approval, not while you watch it.
+let mergeCache = /** @type {any} */ (null);
+let mergeInFlight = false;
+let mergeAt = 0;
+const MERGE_POLL_MS = 90000;
+
+async function refreshMergeability() {
+  if (mergeInFlight) return;
+  const mr = forgeCache?.configured ? forgeCache.mr : null;
+  if (!mr?.iid) {
+    mergeCache = null;
+    return;
+  }
+  mergeInFlight = true;
+  try {
+    mergeCache = await getMergeability(checkoutRoot, mr);
+  } catch (e) {
+    mergeCache = {
+      ok: false,
+      provider: forgeCache?.provider ?? null,
+      mergeable: "unknown",
+      reason: String((e && e.message) || e),
+      observedAt: new Date().toISOString(),
+    };
+  } finally {
+    mergeInFlight = false;
+    mergeAt = Date.now();
+  }
+}
+
 // Assisted tasks: bind the ones whose marker has appeared, notice the ones that
 // went quiet, and refresh what each has actually changed. Nothing here launches
 // anything - a task the human never submitted simply stays in CREATED.
@@ -565,6 +597,7 @@ async function currentSnapshot() {
     forge: forgeCache,
     reviewInbox: summarizeInbox(inboxCache),
     ci: summarizeCi(ciCache),
+    mergeability: mergeCache,
     tasks: taskCache,
     otel: otelStore.summary(),
     events: eventStore.reconcile().snapshot(),
@@ -591,6 +624,7 @@ async function currentSnapshot() {
   if (ctx.branch && Date.now() - forgeAt > 60000) void refreshForge();
   if (Date.now() - inboxAt > INBOX_POLL_MS) void refreshReviewInbox();
   if (Date.now() - ciAt > CI_POLL_MS) void refreshCi();
+  if (Date.now() - mergeAt > MERGE_POLL_MS) void refreshMergeability();
   if (Date.now() - tasksAt > TASK_POLL_MS)
     void refreshTasks(snapshot.worktrees || []);
   return snapshot;

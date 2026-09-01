@@ -203,18 +203,67 @@ export function projectBlockers(snapshot) {
         }),
       );
 
-    if (forge.mr.hasConflicts === true)
+    const merge = snapshot?.mergeability || null;
+    const conflicts = merge?.hasConflicts ?? forge.mr.hasConflicts ?? null;
+    if (conflicts === true)
       out.push(
         blocker({
           id: "merge-conflict",
           kind: "merge-conflict",
           title: "Merge conflicts",
+          detail: merge?.status ? `provider status: ${merge.status}` : null,
           authority: "forge",
           remoteMerge: true,
           localDelivery: true,
           reasonRemote: "the provider reports conflicts with the target branch",
           reasonLocal: "the branch needs a rebase or merge locally",
           needsHuman: true,
+          evidence: merge?.reason ? [{ kind: "forge", note: merge.reason }] : [],
+        }),
+      );
+
+    // The provider's own policy, which is a different fact from the review
+    // list: two approvals prove nothing about a rule requiring three.
+    if (merge?.ok && merge.mergeable === false && conflicts !== true)
+      out.push(
+        blocker({
+          id: "provider-refuses-merge",
+          kind: "merge-policy",
+          title: "The provider will not merge this yet",
+          detail: merge.status ? `status: ${merge.status}` : null,
+          authority: "forge",
+          remoteMerge: true,
+          reasonRemote: merge.reason ?? "the provider reports it is not mergeable",
+          needsHuman: true,
+          evidence: [{ kind: "forge", note: merge.reason ?? "not mergeable" }],
+        }),
+      );
+    else if (!merge?.ok)
+      out.push(
+        blocker({
+          id: "merge-policy-unknown",
+          kind: "merge-policy",
+          title: "Merge policy not read",
+          detail: merge?.reason ?? "the provider was not asked",
+          authority: "forge",
+          remoteMerge: "unknown",
+          reasonRemote: "whether the provider will merge has not been established",
+        }),
+      );
+
+    if (merge?.blockingDiscussionsResolved === false)
+      out.push(
+        blocker({
+          id: "discussions-block-merge",
+          kind: "merge-policy",
+          title: "Unresolved discussions block merge by project policy",
+          authority: "forge",
+          remoteMerge: true,
+          reasonRemote: "the project requires every discussion resolved",
+          needsHuman: true,
+          evidence: [
+            { kind: "forge", note: "blocking_discussions_resolved = false" },
+          ],
         }),
       );
   }
@@ -256,21 +305,27 @@ export function projectBlockers(snapshot) {
     );
 
   const behind = Number(checkout.behind ?? 0);
-  if (behind > 0)
+  if (behind > 0) {
+    // Being behind blocks a merge only where the provider says so. Read, it is
+    // a fact; unread, it stays unknown rather than assumed either way.
+    const behindBlocks = snapshot?.mergeability?.behindBlocks ?? null;
     out.push(
       blocker({
         id: "branch-behind",
         kind: "branch-behind",
         title: `${behind} commit(s) behind the target`,
-        authority: "git",
-        // Whether this blocks a merge depends on branch protection, which we
-        // have not read - so it is unknown rather than assumed either way.
-        remoteMerge: "unknown",
+        authority: behindBlocks == null ? "git" : "forge",
+        remoteMerge: behindBlocks === true ? true : behindBlocks === false ? false : "unknown",
         reasonRemote:
-          "whether the provider requires an up-to-date branch is unknown",
+          behindBlocks === true
+            ? "the provider requires the branch to be up to date"
+            : behindBlocks === false
+              ? null
+              : "whether the provider requires an up-to-date branch is unknown",
         localDelivery: false,
       }),
     );
+  }
 
   return out;
 }

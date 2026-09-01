@@ -135,7 +135,14 @@ const HUBS = [
         label: "Readiness",
         render: delivery,
         auto: true,
-        deps: ["ci", "delivery", "deliveryReadiness", "forge", "reviewInbox"],
+        deps: [
+          "ci",
+          "delivery",
+          "deliveryReadiness",
+          "forge",
+          "mergeability",
+          "reviewInbox",
+        ],
       },
       // Not auto: it holds filters, expanded threads and in-flight assists.
       { id: "inbox", label: "Inbox", render: reviewInbox },

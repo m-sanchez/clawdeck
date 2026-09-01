@@ -18,6 +18,10 @@ import { gitlabReviewThreads } from "./gitlab-reviews.mjs";
 import { githubChecks } from "./github-checks.mjs";
 import { gitlabChecks } from "./gitlab-checks.mjs";
 import { githubJobLog, gitlabJobLog } from "./ci-logs.mjs";
+import {
+  githubMergeability,
+  gitlabMergeability,
+} from "./mergeability.mjs";
 
 const DETECT_TTL_MS = 60000;
 const detectCache = new Map();
@@ -135,6 +139,26 @@ export async function getCiLog(checkoutRoot, jobId, opts = {}) {
     return githubJobLog(forge, token, jobId, opts);
   if (forge.provider === "gitlab")
     return gitlabJobLog(forge, token, jobId, opts);
+  return { ok: false, reason: "unsupported", provider: forge.provider };
+}
+
+/**
+ * Whether the provider will merge this change, from the provider's own policy.
+ * Read-only; anything but GitHub and GitLab reports unsupported rather than a
+ * guess assembled from review counts.
+ *
+ * @param {string} checkoutRoot
+ * @param {{iid:number|string}|null} mr
+ * @param {{fetchImpl?:Function, now?:number}} [opts]
+ */
+export async function getMergeability(checkoutRoot, mr, opts = {}) {
+  const forge = await forgeFor(checkoutRoot);
+  if (!forge) return { ok: false, reason: "no-remote", provider: null };
+  const token = forgeToken(checkoutRoot, forge.provider);
+  if (forge.provider === "github")
+    return githubMergeability(forge, token, mr?.iid ?? null, opts);
+  if (forge.provider === "gitlab")
+    return gitlabMergeability(forge, token, mr?.iid ?? null, opts);
   return { ok: false, reason: "unsupported", provider: forge.provider };
 }
 

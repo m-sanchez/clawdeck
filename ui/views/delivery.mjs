@@ -217,6 +217,7 @@ export function render(app) {
   };
   const r = app.snapshot?.deliveryReadiness || null;
   const ci = app.snapshot?.ci || null;
+  const merge = app.snapshot?.mergeability || null;
 
   const banner = el("div", { class: "cp-banner" }, [
     pill(
@@ -232,6 +233,13 @@ export function render(app) {
           }`,
         })
       : null,
+    // The provider's own words, not a verdict assembled from review counts.
+    el("span", {
+      class: "muted small",
+      text: merge?.ok
+        ? `provider: ${merge.status ?? (merge.mergeable === true ? "mergeable" : "unknown")}`
+        : "provider merge policy: not read",
+    }),
   ]);
 
   const axes = r

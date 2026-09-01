@@ -47,6 +47,18 @@ const clean = {
     },
     failures: [],
   },
+  // The provider's own verdict. Without it there is no basis for READY, which
+  // is what the "policy not read" test below pins.
+  mergeability: {
+    ok: true,
+    provider: "github",
+    mergeable: true,
+    hasConflicts: false,
+    blockingDiscussionsResolved: true,
+    status: "clean",
+    behindBlocks: false,
+    reason: "mergeable_state = clean",
+  },
 };
 
 const withCheckout = (over) => ({
@@ -113,7 +125,11 @@ test("a failing check blocks both axes", () => {
 });
 
 test("branch-behind is unknown until the policy is read, never assumed", () => {
-  const r = deriveReadiness(withCheckout({ behind: 3 }));
+  const r = deriveReadiness({
+    ...withCheckout({ behind: 3 }),
+    // The provider answered, but said nothing about an up-to-date-branch rule.
+    mergeability: { ...clean.mergeability, behindBlocks: null },
+  });
   assert.equal(r.remoteMerge.state, "UNKNOWN");
   assert.equal(r.remoteMerge.blocking.length, 0, "nothing positive is claimed");
   assert.match(r.remoteMerge.unknown[0].reason, /up-to-date branch is unknown/);
@@ -152,6 +168,7 @@ test("stale evidence can be shown but never mints READY", () => {
 test("blocked and unknown together read as blocked, with the unknowns listed", () => {
   const r = deriveReadiness({
     ...withCheckout({ behind: 2 }),
+    mergeability: { ...clean.mergeability, behindBlocks: null },
     ci: {
       freshness: "fresh",
       summary: {
@@ -246,4 +263,85 @@ test("the uncommitted count is the file count, not the dirty flag", () => {
     checkout: { dirty: true, dirtyCount: 7, ahead: 0, behind: 0 },
   });
   assert.match(r.localDelivery.blocking[0].title, /7 uncommitted/);
+});
+
+test("an unread merge policy cannot leave the remote axis READY", () => {
+  const r = deriveReadiness({ ...clean, mergeability: null });
+  assert.equal(r.remoteMerge.state, "UNKNOWN");
+  assert.ok(
+    r.remoteMerge.unknown.some((u) => /will merge has not been established/.test(u.reason)),
+  );
+  assert.equal(r.localDelivery.state, "READY", "the local axis does not care");
+});
+
+test("the provider refusing to merge is a blocker in its own right", () => {
+  const r = deriveReadiness({
+    ...clean,
+    mergeability: {
+      ...clean.mergeability,
+      mergeable: false,
+      status: "blocked",
+      reason: "mergeable_state = blocked",
+    },
+  });
+  assert.equal(r.remoteMerge.state, "BLOCKED");
+  const b = r.blockers.find((x) => x.id === "provider-refuses-merge");
+  assert.equal(b.needsHuman, true);
+  assert.match(b.blockingReason.remoteMerge, /mergeable_state = blocked/);
+});
+
+test("a provider still computing mergeability is unknown, not unmergeable", () => {
+  const r = deriveReadiness({
+    ...clean,
+    mergeability: { ...clean.mergeability, mergeable: "unknown", status: null },
+  });
+  assert.equal(r.remoteMerge.state, "READY", "no positive refusal was reported");
+  assert.ok(
+    !r.blockers.some((b) => b.id === "provider-refuses-merge"),
+    "an unknown answer must not be rendered as a refusal",
+  );
+});
+
+test("a project rule requiring resolved discussions blocks, and says so", () => {
+  const r = deriveReadiness({
+    ...clean,
+    mergeability: { ...clean.mergeability, blockingDiscussionsResolved: false },
+  });
+  const b = r.blockers.find((x) => x.id === "discussions-block-merge");
+  assert.equal(r.remoteMerge.state, "BLOCKED");
+  assert.match(b.blockingReason.remoteMerge, /every discussion resolved/);
+});
+
+test("behind the target blocks only where the provider states that rule", () => {
+  const blocked = deriveReadiness({
+    ...withCheckout({ behind: 2 }),
+    mergeability: { ...clean.mergeability, behindBlocks: true, status: "behind" },
+  });
+  const b = blocked.blockers.find((x) => x.id === "branch-behind");
+  assert.equal(b.authority, "forge", "this is the provider's rule, not git's");
+  assert.equal(blocked.remoteMerge.state, "BLOCKED");
+
+  const fine = deriveReadiness({
+    ...withCheckout({ behind: 2 }),
+    mergeability: { ...clean.mergeability, behindBlocks: false },
+  });
+  assert.equal(fine.remoteMerge.state, "READY");
+});
+
+test("conflicts reported by the policy read outrank a stale list field", () => {
+  const r = deriveReadiness({
+    ...clean,
+    forge: { ...clean.forge, mr: { ...clean.forge.mr, hasConflicts: null } },
+    mergeability: {
+      ...clean.mergeability,
+      mergeable: false,
+      hasConflicts: true,
+      status: "dirty",
+    },
+  });
+  assert.ok(r.blockers.some((b) => b.id === "merge-conflict"));
+  assert.ok(
+    !r.blockers.some((b) => b.id === "provider-refuses-merge"),
+    "one cause, one blocker",
+  );
 });

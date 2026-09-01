@@ -368,6 +368,24 @@ export interface PanelSnapshot {
     failureCount?: number;
   };
   /**
+   * The provider's own merge verdict, or null when it was never read. Absent
+   * and unknown both mean the same thing here: no basis for calling a change
+   * ready, and never a basis for calling it refused.
+   */
+  mergeability: {
+    ok: boolean;
+    provider: "github" | "gitlab" | null;
+    mergeable: boolean | "unknown";
+    hasConflicts: boolean | null;
+    blockingDiscussionsResolved: boolean | null;
+    /** The provider's own status string, shown verbatim. */
+    status: string | null;
+    /** True when the provider requires the branch to be up to date. */
+    behindBlocks: boolean | null;
+    reason: string | null;
+    observedAt: string | null;
+  } | null;
+  /**
    * Both delivery axes and the blockers behind them. Separate from `readiness`
    * (the local /pre-mr push marker), and separate per axis because a dirty
    * worktree must never read as "the provider refuses to merge".

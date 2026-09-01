@@ -86,7 +86,9 @@ export async function githubStatus(forge, token, branch) {
             title: pr.title,
             state: prState(pr),
             draft: Boolean(pr.draft),
-            hasConflicts: false,
+            // Not read here: the list endpoint does not carry it, and
+            // claiming false would be a fact nobody established.
+            hasConflicts: null,
             notes: 0,
             target: pr.base?.ref ?? null,
             webUrl: pr.html_url,

@@ -67,7 +67,9 @@ export async function bitbucketStatus(forge, token, branch) {
             title: pr.title,
             state: prState(pr),
             draft: Boolean(pr.draft),
-            hasConflicts: false,
+            // Bitbucket does not report it on this endpoint; unread is
+            // unknown, never false.
+            hasConflicts: null,
             notes: pr.comment_count ?? 0,
             target: pr.destination?.branch?.name ?? null,
             webUrl: pr.links?.html?.href ?? null,

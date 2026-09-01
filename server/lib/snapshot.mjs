@@ -312,6 +312,9 @@ export async function buildSnapshot(ctx, cached) {
     top: [],
   };
   snapshot.ci = cached.ci ?? { configured: false, available: false };
+  // The provider's own merge verdict. Absent means unread, which the readiness
+  // derivation treats as unknown - never as permission to merge.
+  snapshot.mergeability = cached.mergeability ?? null;
   snapshot.delivery = deriveDelivery(snapshot);
   // Both delivery axes, plus the blockers behind them. Derived last: it reads
   // the checkout, forge, inbox and CI keys assembled above. Distinct from
