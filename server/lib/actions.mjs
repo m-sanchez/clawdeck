@@ -38,6 +38,7 @@ import {
   writeInboxStore,
 } from "../core/review-inbox/store.mjs";
 import { promote, dismiss } from "../core/attention/store.mjs";
+import { recordDecision } from "../core/decisions/store.mjs";
 import { markSetup } from "./setup-state.mjs";
 import { runPolicyAction } from "./policy-actions.mjs";
 import { getWorktrees } from "../adapters/worktrees.mjs";
@@ -442,6 +443,26 @@ export async function runAction(name, params, deps) {
         await deps.refresh();
       }
       return result;
+    }
+
+    case "decision.record": {
+      // The click IS the human action, so the authority is set here and is not
+      // taken from the request: a caller cannot ask for a different one. Claude
+      // may have drafted the text; `draftedBy` keeps that as provenance.
+      const changeId = String(params.changeId ?? "");
+      const record = recordDecision(ctx.runtimeDir, changeId, {
+        decision: String(params.decision ?? ""),
+        reason: params.reason ? String(params.reason) : undefined,
+        source: params.source ?? null,
+        rejectedAlternatives: Array.isArray(params.rejectedAlternatives)
+          ? params.rejectedAlternatives
+          : [],
+        draftedBy: params.draftedBy ? String(params.draftedBy) : undefined,
+        decidedBy: "human",
+      });
+      if (!record) return bad("A change id and a decision are required.");
+      await deps.refresh?.();
+      return { ok: true, decision: record };
     }
 
     case "attention.add": {
@@ -941,6 +962,7 @@ export const ACTION_NAMES = [
   "policy.grantCapability",
   "policy.revokeCapability",
   "dash.ask",
+  "decision.record",
   "attention.add",
   "attention.dismiss",
   "reviewInbox.mark",

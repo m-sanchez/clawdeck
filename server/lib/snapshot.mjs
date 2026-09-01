@@ -25,6 +25,7 @@ import { computeBurn, readBurnHistory } from "../core/telemetry/burn.mjs";
 import { deriveDelivery } from "../core/delivery/lifecycle.mjs";
 import { deriveReadiness } from "../core/blockers/project.mjs";
 import { projectAttention } from "../core/attention/project.mjs";
+import { summarizeDecisions } from "../core/decisions/store.mjs";
 import { readPromotions } from "../core/attention/store.mjs";
 import { findingId } from "../core/findings/model.mjs";
 import {
@@ -70,6 +71,14 @@ function overlayEventState(sessions, events) {
     a.active = WORKING.has(proj.state);
   }
   sessions.activeCount = sessions.agents.filter((a) => a.active).length;
+}
+
+/** Stable ledger key for the change in front of the engineer. */
+function changeIdFor(snapshot) {
+  const iid = snapshot?.forge?.mr?.iid;
+  if (iid != null) return `pr-${String(iid).replace(/[^A-Za-z0-9._-]/g, "")}`;
+  const branch = snapshot?.checkout?.branch || "detached";
+  return `branch-${branch.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 56)}`;
 }
 
 /** Build the needs-attention queue, highest urgency first. */
@@ -313,6 +322,13 @@ export async function buildSnapshot(ctx, cached) {
   snapshot.attentionInbox = projectAttention(snapshot, {
     promotions: readPromotions(ctx.runtimeDir),
   });
+  // Decisions are per change, and a change with no PR still has a ledger: the
+  // local branch is the change until the provider knows about it.
+  const changeId = changeIdFor(snapshot);
+  snapshot.decisions = {
+    changeId,
+    ...summarizeDecisions(ctx.runtimeDir, changeId),
+  };
   // Record this build's wall-clock and expose the panel's self-perf summary.
   if (perf) {
     perf.recordSnapshot(Date.now() - t0);

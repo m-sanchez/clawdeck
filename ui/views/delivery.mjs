@@ -48,7 +48,7 @@ function reasonList(title, entries, tone) {
         el("li", {}, [
           pill(tone === "danger" ? "blocks" : "unknown", tone),
           el("span", { text: e.title }),
-          e.reason
+          e.reason && e.reason !== e.title
             ? el("span", { class: "muted small", text: e.reason })
             : null,
         ]),

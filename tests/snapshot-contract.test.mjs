@@ -48,6 +48,7 @@ const EXPECTED = [
   "reviewInbox",
   "attentionInbox",
   "ci",
+  "decisions",
   "deliveryReadiness",
   "tasks",
   "delivery",

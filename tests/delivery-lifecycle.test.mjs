@@ -68,3 +68,51 @@ test("pre-mr done + forge unconfigured skips MR/CI", () => {
   assert.equal(stage(d, "ci").state, "skipped");
   assert.match(d.nextAction, /Configure a forge/);
 });
+
+test("the CI stage follows the read for this commit, not the branch's last run", () => {
+  const forge = {
+    configured: true,
+    mr: { iid: 3 },
+    pipeline: { status: "success" },
+  };
+
+  // The branch's latest run succeeded, but it belongs to whatever commit
+  // triggered it - with work unpushed, that is not this one.
+  const stale = deriveDelivery(base({ forge }));
+  assert.equal(stage(stale, "ci").state, "current");
+  assert.match(stage(stale, "ci").detail, /latest branch run/);
+
+  const failing = deriveDelivery(
+    base({
+      forge,
+      ci: {
+        available: true,
+        ref: "abcdef1234",
+        summary: {
+          state: "failing",
+          coverage: { complete: true },
+          counts: { total: 2, passing: 1, failing: 1, pending: 0 },
+        },
+      },
+    }),
+  );
+  assert.equal(stage(failing, "ci").state, "blocked");
+  assert.match(stage(failing, "ci").detail, /abcdef1/);
+  assert.ok(failing.blockers.some((b) => /CI is failing/.test(b)));
+
+  const unknown = deriveDelivery(
+    base({
+      forge,
+      ci: {
+        available: true,
+        summary: {
+          state: "unknown",
+          coverage: { complete: false, reason: "commit statuses could not be read" },
+          counts: { total: 1, passing: 1, failing: 0, pending: 0 },
+        },
+      },
+    }),
+  );
+  assert.equal(stage(unknown, "ci").state, "pending");
+  assert.match(stage(unknown, "ci").detail, /commit statuses/);
+});

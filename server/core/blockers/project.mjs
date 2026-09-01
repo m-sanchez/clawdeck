@@ -220,7 +220,9 @@ export function projectBlockers(snapshot) {
   }
 
   // ── Local state ──────────────────────────────────────────────────────────
-  const dirty = Number(checkout.dirty ?? 0);
+  // `dirty` is a boolean; the count is its own field, and Number(true) is 1 -
+  // which reads as "one uncommitted file" no matter how many there are.
+  const dirty = Number(checkout.dirtyCount ?? (checkout.dirty ? 1 : 0));
   if (dirty > 0)
     out.push(
       blocker({
@@ -350,10 +352,15 @@ export function deriveReadiness(snapshot) {
     staleRemote.push("review thread");
   if (ci?.summary && ci.freshness === "stale") staleRemote.push("CI");
 
+  // With no open change there is nothing to merge, so there is also nothing to
+  // call ready: an empty blocker list here means "no PR", not "cleared".
+  const forge = snapshot?.forge || {};
+  const noChange = forge.configured && !forge.mr;
   const remote = readinessFor("remoteMerge", blockers, {
     staleSources: staleRemote,
-    missingEvidence:
-      inbox.configured && !inbox.available
+    missingEvidence: noChange
+      ? "no open change on the provider"
+      : inbox.configured && !inbox.available
         ? "review threads could not be read"
         : null,
   });

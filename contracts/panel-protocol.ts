@@ -395,6 +395,22 @@ export interface PanelSnapshot {
     }>;
   };
   /**
+   * Why this change went the way it did. Only a human action mints a record,
+   * so `decidedBy` never carries a model. Reasons stay behind the token-gated
+   * route; the snapshot carries the decision line and who made it.
+   */
+  decisions: {
+    /** `pr-<iid>` once a change is open, `branch-<name>` before that. */
+    changeId: string;
+    total: number;
+    recent: Array<{
+      id: string;
+      decision: string;
+      decidedBy: "human" | "mechanical-policy";
+      createdAt: string;
+    }>;
+  };
+  /**
    * What needs a person. Distinct from `attention` (run/validation nags) and
    * from delivery blocking: a mechanical blocker like an unpushed commit never
    * appears here, and no advisory suggestion can enter without a human click.
@@ -435,6 +451,21 @@ export interface PanelSnapshot {
       cancelled: number;
       unboundSessions: number;
     } | null;
+    /** Time work sat waiting on a person, from recorded transitions only. */
+    waits?: {
+      tasks: number;
+      closedWaits: number;
+      openWaits: number;
+      medianWaitMs: number | null;
+      longest: { state: string; ms: number } | null;
+      measured: boolean;
+    };
+    /** Which open tasks could proceed at once, by mechanical non-overlap. */
+    lanes?: {
+      lanes: Array<{ id: string; items: string[]; reasons: string[] }>;
+      parallelism: number;
+      unpartitionable: string[];
+    };
     recent: Array<{
       id: string;
       source: { kind: string | null; id: string | null };

@@ -7,6 +7,8 @@
  * tokenless SSE stream carries and the section hash re-serializes every tick.
  */
 import { LIFECYCLE, isTerminal } from "./model.mjs";
+import { waitSummary } from "./wait.mjs";
+import { partitionLanes } from "../lanes/partition.mjs";
 
 const RECENT = 8;
 
@@ -77,7 +79,20 @@ export function summarizeTasks(store) {
       createdAt: t.createdAt,
     }));
 
-  return { counts, recent };
+  // Two derived views that only exist where records support them: how long
+  // work sat waiting on a person, and which open tasks could proceed at once.
+  const waits = waitSummary(tasks);
+  const lanes = partitionLanes(
+    tasks
+      .filter((t) => !isTerminal(t.lifecycle))
+      .map((t) => ({
+        id: t.id,
+        files: t.evidence?.files ?? [],
+        tests: (t.evidence?.tests ?? []).map((x) => x.path ?? x),
+        worktree: t.worktree ?? null,
+      })),
+  );
+  return { counts, recent, waits, lanes };
 }
 
 /** Which tasks a given blocker (a review thread, say) produced. */

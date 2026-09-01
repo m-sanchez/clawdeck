@@ -89,12 +89,29 @@ export function deriveDelivery(snapshot) {
     if (gl.mr)
       push("mr", "MR opened", "done", `!${gl.mr.iid ?? gl.mr.number ?? ""}`);
     else push("mr", "MR opened", "pending", "no MR yet");
-    if (pipe?.status === "success") push("ci", "CI green", "done", "passed");
-    else if (pipe?.status === "failed") {
-      push("ci", "CI green", "blocked", "failing");
-      blockers.push("CI is failing");
-    } else if (pipe?.status) push("ci", "CI green", "current", pipe.status);
-    else push("ci", "CI green", "pending", "no pipeline");
+    // CI read for the commit under review outranks the branch's latest run: a
+    // run that succeeded belongs to whatever commit triggered it, which is not
+    // this one whenever local work has not been pushed.
+    const ci = snapshot?.ci;
+    if (ci?.available && ci.summary) {
+      const at = ci.ref ? ` @ ${String(ci.ref).slice(0, 7)}` : "";
+      if (ci.summary.state === "passing")
+        push("ci", "CI green", "done", `passed${at}`);
+      else if (ci.summary.state === "failing") {
+        push("ci", "CI green", "blocked", `failing${at}`);
+        blockers.push("CI is failing");
+      } else if (ci.summary.state === "pending")
+        push("ci", "CI green", "current", `running${at}`);
+      else
+        push(
+          "ci",
+          "CI green",
+          "pending",
+          ci.summary.coverage?.reason || ci.summary.state,
+        );
+    } else if (pipe?.status)
+      push("ci", "CI green", "current", `latest branch run: ${pipe.status}`);
+    else push("ci", "CI green", "pending", "no CI read for this commit");
   }
 
   // Remote review threads. Only resolvable ones count: a PR conversation

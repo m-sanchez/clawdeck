@@ -139,13 +139,8 @@ const HUBS = [
       },
       // Not auto: it holds filters, expanded threads and in-flight assists.
       { id: "inbox", label: "Inbox", render: reviewInbox },
-      {
-        id: "attention",
-        label: "Attention",
-        render: attention,
-        auto: true,
-        deps: ["attentionInbox"],
-      },
+      // Not auto: the ledger form holds text the engineer is still typing.
+      { id: "attention", label: "Attention", render: attention },
     ],
   },
   {

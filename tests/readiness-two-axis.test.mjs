@@ -228,3 +228,22 @@ test("readinessFor ignores blockers that do not touch its axis", () => {
   ]);
   assert.equal(only.state, "READY");
 });
+
+test("with no open change, the remote axis is unknown rather than ready", () => {
+  const r = deriveReadiness({
+    ...clean,
+    forge: { configured: true, mr: null },
+    reviewInbox: { ...clean.reviewInbox, configured: false, available: false },
+  });
+  assert.equal(r.remoteMerge.state, "UNKNOWN");
+  assert.match(r.remoteMerge.unknown[0].reason, /no open change/);
+  assert.equal(r.localDelivery.state, "READY", "local work is still local work");
+});
+
+test("the uncommitted count is the file count, not the dirty flag", () => {
+  const r = deriveReadiness({
+    ...clean,
+    checkout: { dirty: true, dirtyCount: 7, ahead: 0, behind: 0 },
+  });
+  assert.match(r.localDelivery.blocking[0].title, /7 uncommitted/);
+});
