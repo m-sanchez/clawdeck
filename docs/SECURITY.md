@@ -55,6 +55,47 @@ Bind to `127.0.0.1` by default. Do not expose the panel on all interfaces withou
 - Return only the metadata needed for the UI.
 - Keep SSE streams scoped and bounded.
 
+## The Git + Claude Workbench
+
+The Workbench reads a forge and reasons about what it finds. Its boundary has
+four parts, each pinned by a test:
+
+**No forge mutation exists.** Review and CI access is GET-only over REST; the
+single GraphQL POST carries a frozen read-only query document, and there is no
+mutation document anywhere under `server/forge/`. No `reviewInbox.reply`,
+`reviewInbox.resolve`, `forge.review.approve` or `forge.merge` action is
+routable, so none can be called - by a person, by a page, or by a model. The
+pre-existing `remote.deleteBranch` and `policy.approve` actions are outside this
+boundary and unchanged.
+
+**Tokens stay in `server/forge/*`.** A forge token never reaches the browser,
+the SSE stream, a Claude prompt, a log line, or a stored review record. The
+assist child's environment allowlist contains no `*_TOKEN` (the one credential
+carve-out, `CLAUDE_CODE_OAUTH_TOKEN`, is documented under the Ask subprocess).
+
+**Remote text is contained structurally, and treated as advisory.** Review
+bodies and CI logs are sanitized (C0/C1 controls, bidi overrides and zero-width
+marks stripped), capped, and placed inside a per-packet nonced block that the
+text cannot close - near-miss sentinels are neutralized before assembly. This
+prevents a comment from altering the packet's structure. It does not make the
+text trustworthy: semantic injection remains possible, which is why model output
+is advisory everywhere and can never move state, enter an authoritative
+projection, or change readiness. Only a human action promotes advice.
+
+**Payloads that grow are not in the snapshot.** `/events` is the one tokenless
+stream, so review bodies, task briefs and CI job output never ride it. The
+snapshot carries counts, identities and coverage; the material itself comes from
+token-gated routes (`/api/review-inbox`, `/api/review-inbox/thread`, `/api/ci`,
+`/api/ci/log`). The log route refuses any job id outside the CI read for the
+current commit, so it is not a proxy to the provider's log storage, and the tail
+it returns is secret-scanned fail-closed in both directions: a hit withholds the
+text, and a scanner that cannot be loaded withholds it too.
+
+**A task brief is a file, not a URL.** The `claude-cli://` deep link carries only
+the task id, the brief's path, and a correlation marker. Review comments, diffs
+and code context never enter a URL that browser and OS history retain. The brief
+is secret-scanned before it is written, and a hit refuses the task.
+
 ## The Ask subprocess (`dash.ask`)
 
 The one place the panel starts a Claude session of its own. Its boundary is structural, not advisory:

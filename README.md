@@ -21,6 +21,34 @@ reviews, and delivery state - in one local web UI.
 
 ## Feature tour
 
+**Git + Claude Workbench** (Delivery hub) - what stands between this branch
+and a shipped change, connected to the code and to Claude.
+
+- **Readiness** answers two questions separately, because they are different
+  questions: can the REMOTE change merge, and has all the LOCAL work reached
+  it. A dirty worktree blocks the second and not the first. Each axis is
+  `READY | BLOCKED | UNKNOWN`, and UNKNOWN is a real answer - "I cannot show
+  that you can merge" is not "you can merge".
+- **Review Inbox** imports the PR/MR discussion read-only, maps each comment to
+  the line it now points at (anchor-aware, so a line that moved by eight reads
+  as moved, not changed), and derives a state with its evidence attached. Fact,
+  derivation and model output are three different visual grammars; every derived
+  state has a `Why?` that shows the reasons verbatim.
+- **CI** is read for the commit the change is on, never for "the latest run",
+  and covers every check context - a green Actions run beside a failing
+  external status is `failing`, and an incomplete read is `unknown`, never a
+  pass. Failing jobs offer their output (tail only, secret-scanned) and a
+  scoped `Fix locally` task.
+- **Attention** is what needs a person, kept apart from what blocks delivery:
+  an unpushed commit blocks shipping and needs nobody's judgement, so it never
+  reaches the badge.
+- **Decision ledger** records why the change went the way it did. Claude can
+  draft; only a person can decide, and the record says which.
+
+Clawdeck never writes to the forge. There is no reply, resolve, approve or
+merge action, no mutation document in the provider layer, and model output can
+never move state - only a human action promotes advice into anything.
+
 **Trace waterfall** - every turn of a session broken into tool-call spans
 with real durations: subagent tasks, failing commands, and human-wait spans
 (dashed, width-capped) at a glance.
@@ -176,6 +204,15 @@ a bounded SSE interval. See [ARCHITECTURE.md](ARCHITECTURE.md) and
   its own local store instead of corrupting the shared one.
 - Deep links to Claude are **fail-closed secret-scanned**: a prompt containing
   suspected secret material refuses to become a URL.
+- **The Workbench is read-only against every forge.** REST calls are GETs, the
+  one GraphQL POST carries a frozen read-only query document, and no
+  reply/resolve/approve/merge action exists to be called.
+- **A task brief goes to a file, never a URL.** The deep link carries only the
+  task id, that path and a correlation marker, so review text and diffs never
+  enter browser or OS history.
+- **CI job output is fetched per job, tail-bounded and secret-scanned in both
+  directions**: a hit withholds the text, and a scanner that will not load
+  withholds it too.
 - No shell endpoint. Commands are a fixed allowlist with server-built argv.
 
 Details: [docs/SECURITY.md](docs/SECURITY.md).

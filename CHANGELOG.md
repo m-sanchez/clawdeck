@@ -1,5 +1,54 @@
 # Changelog
 
+## Unreleased
+
+### Git + Claude Workbench
+
+The Delivery hub becomes a workbench: what blocks the change, why, and what to
+do about it - without Clawdeck ever writing to a forge.
+
+- **Review Inbox.** GitHub and GitLab discussions imported read-only, with
+  deterministic thread ids, two coverage axes (threads listed vs resolutions
+  read), anchor-aware line mapping, and a derived state that always carries its
+  own evidence. `REMOTE_RESOLVED` is reachable only from the provider saying so.
+- **Fix locally.** One review comment or one failing check becomes a scoped
+  task. The brief is written to a file and secret-scanned first; the deep link
+  carries only the task id, that path, and a correlation marker. Nothing
+  launches: the human submits the prompt, and the marker is what binds the
+  session - a time window only nominates candidates.
+- **Task lifecycle, separate from outcome.** `CREATED` starts no watchdog,
+  `SETTLED` requires a captured result, and correctly concluding the reviewer is
+  wrong settles as `NO_CHANGE_RECOMMENDED`. Idleness never implies completion.
+- **CI as a positive fact.** Read for the commit the change is on, across
+  check-runs and commit statuses, so an all-green Actions run beside a failing
+  external context reports failing. An incomplete read is `unknown`; an empty
+  failure list is never, by itself, green.
+- **Job output and attribution.** Failing jobs offer a bounded, secret-scanned
+  log tail behind a token-gated route that refuses any job outside this
+  commit's read. Attribution defaults to "no reliable attribution" and names a
+  task only when a marker-bound task changed a file the job itself named.
+- **Two-axis readiness.** `remoteMerge` and `localDelivery`, each
+  `READY | BLOCKED | UNKNOWN`. Stale evidence can be displayed but can never
+  mint READY, and a change with no open PR is UNKNOWN rather than ready.
+- **Attention Inbox.** What needs a person, kept apart from what blocks
+  delivery. Advisory output cannot enter it: there is no argument that puts a
+  suggestion in the authoritative list, and "Add to attention" records the
+  engineer's decision with the assist kept as provenance.
+- **Decision ledger, fix lanes, wait telemetry.** A decision's authority must be
+  stated and can only be human or mechanical policy; lanes group tasks only by
+  mechanical overlap and show the overlap; waits are measured between recorded
+  transitions, so thinking time is never reported as waste.
+
+### Fixed
+
+- The uncommitted-file count read the dirty flag rather than the count, so any
+  dirty tree reported exactly one file.
+- The delivery lifecycle called CI green from the branch's latest run even when
+  local commits had not been pushed - that run belongs to a different commit.
+- A GitHub review anchor could be double-mapped by pairing a current line with
+  an original commit, moving a comment to the wrong line. Found on a live PR.
+
+
 ## 0.3.0
 
 Three flagship features plus security and test-coverage hardening. Several
