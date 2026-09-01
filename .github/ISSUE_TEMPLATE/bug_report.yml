@@ -1,0 +1,65 @@
+name: Bug report
+description: Something in Clawdeck behaves wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For a **security** issue, do not file it here —
+        email contact@miguelsanchez.co.uk instead (see CONTRIBUTING.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The commands you ran and what you clicked, in order.
+      placeholder: |
+        1. npx clawdeck-panel run --checkout ...
+        2. open the panel, go to ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Clawdeck version
+      description: From the panel footer, or `npm view clawdeck-panel version` / your commit SHA.
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      description: Output of `node --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Console output or panel log lines. Redact anything sensitive — do not paste tokens.
+      render: shell
+  - type: checkboxes
+    id: not-security
+    attributes:
+      label: Confirmation
+      options:
+        - label: This is not a security vulnerability (those go to contact@miguelsanchez.co.uk).
+          required: true

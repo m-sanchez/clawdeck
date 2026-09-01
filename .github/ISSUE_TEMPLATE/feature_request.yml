@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest something Clawdeck should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Clawdeck makes hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: A rough sketch of the behaviour. Design details can come later.
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Fit with Clawdeck's constraints
+      description: See CONTRIBUTING.md. These are not blockers for the idea, just a nudge to think about them.
+      options:
+        - label: This does not require a new runtime dependency (or I explain why one is worth it).
+        - label: This keeps the loopback-only, no-shell-endpoint security model intact.
