@@ -13,6 +13,16 @@ import { randomBytes } from "node:crypto";
 import { mkdirSync, rmSync } from "node:fs";
 import { loadEsm } from "./repo-modules.mjs";
 import { buildDashContext } from "./dash-context.mjs";
+import { ASSIST_KINDS, buildAssistPacket } from "./assist-packet.mjs";
+import {
+  clearDraft,
+  markThread,
+  readDraft,
+  readInboxStore,
+  recordAssist,
+  writeDraft,
+  writeInboxStore,
+} from "../core/review-inbox/store.mjs";
 import { markSetup } from "./setup-state.mjs";
 import { runPolicyAction } from "./policy-actions.mjs";
 import { getWorktrees } from "../adapters/worktrees.mjs";
@@ -30,6 +40,9 @@ import {
 
 let validationInFlight = false;
 let askInFlight = false;
+// Assists get their own registry, keyed per thread: sharing dash.ask's
+// process-wide flag would let one review assist block Ask Clawdeck.
+const assistInFlight = new Map();
 
 function bad(message) {
   return { ok: false, error: message };
@@ -416,6 +429,144 @@ export async function runAction(name, params, deps) {
       return result;
     }
 
+    case "reviewInbox.mark": {
+      // An explicit human decision about a thread. Model output can never
+      // reach this path; only a click does.
+      const id = String(params.id ?? "");
+      const mark = String(params.mark ?? "");
+      const store = readInboxStore(ctx.runtimeDir);
+      const marked = markThread(store, id, mark);
+      if (!marked.ok) return bad(marked.error);
+      writeInboxStore(ctx.runtimeDir, marked.store);
+      deps.hub?.broadcast?.("panel", {
+        type: "reviewInbox.marked",
+        id,
+        mark,
+        emittedAt: new Date().toISOString(),
+      });
+      return { ok: true, id, mark };
+    }
+
+    case "reviewInbox.draft": {
+      // Saving a draft is what makes a thread REPLY_DRAFTED - a human action,
+      // never the model's. Nothing is posted to the provider.
+      const id = String(params.id ?? "");
+      const body = String(params.body ?? "");
+      if (body.length > 20000) return bad("Draft is too long (20000 max).");
+      const written = body
+        ? writeDraft(ctx.runtimeDir, id, body)
+        : clearDraft(ctx.runtimeDir, id);
+      if (!written.ok) return bad(written.error);
+      return { ok: true, id, chars: body.length, posted: false };
+    }
+
+    case "reviewInbox.assist": {
+      // Advisory only: a tool-less `claude -p` reads one thread and answers.
+      // It cannot edit code, cannot reach the provider, and its output never
+      // changes any state Clawdeck reports.
+      const id = String(params.id ?? "");
+      const kind = String(params.kind ?? "");
+      if (!/^rt_[0-9a-f]{24}$/.test(id)) return bad("Unknown thread id.");
+      if (!ASSIST_KINDS[kind]) return bad(`Unknown assist kind: ${kind}`);
+      if (assistInFlight.has(id))
+        return bad("An assist is already running for this thread.");
+
+      const inbox = deps.reviewInbox ? await deps.reviewInbox() : null;
+      const item = (inbox?.items || []).find((i) => i.thread.id === id);
+      if (!item) return bad("That thread is not in the current inbox.");
+
+      const built = buildAssistPacket({
+        kind,
+        thread: item.thread,
+        derived: item.derived,
+        facts: item.facts,
+        code: params.code || [],
+        draft: readDraft(ctx.runtimeDir, id)?.body ?? null,
+        nonce: randomBytes(8).toString("hex"),
+      });
+      if (!built.ok) return bad(built.error);
+
+      const scanner = deps.secretScan
+        ? { scanText: deps.secretScan }
+        : await import("./secret-scan.mjs");
+      if (!scanner || typeof scanner.scanText !== "function")
+        return {
+          ok: true,
+          refused: true,
+          stage: "scanner-missing",
+          reason: "Secret scanner unavailable; refused to send the review packet.",
+        };
+      const hits = scanner.scanText(built.payload) || [];
+      if (hits.length)
+        return {
+          ok: true,
+          refused: true,
+          stage: "packet",
+          reason:
+            "The review packet contains suspected secret material; refused to send it.",
+          patterns: [...new Set(hits.map((h) => h.pattern))].sort(),
+        };
+
+      const inv = resolveClaudeInvocation();
+      const sandbox = join(
+        tmpdir(),
+        "clawdeck-assist",
+        randomBytes(6).toString("hex"),
+      );
+      const startedAt = Date.now();
+      try {
+        mkdirSync(sandbox, { recursive: true });
+        const done = runChild(inv.file, inv.argv, {
+          cwd: sandbox,
+          input: built.payload,
+          timeoutMs: 90000,
+          shell: inv.shell,
+          env: askChildEnv(),
+          spawn: deps.spawn,
+          onChild: (child) => assistInFlight.set(id, child),
+        });
+        const r = await done;
+        const elapsedMs = Date.now() - startedAt;
+        const store = readInboxStore(ctx.runtimeDir);
+        const stub = recordAssist(store, id, {
+          kind,
+          ok: r.code === 0 && Boolean(r.stdout.trim()),
+          elapsedMs,
+        });
+        if (stub.ok) writeInboxStore(ctx.runtimeDir, stub.store);
+
+        if (r.code !== 0 || !r.stdout.trim())
+          return bad(
+            `claude -p failed: ${(r.stderr || "no output").slice(0, 300)}`,
+          );
+        return {
+          ok: true,
+          id,
+          kind,
+          answer: r.stdout.trim().slice(0, 20000),
+          elapsedMs,
+          contextChars: built.chars,
+          contextDropped: built.dropped,
+          advisory: true,
+          posted: false,
+        };
+      } finally {
+        assistInFlight.delete(id);
+        rmSync(sandbox, { recursive: true, force: true });
+      }
+    }
+
+    case "reviewInbox.assist.cancel": {
+      // Client-side abort alone would leave the child running and the slot
+      // held, so cancelling actually kills it.
+      const id = String(params.id ?? "");
+      const running = assistInFlight.get(id);
+      if (!running) return { ok: true, cancelled: false };
+      running.kill?.();
+      assistInFlight.delete(id);
+      return { ok: true, cancelled: true };
+    }
+
     case "dash.ask": {
       // Answer a question about the dashboard by shelling out to the local
       // `claude -p` (the user's own plan). The ONLY context that leaves this
@@ -539,6 +690,10 @@ export const ACTION_NAMES = [
   "policy.grantCapability",
   "policy.revokeCapability",
   "dash.ask",
+  "reviewInbox.mark",
+  "reviewInbox.draft",
+  "reviewInbox.assist",
+  "reviewInbox.assist.cancel",
   "config.read",
   "config.save",
   "setup.complete",

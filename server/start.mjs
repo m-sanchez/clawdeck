@@ -555,6 +555,7 @@ const server = http.createServer(async (request, response) => {
         refresh: refreshAndBroadcast,
         resolveWorktree: resolveJobCwd,
         snapshot: currentSnapshot,
+        reviewInbox: async () => inboxCache,
       });
       return sendJson(response, result.ok === false ? 400 : 200, result);
     }

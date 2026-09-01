@@ -25,6 +25,7 @@ import { render as mr } from "./views/mr.mjs";
 import { render as prompt } from "./views/prompt.mjs";
 import { render as cost } from "./views/cost.mjs";
 import { render as delivery } from "./views/delivery.mjs";
+import { render as reviewInbox } from "./views/review-inbox.mjs";
 import { render as health } from "./views/health.mjs";
 import { tabStrip } from "./lib/tabs.mjs";
 import { resolveRoute, canonicalHash } from "./lib/route.mjs";
@@ -125,9 +126,17 @@ const HUBS = [
   {
     key: "delivery",
     label: "Delivery",
-    render: delivery,
-    auto: true,
-    deps: ["delivery"],
+    tabs: [
+      {
+        id: "readiness",
+        label: "Readiness",
+        render: delivery,
+        auto: true,
+        deps: ["delivery", "forge", "reviewInbox"],
+      },
+      // Not auto: it holds filters, expanded threads and in-flight assists.
+      { id: "inbox", label: "Inbox", render: reviewInbox },
+    ],
   },
   {
     key: "health",

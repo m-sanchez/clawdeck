@@ -76,8 +76,11 @@ export function askChildEnv() {
  * Run a child process to completion, capturing stdout/stderr. Async (never
  * blocks the event loop) and never rejects; failures surface as a non-zero code.
  * @param {string} file @param {string[]} argv
+ * `onChild` hands the live handle to the caller so a cancel can actually kill
+ * it; without that, an aborted client fetch would leave the child running.
  * @param {{ cwd?: string, input?: string, timeoutMs?: number, shell?: boolean,
- *           env?: Record<string,string>, spawn?: Function }} [opts]
+ *           env?: Record<string,string>, spawn?: Function,
+ *           onChild?: (child: any) => void }} [opts]
  */
 export function runChild(file, argv, opts = {}) {
   const { cwd, input, timeoutMs = 45000 } = opts;
@@ -89,6 +92,7 @@ export function runChild(file, argv, opts = {}) {
       shell: opts.shell === true,
       ...(opts.env ? { env: opts.env } : {}),
     });
+    opts.onChild?.(child);
     let stdout = "";
     let stderr = "";
     const timer = setTimeout(() => child.kill(), timeoutMs);

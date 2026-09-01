@@ -71,6 +71,10 @@ export const api = {
     ),
   mcp: () => fetch("/api/mcp").then(asJson),
   configMap: () => fetch("/api/config-map").then(asJson),
+  reviewInbox: (refresh) =>
+    fetch(`/api/review-inbox${refresh ? "?refresh=1" : ""}`).then(asJson),
+  reviewThread: (id) =>
+    fetch(`/api/review-inbox/thread?id=${encodeURIComponent(id)}`).then(asJson),
   trace: (session, worktree, turns) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);
