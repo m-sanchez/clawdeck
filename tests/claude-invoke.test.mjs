@@ -85,14 +85,42 @@ test("the isolation set itself is fixed: no tools, no settings, no MCP", () => {
   assert.match(joined, /-p/);
 });
 
-test("the child env allowlist carries no credential-shaped variable", () => {
-  const env = askChildEnv();
-  for (const key of Object.keys(env))
+test("the child env carries only the CLI's own credential, nothing else", () => {
+  const saved = { ...process.env };
+  try {
+    // Everything a leak would look like, set at once.
+    process.env.GITHUB_TOKEN = "gh-secret";
+    process.env.GITLAB_TOKEN = "gl-secret";
+    process.env.ANTHROPIC_API_KEY = "sk-secret";
+    process.env.CLAUDE_CODE_SESSION_ID = "session-123";
+    process.env.CLAUDE_CODE_OAUTH_TOKEN = "the-cli-credential";
+
+    const env = askChildEnv();
+
+    for (const key of ["GITHUB_TOKEN", "GITLAB_TOKEN", "ANTHROPIC_API_KEY"])
+      assert.equal(key in env, false, `${key} must never reach a Claude child`);
     assert.equal(
-      /TOKEN|SECRET|KEY|PASSWORD|CLAUDE_/i.test(key),
+      "CLAUDE_CODE_SESSION_ID" in env,
       false,
-      `${key} must not reach a Claude child`,
+      "a CLAUDE_* variable that steers behaviour is not an auth necessity",
     );
-  // PATH has to be there or the CLI cannot be found at all.
-  assert.ok("PATH" in env || "Path" in env);
+    // The one carve-out: the child's own credential, which `claude setup-token`
+    // installs and without which the CLI cannot authenticate at all.
+    assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, "the-cli-credential");
+    // PATH has to be there or the CLI cannot be found at all.
+    assert.ok("PATH" in env || "Path" in env);
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+  }
+});
+
+test("the credential is absent from the child env when the machine has none", () => {
+  const saved = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  try {
+    assert.equal("CLAUDE_CODE_OAUTH_TOKEN" in askChildEnv(), false);
+  } finally {
+    if (saved !== undefined) process.env.CLAUDE_CODE_OAUTH_TOKEN = saved;
+  }
 });

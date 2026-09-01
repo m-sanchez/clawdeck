@@ -61,7 +61,7 @@ The one place the panel starts a Claude session of its own. Its boundary is stru
 
 - The child is `claude -p` with a **fixed argv**: `--max-turns 1`, `--setting-sources ""` (no user or project instruction files), `--disallowedTools "*"` (no tools), `--strict-mcp-config` (no MCP servers). The question and the snapshot summary travel on **stdin only** - nothing user-controlled reaches the command line.
 - Its working directory is a sterile per-call directory under the OS temp root - outside both the observed checkout and Clawdeck itself, so ancestor discovery finds nothing.
-- Its environment is an **allowlist** (PATH, OS basics, the CLI's auth home); no `CLAUDE_*` or forge-token variables inherit.
+- Its environment is an **allowlist** (PATH, OS basics, the CLI's auth home). Forge tokens and API keys never inherit, and neither does any `CLAUDE_*` variable that steers behaviour. The single exception is `CLAUDE_CODE_OAUTH_TOKEN`: it is the child's own credential, installed by `claude setup-token`, and on a machine authenticated that way the CLI cannot start without it. The usual path is the credential file, reached through `HOME`/`USERPROFILE`, so this is a fallback rather than the norm.
 - The full outbound payload is **secret-scanned fail-closed** first: a scan hit, or an unavailable scanner, refuses the call before any process is spawned; refusals report pattern names, never values.
 - The prompt delimits the snapshot JSON as untrusted evidence and instructs the model to ignore directives inside it.
 

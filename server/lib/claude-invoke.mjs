@@ -64,7 +64,18 @@ export function resolveClaudeInvocation(seams = {}) {
   return { file: "claude", argv: ASK_ARGS, shell: false };
 }
 
-/** Allowlisted child env: auth + OS basics. No CLAUDE_* and no forge token. */
+/**
+ * Allowlisted child env: OS basics, plus the CLI's own credential.
+ *
+ * `CLAUDE_CODE_OAUTH_TOKEN` is the one credential-shaped variable that passes,
+ * and only because it is the child's own: `claude setup-token` installs auth
+ * that way, and on a machine using it the CLI cannot start without it. The
+ * usual auth path is the credential file, reached through HOME/USERPROFILE, so
+ * this is a fallback rather than the norm.
+ *
+ * Everything else stays out - forge tokens, API keys, and any other CLAUDE_*
+ * variable that could steer the child's behaviour rather than authenticate it.
+ */
 export function askChildEnv() {
   const keep = [
     "PATH",
@@ -78,6 +89,7 @@ export function askChildEnv() {
     "LOCALAPPDATA",
     "USERNAME",
     "LANG",
+    "CLAUDE_CODE_OAUTH_TOKEN",
   ];
   const env = {};
   for (const k of keep) if (process.env[k] != null) env[k] = process.env[k];
