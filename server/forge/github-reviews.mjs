@@ -48,7 +48,8 @@ async function getAll(fetchImpl, apiBase, path, token, signal, obs) {
         parseScopeHeader(headerOf(res, "x-oauth-scopes")) ?? obs.scopes ?? null;
       obs.rateLimitRemaining =
         headerOf(res, "x-ratelimit-remaining") ?? obs.rateLimitRemaining;
-      obs.rateLimitReset = headerOf(res, "x-ratelimit-reset") ?? obs.rateLimitReset;
+      obs.rateLimitReset =
+        headerOf(res, "x-ratelimit-reset") ?? obs.rateLimitReset;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const batch = await res.json();
@@ -97,6 +98,37 @@ async function graphqlThreads(fetchImpl, forge, token, number, signal, obs) {
     after = pr.reviewThreads.pageInfo.endCursor;
   }
   return { byRootId, reviewDecision, complete: false };
+}
+
+/**
+ * A line number only means something against the commit it was measured on,
+ * and GitHub reports two frames: `line` is the position on `commit_id` (the
+ * newest commit it could still map the comment to), while `original_line` is
+ * the position on `original_commit_id` where the comment was written. Taking
+ * the line from one frame and the commit from the other maps the anchor twice
+ * and lands on a line nobody reviewed - so the pair is chosen together, newest
+ * first, and `line: null` (the comment could not be mapped forward) falls back
+ * to the original pair.
+ */
+function anchorOf(root) {
+  const current =
+    root.line != null && root.commit_id
+      ? { line: root.line, sha: root.commit_id }
+      : null;
+  const original =
+    root.original_line != null && (root.original_commit_id || root.commit_id)
+      ? {
+          line: root.original_line,
+          sha: root.original_commit_id ?? root.commit_id,
+        }
+      : null;
+  const pick = current ?? original;
+  return {
+    file: root.path ?? null,
+    line: pick?.line ?? null,
+    side: root.side === "LEFT" ? "old" : "new",
+    anchorCommitSha: pick?.sha ?? null,
+  };
 }
 
 /** Group review comments into threads by their root (`in_reply_to_id ?? id`). */
@@ -199,12 +231,7 @@ export async function githubReviewThreads(forge, token, mr, opts = {}) {
           createdAt: root.created_at ?? null,
           updatedAt: list[list.length - 1]?.updated_at ?? root.updated_at,
           observedAt,
-          location: {
-            file: root.path ?? null,
-            line: root.line ?? root.original_line ?? null,
-            side: root.side === "LEFT" ? "old" : "new",
-            anchorCommitSha: root.original_commit_id ?? root.commit_id ?? null,
-          },
+          location: anchorOf(root),
           remote: {
             resolved: enriched ? enriched.resolved : null,
             resolvable: true,

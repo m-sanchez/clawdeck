@@ -142,6 +142,47 @@ test("PR conversation comments become notes, never review threads", async () => 
   assert.equal("remote" in r.notes[0], false, "a note has no resolution state");
 });
 
+test("the anchor keeps its line and commit in the same frame", async () => {
+  // GitHub reports two frames: `line` measured on `commit_id` (the newest
+  // commit it could map the comment to) and `original_line` measured on
+  // `original_commit_id`. Pairing a line from one with a commit from the other
+  // maps the anchor twice and lands on a line nobody reviewed - the exact
+  // defect a real PR surfaced.
+  const fetchImpl = stubFetch({
+    "/pulls/184/comments": [
+      ghReviewComment({
+        id: 1001,
+        line: 13,
+        original_line: 10,
+        commit_id: "newsha1",
+        original_commit_id: "oldsha1",
+      }),
+      // Not mappable forward any more: only the original frame is usable.
+      ghReviewComment({
+        id: 2001,
+        line: null,
+        original_line: 24,
+        commit_id: "oldsha1",
+        original_commit_id: "oldsha1",
+      }),
+    ],
+    "/issues/184/comments": [],
+  });
+  const r = await githubReviewThreads(FORGE, null, MR, { fetchImpl });
+
+  const current = r.threads.find((t) => t.remoteThreadId === "1001");
+  assert.equal(current.location.line, 13);
+  assert.equal(
+    current.location.anchorCommitSha,
+    "newsha1",
+    "line 13 is measured on the newer commit, so that is its anchor",
+  );
+
+  const outdated = r.threads.find((t) => t.remoteThreadId === "2001");
+  assert.equal(outdated.location.line, 24);
+  assert.equal(outdated.location.anchorCommitSha, "oldsha1");
+});
+
 test("pagination stops at the cap and marks the collection incomplete", async () => {
   const page = Array.from({ length: 100 }, (_, i) =>
     ghReviewComment({ id: 3000 + i }),
