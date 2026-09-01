@@ -292,11 +292,18 @@ function actions(app, item, assist, reload) {
       onClick: () => runAssist(app, item, kind),
     });
 
+  // Only offered where a fix attempt exists: a second opinion needs something
+  // to be the second opinion about.
+  const attempted = (item.tasks || []).some((t) =>
+    ["SETTLED", "FAILED", "NEEDS_HUMAN", "STALLED"].includes(t.lifecycle),
+  );
+
   const row = el("div", { class: "btn-row" }, [
     btn("explain", "Explain"),
     btn("investigate", "Investigate"),
     btn("draft-reply", "Draft reply"),
     btn("draft-pushback", "Draft pushback"),
+    attempted ? btn("review-fix", "Review the fix") : null,
     el("button", {
       class: "btn btn-sm",
       type: "button",

@@ -33,6 +33,11 @@ export const ASSIST_KINDS = Object.freeze({
     instruction:
       "Draft a short technical reply to the reviewer, grounded only in the facts and code provided. Do not agree by default. If the evidence is insufficient, say what is missing rather than guessing.",
   },
+  "review-fix": {
+    label: "review-fix",
+    instruction:
+      "A fix was attempted for this review. Judge, from the evidence below, whether the change actually addresses what the reviewer asked, whether it went further than asked, and what is still unverified. You are a second opinion for the engineer: you cannot resolve the thread, you cannot declare the change ready, and observing your own reasoning is not evidence - only the git and test facts below are. If the evidence is insufficient to judge, say exactly what is missing.",
+  },
   "draft-pushback": {
     label: "draft-pushback",
     instruction:
@@ -107,6 +112,24 @@ export function buildAssistPacket(input) {
     unknowns: input.derived?.unknowns ?? [],
   };
 
+  // What a fix attempt actually did, for the second-opinion pass. Lifecycle and
+  // outcome are stated separately from the git facts, so "the agent said it
+  // fixed it" and "these files changed" never blur into one claim.
+  const attempt = input.task
+    ? {
+        lifecycle: input.task.lifecycle ?? null,
+        outcome: input.task.outcome ?? null,
+        filesChanged: (
+          input.task.evidence?.files ??
+          input.task.files ??
+          []
+        ).slice(0, 40),
+        commit: input.task.evidence?.commit ?? input.task.commit ?? null,
+        tests: input.task.evidence?.tests ?? input.task.tests ?? [],
+        note: "Lifecycle and outcome are the agent's own report. Only the files, commit and tests are observed facts.",
+      }
+    : null;
+
   const sections = [
     { key: "rules", text: RULES },
     { key: "task", text: `Task: ${spec.instruction}` },
@@ -114,6 +137,15 @@ export function buildAssistPacket(input) {
       key: "facts",
       text: `Local facts (from git and the provider):\n${JSON.stringify(facts, null, 2)}`,
     },
+    ...(attempt
+      ? [
+          {
+            key: "attempt",
+            text: `The fix attempt under review:
+${JSON.stringify(attempt, null, 2)}`,
+          },
+        ]
+      : []),
     ...input.code.map((c, i) => ({
       key: `code:${i}`,
       text: `${c.label}\n\`\`\`\n${c.body}\n\`\`\``,

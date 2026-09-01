@@ -746,11 +746,22 @@ export async function runAction(name, params, deps) {
       const item = (inbox?.items || []).find((i) => i.thread.id === id);
       if (!item) return bad("That thread is not in the current inbox.");
 
+      // The second-opinion pass needs to see what the fix attempt did. The most
+      // recent task for this thread is the one under review; a thread with no
+      // task gets no attempt section rather than an invented one.
+      const attempt =
+        kind === "review-fix"
+          ? ((item.tasks || []).slice(-1)[0] ?? null)
+          : null;
+      if (kind === "review-fix" && !attempt)
+        return bad("No fix attempt on this thread to review.");
+
       const built = buildAssistPacket({
         kind,
         thread: item.thread,
         derived: item.derived,
         facts: item.facts,
+        task: attempt,
         code: params.code || [],
         draft: readDraft(ctx.runtimeDir, id)?.body ?? null,
         nonce: randomBytes(8).toString("hex"),

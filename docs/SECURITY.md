@@ -95,6 +95,12 @@ current commit, so it is not a proxy to the provider's log storage, and the tail
 it returns is secret-scanned fail-closed in both directions: a hit withholds the
 text, and a scanner that cannot be loaded withholds it too.
 
+**Advisory output cannot certify itself.** The second-pass review sees a fix
+attempt's lifecycle and outcome explicitly labelled as the agent's own report,
+separate from the observed git and test facts, and its result is stored as a
+stub (kind, ok, duration) rather than as state. No assist of any kind moves a
+thread's derived state, changes readiness, or reaches a remote write.
+
 **A task brief is a file, not a URL.** The `claude-cli://` deep link carries only
 the task id, the brief's path, and a correlation marker. Review comments, diffs
 and code context never enter a URL that browser and OS history retain. The brief

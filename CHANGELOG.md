@@ -39,6 +39,16 @@ do about it - without Clawdeck ever writing to a forge.
   mechanical overlap and show the overlap; waits are measured between recorded
   transitions, so thinking time is never reported as waste.
 
+- **Merge policy read from the provider.** GitHub `mergeable`/`mergeable_state`
+  and GitLab `detailed_merge_status` + `blocking_discussions_resolved`, so
+  "can this merge" stops being inferred from a review count. `mergeable: null`
+  (still computing) is unknown rather than a refusal, an unread policy leaves the
+  remote axis UNKNOWN, and being behind the target blocks only where the
+  provider states that rule.
+- **Advisory second pass** (`Review the fix`). Judges whether a fix attempt
+  addresses the review, with the agent's lifecycle/outcome labelled as its own
+  report and the git facts kept separate. It cannot resolve, cannot declare the
+  change ready, and changes no derived state.
 - **GitHub credentials from the `gh` CLI.** When neither the environment nor
   `settings.local.json` holds a `GITHUB_TOKEN`, Clawdeck asks the already
   signed-in `gh` CLI, cached, GitHub-only, and skippable with
