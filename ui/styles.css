@@ -3986,3 +3986,32 @@ textarea:focus-visible {
 .agent-orphan-note {
   margin: 14px 0 6px;
 }
+
+/* ── Review inbox: traceability chain ── */
+.ri-trace {
+  margin: 6px 0 2px 18px;
+}
+.ri-chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  margin-top: 6px;
+}
+.ri-chain-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ri-chain-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.ri-chain-files {
+  margin: 4px 0 0 10px;
+  overflow-wrap: anywhere;
+}

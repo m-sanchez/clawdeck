@@ -226,3 +226,91 @@ test("the summary counts unknown resolution apart from resolved", () => {
   assert.equal(counts.likelyAddressed, 1);
   assert.equal(counts.unread, 1);
 });
+
+const taskFor = (over = {}) => ({
+  id: "task_aaaaaaaaaaaa",
+  lifecycle: "SETTLED",
+  outcome: "CHANGED",
+  sessionId: "sess-1234abcd",
+  evidence: { files: ["src/auth.ts"], commit: { sha: "8bd91f2" }, tests: [] },
+  ...over,
+});
+
+test("a running task says work is under way, never that it worked", () => {
+  for (const lifecycle of ["CREATED", "STARTING", "RUNNING", "STALLED"]) {
+    const r = deriveThreadDisplayState(
+      thread({ remote: { resolved: false } }),
+      null,
+      facts({ fileChanged: true, mapping: { kind: "changed", reasons: [] } }),
+      { now: NOW, tasks: [taskFor({ lifecycle, outcome: null })] },
+    );
+    assert.equal(r.state, STATES.FIX_IN_PROGRESS, lifecycle);
+    assert.notEqual(r.state, STATES.LIKELY_ADDRESSED);
+  }
+});
+
+test("a task waiting to be launched is distinguished from one working", () => {
+  const waiting = deriveThreadDisplayState(thread(), null, facts(), {
+    now: NOW,
+    tasks: [taskFor({ lifecycle: "CREATED", outcome: null, sessionId: null })],
+  });
+  assert.match(waiting.reasons[0], /waiting to be launched/);
+  assert.ok(waiting.evidence.some((e) => /no session bound yet/.test(e.note)));
+
+  const working = deriveThreadDisplayState(thread(), null, facts(), {
+    now: NOW,
+    tasks: [taskFor({ lifecycle: "RUNNING", outcome: null })],
+  });
+  assert.match(working.reasons[0], /working on this thread/);
+});
+
+test("a settled task that changed code strengthens the inference, not its certainty", () => {
+  const r = deriveThreadDisplayState(
+    thread({ remote: { resolved: false } }),
+    null,
+    facts(),
+    { now: NOW, tasks: [taskFor()] },
+  );
+  assert.equal(r.state, STATES.LIKELY_ADDRESSED);
+  assert.equal(r.certainty, "likely", "a task result is still an inference");
+  assert.ok(r.evidence.some((e) => e.kind === "task"));
+  assert.ok(r.evidence.some((e) => /committed in/.test(e.note)));
+  assert.ok(
+    r.reasons.some((x) => /still reports this thread unresolved/.test(x)),
+    "the remote fact stays beside the inference",
+  );
+});
+
+test("a task that concluded the review does not hold asks for a human", () => {
+  const r = deriveThreadDisplayState(
+    thread({ remote: { resolved: false } }),
+    null,
+    facts(),
+    { now: NOW, tasks: [taskFor({ outcome: "NO_CHANGE_RECOMMENDED", evidence: { files: [] } })] },
+  );
+  assert.equal(r.state, STATES.NEEDS_HUMAN);
+  assert.equal(r.authority, "clawdeck");
+  assert.ok(r.evidence.some((e) => /nothing was replied or resolved/.test(e.note)));
+  assert.notEqual(r.state, STATES.LIKELY_ADDRESSED);
+});
+
+test("a failed or cancelled task contributes nothing", () => {
+  for (const lifecycle of ["FAILED", "CANCELLED"]) {
+    const r = deriveThreadDisplayState(thread(), null, facts(), {
+      now: NOW,
+      tasks: [taskFor({ lifecycle, outcome: null })],
+    });
+    assert.equal(r.state, STATES.UNREAD, `${lifecycle} must not speak`);
+  }
+});
+
+test("no task at all leaves the git-only path intact", () => {
+  const r = deriveThreadDisplayState(
+    thread({ remote: { resolved: false } }),
+    null,
+    facts({ fileChanged: true, mapping: { kind: "changed", reasons: ["inside a changed range"] } }),
+    { now: NOW, tasks: [] },
+  );
+  assert.equal(r.state, STATES.LIKELY_ADDRESSED);
+  assert.equal(r.evidence.some((e) => e.kind === "task"), false);
+});

@@ -38,6 +38,14 @@ release closes them and pins each with a test against the real server.
   their cards, so short cards stop leaving holes under tall ones; delivery
   stages and prompt context toggles keep even widths when they wrap; card
   grids wrap instead of stretching before layout runs.
+- **Fix locally, with traceability** (Delivery → Inbox). A review thread can be
+  handed to Claude as a scoped task: the brief is written to a file and the
+  deep link carries only the task id, that path and a correlation marker, so no
+  review text reaches a URL. Nothing is launched - the prompt is prefilled and
+  the task waits until you submit it, at which point the marker binds it to the
+  session that ran it. Each thread then shows the chain it caused: task,
+  session, files, commit, tests, and the remote state, which still reads
+  "reply not posted, thread unresolved" no matter how green the rest looks.
 - **Agent tree** (Activity). The subagents a session spawned, nested by who
   spawned whom, with each agent's own closing report quoted verbatim and
   labelled as its own words. An agent is linked to a parent only when a

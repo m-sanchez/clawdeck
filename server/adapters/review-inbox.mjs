@@ -23,6 +23,8 @@ import {
   writeInboxStore,
 } from "../core/review-inbox/store.mjs";
 import { freshness } from "../core/review-inbox/model.mjs";
+import { readTasks } from "../core/tasks/store.mjs";
+import { tasksForSource } from "../core/tasks/summary.mjs";
 
 /** Data older than this is shown, but can never mint readiness. */
 export const STALE_AFTER_MS = 6 * 60 * 1000;
@@ -88,21 +90,44 @@ export async function getReviewInbox(ctx, input, opts = {}) {
     dirtyFiles: await dirtyFiles(ctx.checkoutRoot),
   });
 
+  // Assisted work is part of a thread's story, so the tasks raised against it
+  // are handed to the derivation rather than discovered by it.
+  const taskStore = readTasks(ctx.runtimeDir);
+
   const items = threads.map((thread) => {
     const local = {
       ...(store.threads[thread.id] || {}),
       draft: drafts.get(thread.id) || null,
     };
+    const tasks = tasksForSource(taskStore, "review", thread.id);
     const derived = deriveThreadDisplayState(
       thread,
       local,
       facts.get(thread.id) || null,
-      { now, changeState: mr.state },
+      { now, changeState: mr.state, tasks },
     );
     return {
       thread,
       derived,
       facts: facts.get(thread.id) || null,
+      // The chain a thread's traceability panel renders: what was asked, what
+      // ran, what it changed. Bodies and briefs stay out; ids and paths are
+      // what a reader needs to follow it.
+      tasks: tasks.map((t) => ({
+        id: t.id,
+        intent: t.intent,
+        lifecycle: t.lifecycle,
+        outcome: t.outcome,
+        sessionId: t.sessionId,
+        reconciliation: t.reconciliation,
+        createdAt: t.createdAt,
+        startedAt: t.startedAt,
+        endedAt: t.endedAt,
+        files: t.evidence?.files ?? [],
+        commit: t.evidence?.commit ?? null,
+        tests: t.evidence?.tests ?? [],
+        packetPath: t.packetPath ?? null,
+      })),
       local: {
         mark: local.mark || "none",
         markAt: local.markAt || null,

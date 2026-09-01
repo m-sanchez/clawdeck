@@ -17,6 +17,7 @@ export const STATES = Object.freeze({
   REMOTE_RESOLVED: "REMOTE_RESOLVED",
   STALE: "STALE",
   NEEDS_HUMAN: "NEEDS_HUMAN",
+  FIX_IN_PROGRESS: "FIX_IN_PROGRESS",
   REPLY_DRAFTED: "REPLY_DRAFTED",
   INVESTIGATING: "INVESTIGATING",
   LIKELY_ADDRESSED: "LIKELY_ADDRESSED",
@@ -32,7 +33,7 @@ const ev = (kind, note, ref) => (ref ? { kind, note, ref } : { kind, note });
  * @param {object} thread   normalized ReviewThread
  * @param {object|null} local  stored marks for this thread
  * @param {object|null} facts  git facts for this thread
- * @param {{now?: number, changeState?: string}} [opts]
+ * @param {{now?: number, changeState?: string, tasks?: object[]}} [opts]
  * @returns {{state: string, authority: string, certainty: string,
  *            reasons: string[], evidence: object[], unknowns: string[]}}
  */
@@ -110,6 +111,63 @@ export function deriveThreadDisplayState(thread, local, facts, opts = {}) {
     );
   }
 
+  // Assisted work on this thread. A task only speaks once it has actually
+  // concluded: one still running says the fix is under way, never that it
+  // worked, and a task that failed says nothing at all.
+  const tasks = opts.tasks ?? [];
+  const settled = tasks.filter((t) => t.lifecycle === "SETTLED");
+  const inFlight = tasks.filter((t) =>
+    ["CREATED", "STARTING", "RUNNING", "NEEDS_HUMAN", "STALLED"].includes(
+      t.lifecycle,
+    ),
+  );
+
+  const pushback = settled.find(
+    (t) => t.outcome === "NO_CHANGE_RECOMMENDED" || t.outcome === "NEEDS_DECISION",
+  );
+  if (pushback) {
+    return out(
+      STATES.NEEDS_HUMAN,
+      "clawdeck",
+      "known",
+      [
+        pushback.outcome === "NO_CHANGE_RECOMMENDED"
+          ? "an assisted task concluded the review does not hold"
+          : "an assisted task needs a decision before it can continue",
+        "the provider still reports this thread unresolved",
+      ],
+      [
+        ev("task", `task ${pushback.id} settled as ${pushback.outcome}`),
+        ev("forge", "nothing was replied or resolved remotely", thread.remoteUrl),
+      ],
+      unknowns,
+    );
+  }
+
+  if (inFlight.length) {
+    const t = inFlight[0];
+    const running = t.lifecycle === "RUNNING" || t.lifecycle === "STARTING";
+    return out(
+      STATES.FIX_IN_PROGRESS,
+      "clawdeck",
+      "known",
+      [
+        running
+          ? "an assisted task is working on this thread"
+          : t.lifecycle === "CREATED"
+            ? "an assisted task is waiting to be launched"
+            : `an assisted task is ${t.lifecycle.toLowerCase().replace("_", " ")}`,
+      ],
+      [
+        ev("task", `task ${t.id} is ${t.lifecycle}`),
+        t.sessionId
+          ? ev("task", `bound to session ${t.sessionId.slice(0, 8)}`)
+          : ev("task", "no session bound yet"),
+      ],
+      unknowns,
+    );
+  }
+
   // Git facts: what the local code says. Never a claim about the remote.
   const changedSince = facts?.fileChanged === true;
   const lineChanged =
@@ -122,13 +180,31 @@ export function deriveThreadDisplayState(thread, local, facts, opts = {}) {
       evidence.push(ev("git", "last touched in", facts.blameSha));
   }
 
-  if (changedSince && lineChanged) {
+  // A settled task that changed code is the strongest evidence available, but
+  // it is still an inference about whether the REVIEW was addressed, so the
+  // certainty stays "likely" and the remote fact stays visible beside it.
+  const settledChanged = settled.find((t) => t.outcome === "CHANGED");
+  if (settledChanged) {
+    evidence.push(
+      ev("task", `task ${settledChanged.id} settled having changed code`),
+    );
+    if (settledChanged.evidence?.commit?.sha)
+      evidence.push(
+        ev("git", "committed in", settledChanged.evidence.commit.sha),
+      );
+    for (const t of settledChanged.evidence?.tests ?? [])
+      if (t.status === "passed") evidence.push(ev("test", `${t.label ?? t.id} passed`));
+  }
+
+  if (settledChanged || (changedSince && lineChanged)) {
     return out(
       STATES.LIKELY_ADDRESSED,
       "clawdeck",
       "likely",
       [
-        "the reviewed range changed after the review",
+        settledChanged
+          ? "an assisted task settled after changing code here"
+          : "the reviewed range changed after the review",
         "the provider still reports this thread unresolved",
       ],
       evidence,

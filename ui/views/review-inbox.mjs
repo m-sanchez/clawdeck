@@ -229,10 +229,16 @@ function threadRow(app, item, reload) {
   if (first)
     li.append(el("p", { class: "ri-body", text: truncate(first.body, 400) }));
 
-  li.append(whyBlock(rows));
-  li.append(actions(app, item, assist, reload));
-  if (assist) li.append(assistBlock(assist));
-  li.append(draftEditor(app, item, assist, reload));
+  // append() stringifies null, so optional blocks are filtered rather than
+  // handed over as-is.
+  for (const block of [
+    whyBlock(rows),
+    actions(app, item, assist, reload),
+    assist ? assistBlock(assist) : null,
+    draftEditor(app, item, assist, reload),
+    traceability(item),
+  ])
+    if (block) li.append(block);
   return li;
 }
 
@@ -291,6 +297,17 @@ function actions(app, item, assist, reload) {
     btn("investigate", "Investigate"),
     btn("draft-reply", "Draft reply"),
     btn("draft-pushback", "Draft pushback"),
+    el("button", {
+      class: "btn btn-sm",
+      type: "button",
+      text: "Fix locally",
+      disabled: (item.tasks || []).some((t) =>
+        ["CREATED", "STARTING", "RUNNING"].includes(t.lifecycle),
+      )
+        ? true
+        : null,
+      onClick: () => startFix(app, item, reload),
+    }),
     el("button", {
       class: "btn btn-sm",
       type: "button",
@@ -372,6 +389,98 @@ function assistBlock(assist) {
     );
   }
   return block;
+}
+
+/**
+ * Hand this thread to Claude as a scoped task. Nothing is launched here: the
+ * action writes the brief to a file and returns a link that PREFILLS a prompt
+ * the engineer still submits, which is why the task starts out awaiting launch.
+ */
+async function startFix(app, item, reload) {
+  const r = await app.api.action("reviewInbox.fix", { id: item.thread.id });
+  if (r?.refused) {
+    app.toast(`Refused: ${r.reason}`, "danger");
+    return;
+  }
+  if (r?.ok === false) {
+    app.toast(r.error || "Could not create the task.", "danger");
+    return;
+  }
+  // The link opens Claude with the prompt ready; submitting it is the human's
+  // act, and only then does the task bind to a session.
+  const a = document.createElement("a");
+  a.href = r.url;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  app.toast(`Task ${r.taskId} created. Submit the prompt in Claude to start it.`, "ok");
+  reload(false);
+}
+
+/**
+ * What this thread caused: the task, the session that ran it, what changed, and
+ * where it landed. The remote state is restated at the end on purpose - a chain
+ * that ends in a green commit still has not replied to anyone.
+ */
+function traceability(item) {
+  const tasks = item.tasks || [];
+  if (!tasks.length) return null;
+
+  const wrap = el("details", { class: "ri-trace" });
+  wrap.append(
+    el("summary", { class: "small" }, [
+      el("span", { text: `Traceability (${tasks.length} task)` }),
+    ]),
+  );
+
+  for (const t of tasks) {
+    const steps = [
+      { label: "thread", value: item.thread.id.slice(0, 10), tone: "neutral" },
+      { label: "task", value: `${t.id} · ${t.lifecycle}${t.outcome ? ` · ${t.outcome}` : ""}` },
+      {
+        label: "session",
+        value: t.sessionId
+          ? `${t.sessionId.slice(0, 8)}${t.reconciliation === "bound" ? "" : " (link unproven)"}`
+          : "not launched yet",
+      },
+      {
+        label: "files",
+        value: t.files.length ? `${t.files.length} changed` : "none recorded",
+      },
+      { label: "commit", value: t.commit?.sha ? t.commit.sha.slice(0, 7) : "none attributed" },
+      {
+        label: "tests",
+        value: t.tests?.length
+          ? t.tests.map((x) => `${x.label ?? x.id}: ${x.status}`).join(", ")
+          : "not observed",
+      },
+      {
+        label: "remote",
+        value:
+          item.thread.remote?.resolved === true
+            ? "resolved"
+            : "reply not posted · thread unresolved",
+        tone: "warn",
+      },
+    ];
+    const row = el("div", { class: "ri-chain" });
+    for (const s of steps)
+      row.append(
+        el("div", { class: "ri-chain-step" }, [
+          el("span", { class: "ri-chain-label muted small", text: s.label }),
+          el("span", { class: "mono small", text: s.value }),
+        ]),
+      );
+    wrap.append(row);
+    if (t.files.length)
+      wrap.append(
+        el("p", {
+          class: "mono small muted ri-chain-files",
+          text: t.files.slice(0, 6).join(", ") + (t.files.length > 6 ? " …" : ""),
+        }),
+      );
+  }
+  return wrap;
 }
 
 /**
