@@ -38,6 +38,11 @@ release closes them and pins each with a test against the real server.
   their cards, so short cards stop leaving holes under tall ones; delivery
   stages and prompt context toggles keep even widths when they wrap; card
   grids wrap instead of stretching before layout runs.
+- **Agent tree** (Activity). The subagents a session spawned, nested by who
+  spawned whom, with each agent's own closing report quoted verbatim and
+  labelled as its own words. An agent is linked to a parent only when a
+  transcript actually contains the Task call that created it; anything
+  unprovable is listed as unattributed rather than guessed into the tree.
 - **Trace span tooltips**. Hover or keyboard-focus a span row to see the
   full story: tool, status, duration, subagent description or input
   summary. Escape dismisses.

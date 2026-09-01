@@ -20,6 +20,7 @@ import { render as commands } from "./views/commands.mjs";
 import { render as diff } from "./views/diff.mjs";
 import { render as timeline } from "./views/timeline.mjs";
 import { render as trace } from "./views/trace.mjs";
+import { render as subagents } from "./views/subagents.mjs";
 import { render as session } from "./views/session.mjs";
 import { render as mr } from "./views/mr.mjs";
 import { render as prompt } from "./views/prompt.mjs";
@@ -67,6 +68,7 @@ const HUBS = [
     tabs: [
       { id: "session", label: "Session", render: session },
       { id: "trace", label: "Trace", render: trace },
+      { id: "agents", label: "Agents", render: subagents },
       { id: "timeline", label: "Timeline", render: timeline },
       { id: "logs", label: "Logs", render: logs },
     ],

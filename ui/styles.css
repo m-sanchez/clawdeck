@@ -3924,3 +3924,65 @@ textarea:focus-visible {
   min-height: 90px;
   resize: vertical;
 }
+
+/* ── Agent tree ── */
+.agent-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agent-node {
+  border-left: 2px solid var(--line-soft);
+  padding-left: 10px;
+}
+.agent-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.agent-head:hover {
+  background: var(--surface-2);
+}
+.agent-caret {
+  color: var(--muted);
+  font-size: 11px;
+}
+.agent-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-body {
+  padding: 4px 8px 10px 22px;
+}
+.agent-report-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.agent-report {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--line);
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+}
+.agent-orphan-note {
+  margin: 14px 0 6px;
+}

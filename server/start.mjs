@@ -63,6 +63,7 @@ import { getWorktrees } from "./adapters/worktrees.mjs";
 import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
 import { getSessionTrace } from "./adapters/session-trace.mjs";
+import { getSubagentTree } from "./adapters/subagent-tree.mjs";
 import {
   pruneSessionRecords,
   getLiveTelemetry,
@@ -1070,6 +1071,36 @@ const server = http.createServer(async (request, response) => {
       }
       const trace = getSessionTrace(file, { maxTurns, sessionLive });
       return sendJson(response, 200, { ...trace, sessionLive });
+    }
+
+    if (path === "/api/subagents") {
+      // The session's subagent tree. Token-gated like the trace: an agent's
+      // closing report carries file paths and command output verbatim.
+      if (!hasPanelToken(request))
+        return sendJson(response, 401, {
+          error: "Missing or invalid panel token",
+        });
+      const sid = (url.searchParams.get("session") || "").trim();
+      if (!/^[0-9a-fA-F-]{8,64}$/.test(sid))
+        return sendJson(response, 400, { error: "Invalid session id." });
+      const wtParam = url.searchParams.get("worktree");
+      let basePath = ctx.checkoutRoot;
+      if (wtParam) {
+        const resolved = await resolveJobCwd(wtParam);
+        if (!resolved)
+          return sendJson(response, 400, {
+            error: "Unknown or invalid worktree.",
+          });
+        basePath = resolved.cwd;
+      }
+      const file = join(
+        homedir(),
+        ".claude",
+        "projects",
+        slugForPath(basePath),
+        `${sid}.jsonl`,
+      );
+      return sendJson(response, 200, getSubagentTree(file));
     }
 
     if (path === "/api/mcp") {

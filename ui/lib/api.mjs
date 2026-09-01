@@ -81,6 +81,11 @@ export const api = {
     if (turns) q.set("turns", String(turns));
     return fetch(`/api/trace?${q}`).then(asJson);
   },
+  subagents: (session, worktree) => {
+    const q = new URLSearchParams({ session });
+    if (worktree) q.set("worktree", worktree);
+    return fetch(`/api/subagents?${q}`).then(asJson);
+  },
   sessionFeed: (session, worktree) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);
