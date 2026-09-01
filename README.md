@@ -37,6 +37,22 @@ windows. Estimates are labelled as estimates; unknowns stay unknown.
 a local `claude -p` child running tool-less in a sterile temp dir; the only
 context sent is a compact, secret-scanned snapshot summary.
 
+Also in the box:
+
+- **Config map** (Configuration) - every rule, slash command, skill, agent,
+  MCP server, and hook the checkout declares to Claude Code, overlaid with
+  what recent sessions actually invoked. Dead config shows up dim.
+- **MCP & skills analytics** (Cost) - per-server call counts, error rates,
+  and durations from recent transcripts: evidence for whether a server earns
+  its context cost.
+- **Host vitals** (Health) - CPU, memory, and checkout-volume disk next to
+  the panel's own self-performance numbers.
+- **Cheap refreshes** - snapshots carry per-section content hashes, so
+  unchanged views skip re-rendering, `/api/snapshot` answers 304, and the
+  page revalidates when you come back to the tab.
+
+Principles:
+
 - **Zero dependencies.** Pure Node stdlib on the server, browser-native ES
   modules in the UI. No build step, no `node_modules`.
 - **Loopback-only.** Binds `127.0.0.1`, refuses foreign `Host` headers, gates
@@ -96,7 +112,7 @@ Restart your Claude Code session afterwards.
 | + event hooks           | live event timeline, per-session activity, delivery lifecycle     |
 | + statusline bridge     | live cost, context-window, and model telemetry per session        |
 | + OTEL exporter pointed at the panel | token/cost metrics via OTLP-JSON                     |
-| + GitHub / GitLab token | MR/PR + pipeline status, merge tracking, notifications            |
+| + forge token           | MR/PR + pipeline status, merge tracking, notifications            |
 
 To point Claude Code's OTEL exporter at the panel, set these before
 launching Claude (the panel prints its port and token on start; the
@@ -130,7 +146,6 @@ and never reach the browser.
 
 ## Roadmap
 
-- Stale-while-revalidate snapshot refresh and dirty-section re-rendering.
 - Session → subagent hierarchy tree view.
 
 ## Architecture
@@ -168,7 +183,7 @@ Details: [docs/SECURITY.md](docs/SECURITY.md).
 ## Development
 
 ```bash
-npm test              # node --test (354 tests)
+npm test              # node --test
 npm run self-test     # boots the server against this repo and checks /health
 ```
 
