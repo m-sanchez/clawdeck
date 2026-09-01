@@ -206,13 +206,36 @@ export function render(app) {
     paintAside();
     paintLog();
   };
-  store._onJobLog = (jobId, line) => {
+  // The tokenless stream only says a job advanced; the lines come from the
+  // bearer-gated job route. Fetches are coalesced so a chatty job cannot turn
+  // one line of output into one request.
+  let logFetchPending = false;
+  let logFetchQueued = false;
+  store._onJobProgress = (jobId) => {
     if (jobId !== store.openJobId) return;
-    const body = logPanelEl.querySelector(".job-log-body");
-    if (body) {
-      body.append(logLine(line));
-      body.scrollTop = body.scrollHeight;
+    if (logFetchPending) {
+      logFetchQueued = true;
+      return;
     }
+    logFetchPending = true;
+    const pull = async () => {
+      try {
+        const detail = await app.api.job(store.openJobId);
+        if (detail?.id === store.openJobId) {
+          store.jobLogs[detail.id] = detail.lines || [];
+          paintLog();
+        }
+      } catch {
+        /* job gone, or the panel is shutting down */
+      }
+      if (logFetchQueued) {
+        logFetchQueued = false;
+        setTimeout(pull, 250);
+        return;
+      }
+      logFetchPending = false;
+    };
+    setTimeout(pull, 120);
   };
 
   paintJobs();

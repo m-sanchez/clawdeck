@@ -125,11 +125,16 @@ export class JobManager {
     job.lines.push({ level, line });
     if (job.lines.length > MAX_LINES)
       job.lines.splice(0, job.lines.length - MAX_LINES);
+    // The line itself stays here. /events is the one tokenless stream, so it
+    // carries the fact that output happened - never the output. A command's
+    // stdout can contain anything the command chose to print, including
+    // secrets, and anything that can reach the loopback port can read this
+    // stream. Text comes from GET /api/jobs/:id, which requires the bearer.
     this.hub.broadcast("job", {
-      type: "job.log",
+      type: "job.progress",
       jobId: job.id,
       level,
-      line,
+      lineCount: job.lines.length,
       emittedAt: new Date().toISOString(),
     });
   }

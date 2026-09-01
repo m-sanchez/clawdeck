@@ -87,7 +87,13 @@ is advisory everywhere and can never move state, enter an authoritative
 projection, or change readiness. Only a human action promotes advice.
 
 **Payloads that grow are not in the snapshot.** `/events` is the one tokenless
-stream, so review bodies, task briefs and CI job output never ride it. The
+stream, so review bodies, task briefs and CI job output never ride it. Panel
+job output is included: the stream carries `job.progress` (a level and a line
+count) and the panel fetches the text from the bearer-gated
+`GET /api/jobs/:id`. This is enforced on the wire by
+`tests/events-payload-scope.test.mjs`, which runs a real job and asserts its
+stdout never reaches an unauthenticated listener - the claim was true of the
+design and false of the code until that test was written. The
 snapshot carries counts, identities and coverage; the material itself comes from
 token-gated routes (`/api/review-inbox`, `/api/review-inbox/thread`, `/api/ci`,
 `/api/ci/log`). The log route refuses any job id outside the CI read for the

@@ -868,11 +868,10 @@ function desktopNotify(title, body) {
 function pushEvent(event) {
   // Job lifecycle/log events drive the command cockpit live.
   if (typeof event.type === "string" && event.type.startsWith("job.")) {
-    if (event.type === "job.log") {
-      const list = (store.jobLogs[event.jobId] ||= []);
-      list.push({ level: event.level, line: event.line });
-      if (list.length > 600) list.splice(0, list.length - 600);
-      store._onJobLog?.(event.jobId, { level: event.level, line: event.line });
+    if (event.type === "job.progress") {
+      // The open stream says a job produced output, not what it produced.
+      // The text is fetched from the token-gated job route instead.
+      store._onJobProgress?.(event.jobId, event.lineCount);
     } else if (event.job) {
       upsertJob(event.job);
       if (event.type === "job.completed") {
