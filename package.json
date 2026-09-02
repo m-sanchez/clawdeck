@@ -8,6 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/m-sanchez/clawdeck.git"
   },
+  "homepage": "https://github.com/m-sanchez/clawdeck#readme",
   "engines": {
     "node": ">=20"
   },

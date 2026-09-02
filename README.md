@@ -8,6 +8,7 @@
 
 [![CI](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml/badge.svg)](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f0ad3d)](LICENSE)
+[![npm](https://img.shields.io/npm/v/clawdeck-panel?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/clawdeck-panel)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-2f6f3f)](package.json)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-f0ad3d)](package.json)
 [![GitHub stars](https://img.shields.io/github/stars/m-sanchez/clawdeck?style=social)](https://github.com/m-sanchez/clawdeck/stargazers)
