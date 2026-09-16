@@ -2752,7 +2752,7 @@ kbd {
 .clawd-mini:hover {
   transform: translateY(-3px);
 }
-.clawd-mini clawd-assistant {
+.clawd-mini :is(clawd-assistant, ocelin-assistant) {
   position: absolute;
   left: 50%;
   bottom: 0;

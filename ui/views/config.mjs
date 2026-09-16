@@ -35,7 +35,7 @@ export function render(app) {
   const presentation = card("Presentation", [
     field("Theme", themeSel, "Defaults to your OS preference."),
     field(
-      "Clawd motion",
+      "Ocelin motion",
       motionSel,
       "Reduced/none also respected automatically via prefers-reduced-motion.",
     ),
@@ -47,7 +47,7 @@ export function render(app) {
     field(
       "Idle patrol",
       patrolSel,
-      "When off, Clawd stays planted even while idle.",
+      "When off, Ocelin stays planted even while idle.",
     ),
   ]);
 
@@ -76,26 +76,26 @@ export function render(app) {
   const browserNote = card("Browser opening", [
     el("p", {
       class: "muted small",
-      text: "Automatic browser opening is a launcher setting in Clawdeck's panel.config.json (browser.openByDefault) applied by the launcher. It is server-side and cannot be changed from the browser.",
+      text: "Automatic browser opening is a launcher setting in Ocelin's panel.config.json (browser.openByDefault) applied by the launcher. It is server-side and cannot be changed from the browser.",
     }),
   ]);
 
   const devSection = cfg.devMode
     ? card("Development / demo", [
         field(
-          "Clawd demo cycling",
+          "Ocelin demo cycling",
           choice(["off", "on"], cfg.demo, (v) => set(app, "demo", v), "demo"),
-          "Cycles every Clawd state for inspection. Development only, never drives production state.",
+          "Cycles every Ocelin state for inspection. Development only, never drives production state.",
         ),
         el("p", {
           class: "muted small",
-          text: "Dev mode is active (?dev=1 or ?clawdDemo=1). In production this section is hidden and Clawd reflects only real workflow state.",
+          text: "Dev mode is active (?dev=1 or ?clawdDemo=1). In production this section is hidden and Ocelin reflects only real workflow state.",
         }),
       ])
     : card("Development / demo", [
         el("p", {
           class: "muted small",
-          text: "Hidden in production. Append ?dev=1 to the URL to expose demo controls. Clawd never cycles fake states outside demo mode.",
+          text: "Hidden in production. Append ?dev=1 to the URL to expose demo controls. Ocelin never cycles fake states outside demo mode.",
         }),
       ]);
 

@@ -1,0 +1,295 @@
+{
+  "collectedOn": "2026-09-16",
+  "files": [
+    {
+      "path": "upstream/claude-deck/LICENSE",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/LICENSE",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/LICENSE",
+      "license": "MIT",
+      "bytes": 1070,
+      "sha256": "bbd46a02e9a73eefbd5dd3c3d884849c3001ef9fad6f68b2dc75f83c86b1cd1b"
+    },
+    {
+      "path": "upstream/claude-deck/scripts/session-common.ps1",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-common.ps1",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-common.ps1",
+      "license": "MIT",
+      "bytes": 16085,
+      "sha256": "e5245b3b68616fd600b67bfe0c373f52daac7525583bf5db060c892d9ef53a72"
+    },
+    {
+      "path": "upstream/claude-deck/scripts/session-tracker.ps1",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-tracker.ps1",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-tracker.ps1",
+      "license": "MIT",
+      "bytes": 9867,
+      "sha256": "94ddf65b69973901395278d82702a7205a34b02f04f720c8c82284d2a6d15572"
+    },
+    {
+      "path": "upstream/claude-deck/scripts/session-tray.ps1",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-tray.ps1",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-tray.ps1",
+      "license": "MIT",
+      "bytes": 22277,
+      "sha256": "1b103e0b4fb4bf6b9c8a4f4e8edd352c40efed6f51cd1583c6c9eb189cce6d8d"
+    },
+    {
+      "path": "upstream/claude-deck/scripts/session-view.ps1",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-view.ps1",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-view.ps1",
+      "license": "MIT",
+      "bytes": 145542,
+      "sha256": "d40a9648a2f4b9c0568616767f48889da04c23fbd9482bcf8ae7d6f46157cc6b"
+    },
+    {
+      "path": "upstream/claude-deck/scripts/session-ui-interop.ps1",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "source": "https://github.com/hydropix/claude-deck/blob/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-ui-interop.ps1",
+      "download": "https://raw.githubusercontent.com/hydropix/claude-deck/26e1195cb98d4a3f0f4901c6150f5610eb2d34cb/scripts/session-ui-interop.ps1",
+      "license": "MIT",
+      "bytes": 9350,
+      "sha256": "8184f9ad855ad4ad957d04da3840dcef6b5966cbb34d7847eddf2033abbb9330"
+    },
+    {
+      "path": "upstream/agentbar-windows/LICENSE",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/LICENSE",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/LICENSE",
+      "license": "MIT",
+      "bytes": 1072,
+      "sha256": "8f236cf7a3d75981c065801d3962f5dbc07df9862147a9e6c41cde27938468ff"
+    },
+    {
+      "path": "upstream/agentbar-windows/THIRD_PARTY_NOTICES.md",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/THIRD_PARTY_NOTICES.md",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/THIRD_PARTY_NOTICES.md",
+      "license": "MIT",
+      "bytes": 381,
+      "sha256": "cf3feac7bd78ef026d8b9efddff0004eba9dd9cdd472f5bdb09c8b2edf6ac233"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Models/Session.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Models/Session.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Models/Session.cs",
+      "license": "MIT",
+      "bytes": 3792,
+      "sha256": "4f8860641e09baa107ec3fc6a879055a7d2bcb9fe301ef14c886903d08fc3259"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Models/SessionState.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Models/SessionState.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Models/SessionState.cs",
+      "license": "MIT",
+      "bytes": 992,
+      "sha256": "c4e0bd7af544175b092a7afbe698b1f8c5c977a4db27c97b5ddee02cb7ad9bd0"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Stores/SessionStore.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/SessionStore.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/SessionStore.cs",
+      "license": "MIT",
+      "bytes": 3374,
+      "sha256": "3573760e24ceb354c19f0c378cb595c05237f0930d2039050ef933c1edd1d3e9"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Stores/Autostart.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/Autostart.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/Autostart.cs",
+      "license": "MIT",
+      "bytes": 1139,
+      "sha256": "4774ff6667f5858e01a33596aa97a1636745be68084e29e091ce71218502a333"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Stores/HookInstaller.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/HookInstaller.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Stores/HookInstaller.cs",
+      "license": "MIT",
+      "bytes": 12597,
+      "sha256": "e65d25a2e4a2ae8de98b1b958b4b8a490cff64ab6fa6a1c1eeabc25179604d51"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Tray/TrayController.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Tray/TrayController.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Tray/TrayController.cs",
+      "license": "MIT",
+      "bytes": 7146,
+      "sha256": "e9e88021d9eb4ca53bf72f16184be53f5e166dd8f69e285e4760ed77ac62f91d"
+    },
+    {
+      "path": "upstream/agentbar-windows/src/AgentBar/Tray/PopoverWindow.xaml.cs",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Tray/PopoverWindow.xaml.cs",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/src/AgentBar/Tray/PopoverWindow.xaml.cs",
+      "license": "MIT",
+      "bytes": 8787,
+      "sha256": "9397cebd848801b633f76eb0dc42fcb168d59c22ec86e13929b31817714e1783"
+    },
+    {
+      "path": "upstream/agentbar-windows/scripts/hooks/claude/update.js",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/scripts/hooks/claude/update.js",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/scripts/hooks/claude/update.js",
+      "license": "MIT",
+      "bytes": 2412,
+      "sha256": "0c6783964fb5e286a64d941bfad10374b9a836827b65c349a99e5b847858d088"
+    },
+    {
+      "path": "upstream/agentbar-windows/scripts/hooks/claude/lifecycle.js",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "source": "https://github.com/michalstrnadel/AgentBar-Windows/blob/e9afe13d4792b9cf31b28bc87bc7e655c3071103/scripts/hooks/claude/lifecycle.js",
+      "download": "https://raw.githubusercontent.com/michalstrnadel/AgentBar-Windows/e9afe13d4792b9cf31b28bc87bc7e655c3071103/scripts/hooks/claude/lifecycle.js",
+      "license": "MIT",
+      "bytes": 3311,
+      "sha256": "5f7f4e3652827ba14d1727e54aab24cceb0d8dbf06e7d376942575f4edd82270"
+    },
+    {
+      "path": "upstream/agentbar-electron/LICENSE",
+      "repository": "racase/agentbar",
+      "commit": "4a175910af8be2b340f40954b6f33182b7f28dec",
+      "source": "https://github.com/racase/agentbar/blob/4a175910af8be2b340f40954b6f33182b7f28dec/LICENSE",
+      "download": "https://raw.githubusercontent.com/racase/agentbar/4a175910af8be2b340f40954b6f33182b7f28dec/LICENSE",
+      "license": "MIT",
+      "bytes": 1078,
+      "sha256": "8c079a951f12a7d523174a51982969cd787099a36aa145f48210ad51c0f3b22c"
+    },
+    {
+      "path": "upstream/agentbar-electron/electron/main.cjs",
+      "repository": "racase/agentbar",
+      "commit": "4a175910af8be2b340f40954b6f33182b7f28dec",
+      "source": "https://github.com/racase/agentbar/blob/4a175910af8be2b340f40954b6f33182b7f28dec/electron/main.cjs",
+      "download": "https://raw.githubusercontent.com/racase/agentbar/4a175910af8be2b340f40954b6f33182b7f28dec/electron/main.cjs",
+      "license": "MIT",
+      "bytes": 18141,
+      "sha256": "2eb7b4d6d761daedfd199353f8bc09b58e466d64e3bc5860cee38ade29856987"
+    },
+    {
+      "path": "upstream/codex-usage-monitor/LICENSE",
+      "repository": "upstream-ray/codex-usage-monitor",
+      "commit": "5cbe8d7ae9e0a8b15571999d48e656e07f960faf",
+      "source": "https://github.com/upstream-ray/codex-usage-monitor/blob/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/LICENSE",
+      "download": "https://raw.githubusercontent.com/upstream-ray/codex-usage-monitor/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/LICENSE",
+      "license": "MIT",
+      "bytes": 1072,
+      "sha256": "971432c33b4f727cedc42b6640c26ec929059719ad1116e11fd7e92bb5436b59"
+    },
+    {
+      "path": "upstream/codex-usage-monitor/src/native_interop.rs",
+      "repository": "upstream-ray/codex-usage-monitor",
+      "commit": "5cbe8d7ae9e0a8b15571999d48e656e07f960faf",
+      "source": "https://github.com/upstream-ray/codex-usage-monitor/blob/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/native_interop.rs",
+      "download": "https://raw.githubusercontent.com/upstream-ray/codex-usage-monitor/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/native_interop.rs",
+      "license": "MIT",
+      "bytes": 7161,
+      "sha256": "486269f0d5bdf731265a35cf0d6feb03b2649ddc03fafc548dc2a14e762e9e76"
+    },
+    {
+      "path": "upstream/codex-usage-monitor/src/window.rs",
+      "repository": "upstream-ray/codex-usage-monitor",
+      "commit": "5cbe8d7ae9e0a8b15571999d48e656e07f960faf",
+      "source": "https://github.com/upstream-ray/codex-usage-monitor/blob/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/window.rs",
+      "download": "https://raw.githubusercontent.com/upstream-ray/codex-usage-monitor/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/window.rs",
+      "license": "MIT",
+      "bytes": 141891,
+      "sha256": "ba31b555621f94bfefcba40324ab388113f8a7c31280eea86c2d0b3d29bc6b87"
+    },
+    {
+      "path": "upstream/codex-usage-monitor/src/tray_icon.rs",
+      "repository": "upstream-ray/codex-usage-monitor",
+      "commit": "5cbe8d7ae9e0a8b15571999d48e656e07f960faf",
+      "source": "https://github.com/upstream-ray/codex-usage-monitor/blob/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/tray_icon.rs",
+      "download": "https://raw.githubusercontent.com/upstream-ray/codex-usage-monitor/5cbe8d7ae9e0a8b15571999d48e656e07f960faf/src/tray_icon.rs",
+      "license": "MIT",
+      "bytes": 5241,
+      "sha256": "4254f9e1c6fb1edd78692bc7a2ea92e7840cbc546b8a02bf0dec718540039736"
+    },
+    {
+      "path": "upstream/codexmonitor/LICENSE",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/LICENSE",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/LICENSE",
+      "license": "MIT",
+      "bytes": 1072,
+      "sha256": "df17aae89ce4705d0a6e5f7b46eeea3b9023967ecad948f8779b47039eb55a8b"
+    },
+    {
+      "path": "upstream/codexmonitor/src-tauri/src/tray.rs",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src-tauri/src/tray.rs",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src-tauri/src/tray.rs",
+      "license": "MIT",
+      "bytes": 22684,
+      "sha256": "72bbddbcf6dc97c4156c807b565c193f7b2f848019b62e5ebe4f663eef5b9111"
+    },
+    {
+      "path": "upstream/codexmonitor/src/features/app/hooks/useResponseRequiredNotificationsController.ts",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useResponseRequiredNotificationsController.ts",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useResponseRequiredNotificationsController.ts",
+      "license": "MIT",
+      "bytes": 1212,
+      "sha256": "6700cad0a8bda84dbf0208a5540613954a0998179da03638326a3388ad6ca3de"
+    },
+    {
+      "path": "upstream/codexmonitor/src/features/app/hooks/useTrayRecentThreads.ts",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useTrayRecentThreads.ts",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useTrayRecentThreads.ts",
+      "license": "MIT",
+      "bytes": 3992,
+      "sha256": "ac8aee5fde84403a22bb1a005d7eb72e3c18eed297dbeb8c2bbd403bfdf89e60"
+    },
+    {
+      "path": "upstream/codexmonitor/src/features/app/hooks/useSystemNotificationThreadLinks.ts",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useSystemNotificationThreadLinks.ts",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/app/hooks/useSystemNotificationThreadLinks.ts",
+      "license": "MIT",
+      "bytes": 3192,
+      "sha256": "e3bcc0f22e6eb49e353628128b679ebf3197a77d8939643234edd928aa42122d"
+    },
+    {
+      "path": "upstream/codexmonitor/src/features/notifications/hooks/useAgentResponseRequiredNotifications.ts",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "source": "https://github.com/Dimillian/CodexMonitor/blob/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/notifications/hooks/useAgentResponseRequiredNotifications.ts",
+      "download": "https://raw.githubusercontent.com/Dimillian/CodexMonitor/dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5/src/features/notifications/hooks/useAgentResponseRequiredNotifications.ts",
+      "license": "MIT",
+      "bytes": 11586,
+      "sha256": "c5f9d20fb0ff71e8d083ce187b5872cb242b2a0594e6f24116fdf29b1cc4390f"
+    }
+  ]
+}

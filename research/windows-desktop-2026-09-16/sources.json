@@ -1,0 +1,55 @@
+{
+  "collectedOn": "2026-09-16",
+  "purpose": "Selected upstream source references for desktop planning; not application dependencies.",
+  "projects": [
+    {
+      "id": "claude-deck",
+      "repository": "hydropix/claude-deck",
+      "commit": "26e1195cb98d4a3f0f4901c6150f5610eb2d34cb",
+      "license": "MIT",
+      "files": ["LICENSE", "scripts/session-common.ps1", "scripts/session-tracker.ps1", "scripts/session-tray.ps1", "scripts/session-view.ps1", "scripts/session-ui-interop.ps1"]
+    },
+    {
+      "id": "agentbar-windows",
+      "repository": "michalstrnadel/AgentBar-Windows",
+      "commit": "e9afe13d4792b9cf31b28bc87bc7e655c3071103",
+      "license": "MIT",
+      "files": ["LICENSE", "THIRD_PARTY_NOTICES.md", "src/AgentBar/Models/Session.cs", "src/AgentBar/Models/SessionState.cs", "src/AgentBar/Stores/SessionStore.cs", "src/AgentBar/Stores/Autostart.cs", "src/AgentBar/Stores/HookInstaller.cs", "src/AgentBar/Tray/TrayController.cs", "src/AgentBar/Tray/PopoverWindow.xaml.cs", "scripts/hooks/claude/update.js", "scripts/hooks/claude/lifecycle.js"]
+    },
+    {
+      "id": "agentbar-electron",
+      "repository": "racase/agentbar",
+      "commit": "4a175910af8be2b340f40954b6f33182b7f28dec",
+      "license": "MIT",
+      "files": ["LICENSE", "electron/main.cjs"]
+    },
+    {
+      "id": "codex-usage-monitor",
+      "repository": "upstream-ray/codex-usage-monitor",
+      "commit": "5cbe8d7ae9e0a8b15571999d48e656e07f960faf",
+      "license": "MIT",
+      "files": ["LICENSE", "src/native_interop.rs", "src/window.rs", "src/tray_icon.rs"]
+    },
+    {
+      "id": "codexmonitor",
+      "repository": "Dimillian/CodexMonitor",
+      "commit": "dd61b9abd37de5ded86e82b9fe8a83fd49d46fa5",
+      "license": "MIT",
+      "files": ["LICENSE", "src-tauri/src/tray.rs", "src/features/app/hooks/useResponseRequiredNotificationsController.ts", "src/features/app/hooks/useTrayRecentThreads.ts", "src/features/app/hooks/useSystemNotificationThreadLinks.ts", "src/features/notifications/hooks/useAgentResponseRequiredNotifications.ts"]
+    }
+  ],
+  "ideasOnly": [
+    {
+      "repository": "superset-sh/superset",
+      "source": "https://github.com/superset-sh/superset/blob/main/apps/docs/content/docs/agent-status.mdx",
+      "licenseSource": "https://github.com/superset-sh/superset/blob/main/LICENSE.md",
+      "reason": "Root license inspected: Elastic License 2.0. Keep as a UX reference; source not included in this MIT reference collection."
+    },
+    {
+      "repository": "Renaissance-Mind/Runlight",
+      "commit": "c26d518550386d1e85edf319d250cd0b7c81a0d4",
+      "source": "https://github.com/Renaissance-Mind/Runlight/tree/c26d518550386d1e85edf319d250cd0b7c81a0d4",
+      "reason": "No root license returned by the GitHub license endpoint, and no license file identified in the inspected tree. Reuse permission unresolved; source not copied."
+    }
+  ]
+}

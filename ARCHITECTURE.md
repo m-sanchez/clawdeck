@@ -1,5 +1,9 @@
 # Architecture
 
+## Optional Windows companion
+
+Ocelin's optional `desktop/` Electron package owns the tray, floating bar, windows and notifications. One `server/monitor/worker.mjs` utility process discovers local Codex and Claude sessions, reduces lifecycle evidence and persists metadata checkpoints. Renderer IPC exposes named actions for known sessions. The existing loopback project backend starts only when a project is opened; `server/monitor/shared.mjs` supplies its session rows from the shared collector. The browser-only launcher remains independent. See [Windows desktop](docs/WINDOWS-DESKTOP.md) for the compatibility and trust boundaries.
+
 ## Boundary
 
 ```text
@@ -20,10 +24,17 @@ server/ (Node stdlib only)
           │
           ▼
 The observed checkout's own scripts and git state, plus Claude Code's
-harness-level files (~/.claude/projects, ~/.claude/tasks)
+harness-level files (~/.claude/projects, ~/.claude/tasks), plus Codex
+rollouts ($CODEX_HOME/sessions, default ~/.codex/sessions)
 ```
 
 The browser is never a privileged filesystem or shell client.
+
+Codex discovery reads bounded rollout headers to match session working directories
+to observed worktrees. Metadata and bounded tail summaries are cached; completion
+markers override recent file activity. Codex messages and calls normalize into the
+existing feed and trace contracts, behind the same token and worktree validation.
+Dollar costs remain unknown when the transcript does not report them.
 
 ## Install root vs observed checkout
 

@@ -57,7 +57,7 @@ export function render(app) {
           onClick: () =>
             copyText(
               app,
-              `/implement resolve the ${r.findings.length} review finding(s) on this branch listed in Clawdeck (rules: ${[...new Set(r.findings.map((f) => f.ruleId).filter(Boolean))].join(", ") || "see review-readiness"}). Fix the root cause, do not suppress.`,
+              `/implement resolve the ${r.findings.length} review finding(s) on this branch listed in Ocelin (rules: ${[...new Set(r.findings.map((f) => f.ruleId).filter(Boolean))].join(", ") || "see review-readiness"}). Fix the root cause, do not suppress.`,
             ),
         })
       : null,

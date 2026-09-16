@@ -1,6 +1,6 @@
 // @ts-check
 /** Panel SPA bootstrap: router, store, SSE wiring, Clawd integration, config. */
-import "./clawd/clawd-element.mjs";
+import "./ocelin/ocelin-element.mjs";
 import { bootstrapToken } from "./lib/token-bootstrap.mjs";
 import { el, clear, relTime, absTime, forgeLabel } from "./lib/dom.mjs";
 import { api, connectEvents } from "./lib/api.mjs";
@@ -183,6 +183,9 @@ const NAV_ORDER = HUBS.map((h) => h.key);
 // Old single-route links (and any external bookmarks) redirect to their hub/tab,
 // so existing app.navigate("#/reviews") call sites keep working unchanged.
 const ROUTE_ALIASES = {
+  session: "activity/session",
+  trace: "activity/trace",
+  subagents: "activity/agents",
   runs: "run/runs",
   commands: "run/commands",
   timeline: "activity/timeline",
@@ -434,7 +437,7 @@ function updateClawdSwarm() {
   host.dataset.key = key;
   clear(host);
   for (const { a, state } of items) {
-    const mascot = el("clawd-assistant", {
+    const mascot = el("ocelin-assistant", {
       state,
       patrol: "off",
       badge: "off",
@@ -1062,7 +1065,7 @@ function statusReport() {
   if (!s) return null;
   const lines = [];
   const c = s.checkout || {};
-  lines.push(`# Clawdeck status: ${c.branch || "(detached)"}`);
+  lines.push(`# Ocelin status: ${c.branch || "(detached)"}`);
   lines.push("");
   lines.push(`- Checkout: ${c.id || "?"} (${c.branch || "(detached)"})`);
   lines.push(`- Working tree: ${c.dirty ? `${c.dirtyCount} dirty` : "clean"}`);
@@ -1260,6 +1263,9 @@ function decorateNavKeys() {
 function boot() {
   // Before any request: take the token out of the fragment and clean the URL.
   bootstrapToken();
+  const requested = new URLSearchParams(location.search);
+  if (["codex", "claude"].includes(requested.get("provider")) && /^[a-zA-Z0-9_-]{1,128}$/.test(requested.get("session") || ""))
+    store.feedSession = { id: requested.get("session"), provider: requested.get("provider") };
   applyConfig();
   initTooltips();
   decorateNavKeys();

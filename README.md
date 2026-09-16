@@ -1,10 +1,30 @@
-<p align="center">
-  <img src="docs/assets/social-preview.png" width="640" alt="Clawdeck: a local dashboard for Claude Code - sessions, events, cost, worktrees and reviews. Zero dependencies, loopback-only, MIT." />
-  <br />
-  <img src="docs/assets/clawd-patrol-v2.gif" width="560" alt="Clawd on patrol, scuttling from side to side" />
-</p>
+<p align="center"><img src="docs/assets/ocelin-banner.svg" width="780" alt="Ocelin: your agents, in view. Codex and Claude, locally." /></p>
 
-# Clawdeck
+# Ocelin
+
+Formerly Clawdeck. A local companion for **Codex and Claude Code**, with an optional **Windows tray, floating session bar, and full dashboard**. Choose any combination; they share one monitor.
+
+[Website](https://miguelsanchez.co.uk/ocelin/) · [Windows preview downloads](https://github.com/m-sanchez/clawdeck/releases) · [Desktop setup and compatibility](docs/WINDOWS-DESKTOP.md)
+
+The browser core keeps zero runtime dependencies. The optional desktop package bundles Electron and Node. The repository URL, npm package and `clawdeck` command remain compatible; `ocelin` is an additional CLI alias.
+
+## Windows companion
+
+Download the x64 installer from Releases. Sign-in startup and lifecycle hooks are optional. The preview is unsigned; automatic updates are not enabled.
+
+![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)
+
+![Ocelin floating session bar with sample sessions](docs/assets/ocelin-bar.png)
+
+From source (Node 22.12 or newer):
+
+```powershell
+cd desktop
+npm ci
+npm start
+```
+
+## Browser dashboard
 
 [![CI](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml/badge.svg)](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f0ad3d)](LICENSE)
@@ -13,12 +33,14 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-0-f0ad3d)](package.json)
 [![GitHub stars](https://img.shields.io/github/stars/m-sanchez/clawdeck?style=social)](https://github.com/m-sanchez/clawdeck/stargazers)
 
-An **unofficial local dashboard for Claude Code**. Point it at any project you
-work on with Claude Code and it shows what is actually happening: live
+An **unofficial local dashboard for Claude Code and Codex**. Point it at any project you
+work on with either assistant and it shows what is actually happening: live
 sessions, an event timeline, cost and context telemetry, git worktrees,
 reviews, and delivery state - in one local web UI.
 
-![The Clawdeck overview dashboard, dark theme](docs/assets/dashboard.png)
+Existing project dashboard (screenshot from the earlier Clawdeck release):
+
+![Project overview dashboard, dark theme](docs/assets/dashboard.png)
 
 ## Feature tour
 
@@ -46,7 +68,7 @@ and a shipped change, connected to the code and to Claude.
 - **Decision ledger** records why the change went the way it did. Claude can
   draft; only a person can decide, and the record says which.
 
-Clawdeck never writes to the forge. There is no reply, resolve, approve or
+Ocelin never writes to the forge. There is no reply, resolve, approve or
 merge action, no mutation document in the provider layer, and model output can
 never move state - only a human action promotes advice into anything.
 
@@ -62,7 +84,7 @@ windows. Estimates are labelled as estimates; unknowns stay unknown.
 
 ![Cost hub: burn KPIs, forecast card, per-model history](docs/assets/cost.png)
 
-**Ask Clawdeck** (Prompt hub) - ask questions about panel state, answered by
+**Ask Ocelin** (Prompt hub) - ask questions about panel state, answered by
 a local `claude -p` child running tool-less in a sterile temp dir; the only
 context sent is a compact, secret-scanned snapshot summary.
 
@@ -89,13 +111,16 @@ Principles:
 - **Degrades gracefully.** Everything works read-only on a bare git repo; more
   signal appears as you opt in to the hooks, statusline bridge, and OTEL.
 
-> Clawdeck is a community project. It is not affiliated with or endorsed by
-> Anthropic.
+> Ocelin is a community project. It is not affiliated with or endorsed by
+> Anthropic or OpenAI.
 
 ## Quickstart
 
+The 0.4 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
+
 ```bash
-npx clawdeck-panel run --checkout /path/to/your/project
+npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.4.0/clawdeck-panel-0.4.0.tgz
+ocelin run --checkout /path/to/your/project
 ```
 
 Or from a clone:
@@ -107,16 +132,21 @@ node scripts/panel-run.mjs --checkout /path/to/your/project
 ```
 
 That alone gives you the git-level views (worktrees, diff, commits, MR draft)
-and session liveness from Claude Code's own transcript files — zero setup,
+and session liveness from Claude Code and Codex's local transcript files — zero setup,
 nothing written to your project, one loopback server that stops when you
 close it.
 
-> **`npx` vs a clone for `init`.** The one-off `run` above is fine over
-> `npx`. But `init` (below) writes generated `/panel` slash commands that
-> reference the panel's install path — under `npx` that is the npm cache
-> directory, which npm may garbage-collect. If you plan to keep the
-> integration installed, run `init` from a clone (or a global install) so
-> the referenced path is stable.
+Codex sessions are discovered automatically under `CODEX_HOME/sessions`
+(`~/.codex/sessions` by default), matched to the observed checkout and its
+git worktrees. Local desktop and CLI sessions appear with a **Codex** label;
+the Session and Trace views show messages, tool results, durations, and
+recorded token usage. Completed or interrupted turns show as idle.
+Discovery polls up to 5,000 recent rollout files and reads bounded transcript
+headers and tails; archived and cloud-only sessions are not included.
+Codex cost is unknown, and the hook timeline, cost dashboard, task lists,
+and subagent tree remain Claude Code integrations.
+
+Use a clone or global install for `init`, which writes generated `/panel` slash commands referencing the install path. Temporary npm cache paths can be garbage-collected.
 
 ## Install the integration (optional, recommended)
 
@@ -124,7 +154,7 @@ The event timeline, activity feed, and cost views are fed by a tiny hook +
 statusline bridge you install into the observed project:
 
 ```bash
-npx clawdeck-panel init --target /path/to/your/project --statusline
+ocelin init --target /path/to/your/project --statusline
 ```
 
 `init` copies the emitter hook (and its lib) into the project's
@@ -157,12 +187,12 @@ export OTEL_EXPORTER_OTLP_HEADERS=x-panel-token=<panel-token>
 
 ## Forge connectors
 
-Clawdeck auto-detects the project's git host from `origin` and speaks to it
+Ocelin auto-detects the project's git host from `origin` and speaks to it
 read-only:
 
 - **GitHub** (github.com + GHES) - PRs, review threads, and checks.
   `GITHUB_TOKEN` optional for reading a public repo's status; needed for review
-  resolution and job logs. If the `gh` CLI is signed in, Clawdeck uses that
+  resolution and job logs. If the `gh` CLI is signed in, Ocelin uses that
   credential rather than asking you to configure a second one
   (`CLAWDECK_NO_GH_CLI=1` turns that off).
 - **GitLab** (gitlab.com + self-hosted) - MRs and pipelines. Needs
@@ -178,7 +208,7 @@ or come from the signed-in `gh` CLI for GitHub, and never reach the browser.
 
 ## Roadmap
 
-- Session → subagent hierarchy tree view.
+See the [delivery tracker](docs/IMPLEMENTATION-ROADMAP.md) and [Windows compatibility notes](docs/WINDOWS-DESKTOP.md). Native Windows local monitoring and the three selectable surfaces are implemented in the 0.4 preview. Future work includes WSL/remote sources, reserved-edge AppBar mode, and richer session hierarchy navigation.
 
 ## Architecture
 

@@ -22,8 +22,8 @@ const SCRIPTS = {
 const [command, ...rest] = process.argv.slice(2);
 const script = SCRIPTS[command ?? ""];
 if (!script) {
-  console.log("Clawdeck — a local dashboard for Claude Code.");
-  console.log("\nUsage: clawdeck <command> [options]\n");
+  console.log("Ocelin: a local dashboard for Codex and Claude Code.");
+  console.log("\nUsage: ocelin <command> [options] (clawdeck also works)\n");
   console.log("Commands:");
   console.log("  run        Start the panel (opens the dashboard)");
   console.log("  full       Start the panel and keep it in the foreground");

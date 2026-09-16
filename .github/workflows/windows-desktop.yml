@@ -1,0 +1,42 @@
+name: Windows desktop
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', '.github/workflows/windows-desktop.yml']
+  push:
+    branches: [main]
+    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', '.github/workflows/windows-desktop.yml']
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+        working-directory: desktop
+      - run: npm run dist
+        working-directory: desktop
+      - name: Packaged smoke check with isolated source fixtures
+        shell: pwsh
+        run: |
+          Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+          foreach ($mode in @('all', 'dashboard-only')) {
+            node desktop/smoke-fixture.mjs ".ocelin-smoke/$mode" "--$mode"
+            $env:OCELIN_DATA_DIR = Join-Path $PWD ".ocelin-smoke/$mode/data"
+            $ocelin = Start-Process -FilePath "$PWD/desktop/dist/win-unpacked/Ocelin.exe" -ArgumentList '--smoke-test --background' -WindowStyle Hidden -PassThru -Wait
+            if ($ocelin.ExitCode -ne 0) { Get-Content "$env:OCELIN_DATA_DIR/proof/report.json"; exit 1 }
+            Get-Content "$env:OCELIN_DATA_DIR/proof/report.json"
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Ocelin-Windows-x64-preview
+          path: |
+            desktop/dist/*setup.exe
+            .ocelin-smoke/*/data/proof/*

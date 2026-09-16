@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Ocelot icon at 32 pixels">
+    <path fill="#d9a252" d="M2 1h3v3h6V1h3v1h1v4h1v7h-2v1H2v-1H0V6h1V2h1z"/>
+    <path fill="#edbd77" d="M5 4h6v1H5z"/>
+    <path fill="#bd853f" d="M2 13h12v1H2z"/>
+    <path fill="#885e36" d="M2 2h1v2H2zM12 2h1v2h-1zM4 5h1v1H4zM10 5h1v1h-1z"/>
+    <path fill="#493527" d="M4 7h2v3H4zM10 7h2v3h-2z"/>
+  </svg>

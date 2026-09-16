@@ -12,6 +12,7 @@ import {
 import { sparkline, donut, lines } from "../lib/charts.mjs";
 import { masonry } from "../lib/masonry.mjs";
 import { pulseStrip } from "../lib/pulse.mjs";
+import { providerLabel } from "../lib/session-picker.mjs";
 
 function agentsCard(s, app) {
   const sess = s?.sessions ?? { agents: [], activeCount: 0 };
@@ -27,7 +28,7 @@ function agentsCard(s, app) {
         shown.map((a) => agentItem(a, app)),
       )
     : emptyState(
-        "No Claude sessions found.",
+        "No Claude Code or Codex sessions found.",
         "Sessions appear per checkout as you work in them.",
       );
   const body = trend ? el("div", {}, [trend, list]) : list;
@@ -35,7 +36,7 @@ function agentsCard(s, app) {
     `Agents${sess.activeCount ? ` (${sess.activeCount} active)` : ""}`,
     body,
     {
-      help: "A Claude Code session working in a checkout/worktree. Active = its transcript was updated in the last 12 minutes. This is your real interactive activity (Runs below are autoloop runs only).",
+      help: "Claude Code and Codex sessions in this checkout and its worktrees. Recent transcript activity indicates liveness; recorded completion marks a session idle.",
       aside: el("button", {
         class: "link-btn",
         text: "Worktrees →",
@@ -116,6 +117,7 @@ function approvalControls(a, app) {
 /** Runtime-truth chips per agent: event state, workflow, model, context, cost. */
 function agentMeta(a, app) {
   const chips = [
+    pill(providerLabel(a.provider), "neutral"),
     a.eventState ? pill(a.eventState, statusTone(a.eventState)) : null,
     a.workflow
       ? pill(
@@ -252,6 +254,7 @@ function openSession(app, a) {
     id: a.latestSessionId,
     path: a.path,
     branch: a.branch,
+    provider: a.provider || "claude",
   };
   app.navigate("#/activity/session");
 }
@@ -273,16 +276,14 @@ function normPath(p) {
 
 const LIVE_WINDOW_MS = 3 * 60 * 1000;
 
-/**
- * Live board across every worktree: which ones have a Claude session and how much
- * uncommitted work is churning in each, right now. The committed-history cards
- * can't see in-progress edits; this can. Each row jumps to that worktree's
- * working-tree diff.
- */
 function liveActivityCard(s, app) {
   const wts = s?.worktrees ?? [];
   const byPath = new Map();
-  for (const a of s?.sessions?.agents ?? []) byPath.set(normPath(a.path), a);
+  for (const a of s?.sessions?.agents ?? []) {
+    const key = normPath(a.path);
+    const previous = byPath.get(key);
+    if (!previous || (!previous.active && a.active)) byPath.set(key, a);
+  }
   const now = Date.now();
   const rows = wts.map((w) => {
     const agent = byPath.get(normPath(w.path));
@@ -334,7 +335,7 @@ function liveActivityCard(s, app) {
     body,
     {
       class: "card-wide",
-      help: "Every worktree, with its Claude session and uncommitted churn. Active = a session is live or a file changed in the last 3 minutes. Click a row to see that worktree's in-progress diff. Updates every refresh.",
+      help: "Every worktree, with its assistant sessions and uncommitted churn. Active = a session is live or a file changed in the last 3 minutes. Click a row to see that worktree's in-progress diff. Updates every refresh.",
       aside: el("span", {
         class: "muted small",
         text: dirtyTotal ? `${dirtyTotal} uncommitted file(s)` : "all clean",
@@ -444,7 +445,7 @@ function throughputCard(s) {
     body = el("div", {}, [host, legend]);
   }
   return card("Throughput", body, {
-    help: "Live counts sampled since the panel started: active Claude agents, running panel jobs, and active autoloop runs. Resets on restart.",
+    help: "Live counts sampled since the panel started: active assistant sessions, running panel jobs, and active autoloop runs. Resets on restart.",
   });
 }
 
@@ -840,7 +841,7 @@ function activeRunsCard(active, app, selected) {
         "Start an autoloop run from the launcher in Runs.",
       );
   return card(`Active runs (${active.length})`, body, {
-    help: "Tracked autoloop runs (bounded iterative loops). Your interactive Claude sessions are in the Agents card, not here, so this is often empty even when you're busy.",
+    help: "Tracked autoloop runs (bounded iterative loops). Your interactive assistant sessions are in the Agents card, so this is often empty even when you're busy.",
     aside: el("button", {
       class: "link-btn",
       text: "All runs →",

@@ -175,7 +175,7 @@ function ciFailureRow(app, ci, f) {
           })
         : el("span", {
             class: "muted small",
-            text: "no log Clawdeck can fetch for this check",
+            text: "no log Ocelin can fetch for this check",
           }),
       f.inspectable
         ? el("button", {

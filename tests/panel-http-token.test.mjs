@@ -14,6 +14,7 @@ import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CODEX_ID, CODEX_OTHER_ID, writeCodexRollout } from "./helpers/codex-fixture.mjs";
 
 const PANEL = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CHECKOUT = PANEL;
@@ -53,6 +54,9 @@ async function waitFor(fn, timeoutMs = 25000) {
 before(async () => {
   port = await freePort();
   runtime = mkdtempSync(join(tmpdir(), "panel-token-"));
+  const codexHome = join(runtime, "codex");
+  writeCodexRollout(codexHome, CHECKOUT);
+  writeCodexRollout(codexHome, join(runtime, "unrelated"), undefined, CODEX_OTHER_ID);
   child = spawn(process.execPath, [ENTRY], {
     cwd: PANEL,
     env: {
@@ -63,6 +67,7 @@ before(async () => {
       PANEL_RUNTIME_DIR: runtime,
       PANEL_CHECKOUT_ID: "token-test",
       PANEL_NONCE: "test-nonce",
+      CODEX_HOME: codexHome,
     },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
@@ -137,6 +142,29 @@ test("/api/trace validates the session id and returns the trace shape", async ()
   assert.equal(typeof body.sessionLive, "boolean");
   // No `turns` param means the adapter default, never a clamp of Number(null)=0.
   assert.equal(body.caps.maxTurns, 20);
+});
+
+test("Codex feeds and traces require the token and enforce checkout scope", async () => {
+  for (const route of ["session-feed", "trace"]) {
+    const path = `/api/${route}?provider=codex&session=${CODEX_ID}`;
+    assert.equal((await get(path, null)).status, 401);
+    assert.equal((await get(path, "wrong")).status, 401);
+    assert.equal((await get(path.replace("provider=codex", "provider=other"), token)).status, 400);
+    assert.equal((await get(path + "&worktree=" + encodeURIComponent(runtime), token)).status, 400);
+    const result = await (await get(path, token)).json();
+    assert.equal(result.provider, "codex");
+    assert.equal(result.session, CODEX_ID);
+    if (route === "session-feed") assert.ok(result.events.some((e) => e.kind === "tool"));
+    else {
+      assert.equal(result.turns.length, 1);
+      assert.equal(result.sessionLive, false);
+    }
+    const other = await (await get(path.replace(CODEX_ID, CODEX_OTHER_ID), token)).json();
+    assert.equal(other.missing, true);
+  }
+  const snapshot = await (await get("/api/snapshot", token)).json();
+  assert.ok(snapshot.sessions.agents.some((a) => a.provider === "codex" && a.latestSessionId === CODEX_ID));
+  assert.ok(!snapshot.sessions.agents.some((a) => a.latestSessionId === CODEX_OTHER_ID));
 });
 
 test("the right token is accepted", async () => {

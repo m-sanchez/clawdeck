@@ -3,4 +3,10 @@ vendor/
 .claude/.runtime/
 *.local.json
 *.tgz
+desktop/dist/
+desktop/assets/*.ico
+desktop/assets/*.png
+.ocelin-smoke/
+desktop/*.log
+.ocelin-test-results.log
 .claude/

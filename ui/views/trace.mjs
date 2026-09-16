@@ -10,6 +10,7 @@ import {
   agentsList,
   pickSession,
   sessionPicker,
+  providerLabel,
 } from "../lib/session-picker.mjs";
 
 const POLL_MS = 4000;
@@ -54,7 +55,7 @@ export function render(app) {
   const refresh = () => {
     if (!sel) return;
     app.api
-      .trace(sel.id, sel.path || undefined)
+      .trace(sel.id, sel.path || undefined, undefined, sel.provider)
       .then((d) => {
         if (!host.isConnected) {
           if (pollTimer) clearInterval(pollTimer);
@@ -79,7 +80,7 @@ export function render(app) {
     clear(host).append(
       emptyState(
         "No sessions to trace.",
-        "Sessions appear here as Claude Code works in this checkout or its worktrees.",
+        "Sessions appear here as Claude Code or Codex works in this checkout or its worktrees.",
       ),
     );
   }
@@ -115,7 +116,7 @@ function renderMeta(hostEl, sel, d) {
       el("span", { class: `agent-dot ${d.sessionLive ? "on" : ""}` }),
       el("span", { text: d.sessionLive ? "live" : "ended" }),
     ]),
-    el("span", { class: "mono", text: d.model || "claude" }),
+    el("span", { class: "mono", text: d.model || providerLabel(sel.provider) }),
     el("span", { text: sel.branch || "" }),
     el("span", {
       text: `${(d.turns || []).length} turn(s)${d.truncated ? " · older history truncated" : ""}`,
@@ -129,7 +130,7 @@ function renderTrace(app, host, d) {
     host.append(
       emptyState(
         "Transcript not found.",
-        "This session has no transcript file under ~/.claude/projects for this checkout.",
+        "No local transcript was found for this session in the selected checkout.",
       ),
     );
     return;

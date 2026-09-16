@@ -1,16 +1,8 @@
 // @ts-check
-/**
- * Sessions / agents adapter. Each Claude Code checkout keeps a session transcript
- * dir under `~/.claude/projects/<munged-path>/`; a recently-modified `*.jsonl` is a
- * live agent. We read only transcript filenames + mtimes (never transcript CONTENT)
- * and map each dir back to its worktree. The session's task list is read separately
- * from the purpose-built harness task store at `~/.claude/tasks/<sessionId>/` (one
- * tiny JSON per task), so the panel can show "how far is each agent through its
- * task list" without parsing the multi-MB transcript.
- */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getCodexSessions } from "./codex-sessions.mjs";
 
 const ACTIVE_MS = 12 * 60 * 1000;
 const SAMPLE_FRESH_MS = 3 * 60 * 1000;
@@ -131,13 +123,15 @@ export function getSessions(ctx, worktrees, ownSessionId, telemetry) {
   const tasksRoot = join(homedir(), ".claude", "tasks");
   const now = Date.now();
   const agents = [];
-  for (const w of worktrees || []) {
+  const observed = worktrees?.length ? worktrees : [{ path: ctx.checkoutRoot, branch: "", isCurrent: true }];
+  for (const w of observed) {
     const dir = join(projectsRoot, slugForPath(w.path));
     const a = dirActivity(dir);
     if (a.count === 0) continue;
     const sample = telemetry?.sessions?.[a.latest] ?? null;
     const sampleAgeMs = sample && sample.ageMs != null ? sample.ageMs : null;
     agents.push({
+      provider: "claude",
       branch: w.branch || "(detached)",
       path: w.path,
       isCurrent: Boolean(w.isCurrent),
@@ -167,6 +161,7 @@ export function getSessions(ctx, worktrees, ownSessionId, telemetry) {
       rejected: false,
     });
   }
+  agents.push(...getCodexSessions(observed));
   agents.sort((x, y) =>
     String(y.lastActivity || "").localeCompare(String(x.lastActivity || "")),
   );

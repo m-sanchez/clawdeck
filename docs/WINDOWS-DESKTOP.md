@@ -1,0 +1,70 @@
+# Ocelin for Windows
+
+Ocelin is the new product and mascot identity for Clawdeck. The existing repository URL, npm package, launcher commands, configuration keys, session stores, and canonical Clawd reference remain compatible.
+
+## Install and run
+
+Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.4 preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
+
+For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, then `npm start`. `npm run pack` produces an unpacked app; `npm run dist` produces the NSIS installer. The browser core continues to need only Node 20 or newer and no runtime npm dependencies.
+
+## Choose your surfaces
+
+- **Windows tray:** running and attention counts, a quick panel, and a menu to reopen windows or quit.
+- **Floating bar:** compact session chips, overflow into the dashboard, draggable position, optional always-on-top, and compact or comfortable density.
+- **Dashboard:** global session search and provider identity; select a session to open the existing project dashboard with its feed, trace, worktrees, reviews, cost and delivery views.
+
+All three share one collector and notification owner. Closing a window hides it. Explicit Quit stops Ocelin's monitor and project backend, without stopping Codex or Claude. Ocelin retains a recovery surface when every option is switched off. Display changes clamp saved window positions to an available work area. Relaunching a second instance brings back the dashboard.
+
+Preferences, checkpoints, notification history and acknowledgements live in `%LOCALAPPDATA%\Ocelin`. Provider transcripts stay where their provider wrote them. The monitor saves metadata and file offsets, not transcript contents. Saved native task names, session IDs and project paths are local metadata. Uninstall preserves these preferences so reinstalling is reversible.
+
+## Sources and state
+
+Default discovery reads `%CODEX_HOME%\sessions` (or `~/.codex/sessions`) and `%CLAUDE_CONFIG_DIR%\projects` (or `~/.claude/projects`). Add additional local source folders from Settings. Claude Desktop metadata is joined by `cliSessionId`, not by matching project names. Subagents carry parent identity when present. Codex's optional `session_index.jsonl` supplies native task names.
+
+Discovery is bounded to 2,000 recent transcript files per source, selected by modification time from at most 20,000 entries. Settings reports a reached limit. Historical entries older than 30 days are pruned from Ocelin's metadata. Reconciliation runs approximately every 30 seconds; active files are incrementally read on a three-second cycle after the previous cycle finishes. Initial discovery of a large history takes longer. Checkpoints restore the last known state while reconciliation runs.
+
+| Signal | Meaning |
+| --- | --- |
+| Lifecycle hook | A locally received provider lifecycle event |
+| Transcript inference | State inferred from local records; not a provider status API |
+| Stale activity | No update for 15 minutes; outcome remains unknown |
+| Turn finished | An explicit observed end of a response, not proof an entire task is complete |
+| Seen | Acknowledges this signal without changing the agent's execution state |
+
+Late events for an older known turn cannot finish a newer turn. Notification identities and acknowledgements survive restart. Historical events do not generate a notification storm. Quiet mode, provider/project muting, optional completion notices and sound settings apply at the shared notification owner. Windows notification policy also applies.
+
+## Optional hooks
+
+Settings previews the exact hook groups before any write. Applying creates a backup and preserves unrelated hooks and settings. Remove uses the recorded command ownership list and removes only Ocelin handlers. A changed configuration invalidates an older preview. The capture process writes only session ID, cwd, timestamp, turn ID when available and lifecycle state, with bounded input and a short timeout.
+
+Codex stores these in its home `hooks.json`; Claude uses its home `settings.json`. **Codex requires review and trust through `/hooks` before new hooks run.** Existing sessions may need restarting. The app cannot grant hook trust on your behalf. Remove the integrations in Ocelin before uninstalling if you enabled them. Backups are in Ocelin's `hooks` data directory; selective removal is preferable to restoring an entire older provider configuration.
+
+Installed versions inspected during development: Codex CLI 0.153.2, Claude Code 2.1.260, Electron 44.4.1. Transcript formats can change. Diagnostics show source availability and the time of the last actual hook received; merely installing hooks does not imply live coverage.
+
+| Host | Local transcript monitoring | Optional lifecycle coverage | Return navigation |
+| --- | --- | --- | --- |
+| Codex CLI / native Codex local tasks | Implemented | Session, prompt, tool, permission, stop, interrupt; provider trust required | Ocelin project feed and project folder |
+| Claude Code CLI | Implemented | Session, prompt, tool, permission, stop, failure, permission notification | Ocelin project feed and project folder |
+| Claude Desktop Code local sessions | Implemented when a local CLI transcript exists | Depends on the host loading the configured hooks; last-received diagnostic is authoritative | Ocelin project feed and project folder |
+| WSL, remote/cloud-only sessions | Not included | Not included | Not included |
+
+Exact native task deep links are not assumed. Ocelin does not click approval buttons, resume tasks, or synthesize keystrokes in either provider.
+
+## Boundaries and packaging
+
+The desktop package is isolated under `desktop/`; the core server and UI still use built-ins only. Sandboxed renderers have no Node access. IPC validates the window, frame, action and arguments. Folder/project actions resolve known session IDs, rather than accept arbitrary paths from a renderer. Navigation is restricted. The existing backend stays token-gated and bound to `127.0.0.1` with strict Host validation. A selected project starts one owned utility-process backend; no project backends or git polling are started for the global tray/bar monitor.
+
+Packaged backend children use Electron's bundled Node mode. Ocelin owns only the utility processes it starts and never stops a standalone dashboard. The approved Ocelin art extends the original state/motion implementation; the canonical Clawd reference remains unchanged.
+
+## Validation and preview limits
+
+Automated coverage includes independent providers and sessions, late turn events, partial UTF-8 records, growth with unchanged mtime, truncation/rotation, checkpoint recovery, notification deduplication, privacy filtering, selective hook install/removal and stale previews, all surface combinations, and offscreen placement recovery. Existing HTTP authorization, checkout scoping and Codex feed/trace tests remain required.
+
+Native Windows and packaged-build results are recorded in the delivery tracker as they are performed. Signing requires a release certificate. WSL, remote sources, reserved-edge AppBar mode, Explorer embedding, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
+
+## Sources and attribution
+
+The research and licensed reference extracts are in [Windows research](WINDOWS-DESKTOP-RESEARCH.md) and `research/windows-desktop-2026-09-16/`. The desktop implementation is written for this repository; external reference code has not been pasted into the runtime.
+
+Primary integration references: [Codex hooks](https://learn.chatgpt.com/docs/hooks), [Claude hooks](https://code.claude.com/docs/en/hooks), [Electron utility processes](https://www.electronjs.org/docs/latest/api/utility-process), [Electron security](https://www.electronjs.org/docs/latest/tutorial/security).

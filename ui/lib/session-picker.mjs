@@ -11,13 +11,32 @@ export function agentsList(app) {
   );
 }
 
+export function providerLabel(provider) {
+  return provider === "codex" ? "Codex" : "Claude Code";
+}
+
+function selection(agent) {
+  return {
+    id: agent.latestSessionId,
+    path: agent.path,
+    branch: agent.branch,
+    provider: agent.provider || "claude",
+  };
+}
+
+function sessionKey(agent) {
+  return `${agent.provider || "claude"}:${agent.latestSessionId}`;
+}
+
 export function pickSession(app, agents) {
   const want = app.store.feedSession;
-  if (want && agents.some((a) => a.latestSessionId === want.id)) return want;
+  const selected = want && agents.find((a) =>
+    a.latestSessionId === want.id &&
+    (a.provider || "claude") === (want.provider || "claude"),
+  );
+  if (selected) return selection(selected);
   const active = agents.find((a) => a.active) || agents[0];
-  return active
-    ? { id: active.latestSessionId, path: active.path, branch: active.branch }
-    : null;
+  return active ? selection(active) : null;
 }
 
 /** @returns {HTMLSelectElement} */
@@ -29,19 +48,17 @@ export function sessionPicker(app, agents, sel) {
         class: "input",
         onChange: (e) => {
           const id = /** @type {HTMLSelectElement} */ (e.target).value;
-          const a = agents.find((x) => x.latestSessionId === id);
-          app.store.feedSession = a
-            ? { id: a.latestSessionId, path: a.path, branch: a.branch }
-            : null;
+          const a = agents.find((x) => sessionKey(x) === id);
+          app.store.feedSession = a ? selection(a) : null;
           app.rerender();
         },
       },
       agents.length
         ? agents.map((a) =>
             el("option", {
-              value: a.latestSessionId,
-              text: `${a.branch || a.latestSessionId.slice(0, 8)}${a.active ? " · live" : ""}`,
-              selected: sel && a.latestSessionId === sel.id ? true : null,
+              value: sessionKey(a),
+              text: `${providerLabel(a.provider)} · ${a.branch || "(detached)"} · ${a.latestSessionId.slice(0, 8)}${a.active ? " · live" : ""}`,
+              selected: sel && sessionKey(a) === `${sel.provider || "claude"}:${sel.id}` ? true : null,
             }),
           )
         : [el("option", { value: "", text: "No sessions" })],

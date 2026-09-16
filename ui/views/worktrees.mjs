@@ -474,11 +474,18 @@ function branchAgeBadge(w) {
 
 function worktreeCard(w, app) {
   const services = w.services ?? [];
-  const agent = (app.snapshot?.sessions?.agents ?? []).find(
+  const agents = (app.snapshot?.sessions?.agents ?? []).filter(
     (a) => a.path === w.path,
   );
+  const activeAgents = agents.filter((a) => a.active);
+  const sessionCount = agents.reduce((n, a) => n + a.sessionCount, 0);
+  const lastActivity = agents
+    .map((a) => a.lastActivity).filter(Boolean).sort().at(-1);
+  const activeProviders = new Set(
+    activeAgents.map((a) => a.provider === "codex" ? "Codex" : "Claude"),
+  );
   const aside = el("div", { class: "wt-tags" }, [
-    agent?.active ? pill("claude active", "ok") : null,
+    ...[...activeProviders].map((name) => pill(`${name} active`, "ok")),
     w.isCurrent ? pill("this worktree", "info") : null,
     w.registered
       ? pill(`slot ${w.slot}`, "neutral")
@@ -570,8 +577,8 @@ function worktreeCard(w, app) {
       `HEAD ${w.head || "?"}`,
       w.processActive ? " · processes active" : "",
       w.lastActivity ? ` · active ${relTime(w.lastActivity)}` : "",
-      agent
-        ? ` · ${agent.sessionCount} claude session${agent.sessionCount === 1 ? "" : "s"}${agent.lastActivity ? ` (last ${relTime(agent.lastActivity)})` : ""}`
+      sessionCount
+        ? ` · ${sessionCount} assistant session${sessionCount === 1 ? "" : "s"}${lastActivity ? ` (last ${relTime(lastActivity)})` : ""}`
         : "",
     ]),
     w.lastCommit

@@ -33,6 +33,7 @@ let autoOpened = false;
 
 /** Auto-open once per session, only on a genuine first run (server-tracked). */
 export function maybeOpenWizard(app) {
+  if (new URLSearchParams(globalThis.location?.search || "").get("desktop") === "1") return;
   if (autoOpened || overlay) return;
   if (!app.snapshot?.setup?.firstRun) return;
   autoOpened = true;
@@ -167,7 +168,7 @@ export function openWizard(app) {
 function stepTitle(step) {
   return (
     {
-      welcome: "Welcome to Clawdeck",
+      welcome: "Welcome to Ocelin",
       forge: "Connect your git forge (optional)",
       prefs: "Preferences",
       finish: "You're all set",
@@ -197,13 +198,13 @@ function lead(text) {
 function welcomeStep() {
   return el("div", {}, [
     lead(
-      "A local console for your worktrees, runs, reviews, and Claude sessions. " +
+      "A local console for your worktrees, runs, reviews, and Claude Code or Codex sessions. " +
         "This quick setup is optional, everything here can also be changed later " +
         "in Configuration.",
     ),
     el("ul", { class: "wizard-list" }, [
       el("li", {
-        text: "See every worktree's status, churn, and active Claude sessions.",
+        text: "See every worktree's status, churn, and active assistant sessions.",
       }),
       el("li", {
         text: "Run validation, reviews, and review-pack jobs from one place.",
