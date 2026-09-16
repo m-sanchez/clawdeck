@@ -62,7 +62,12 @@ import {
 import { getWorktrees } from "./adapters/worktrees.mjs";
 import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
+import { monitorTranscript } from "./monitor/shared.mjs";
 import { getSessionTrace } from "./adapters/session-trace.mjs";
+import {
+  resolveCodexTranscript,
+  codexSessionIsLive,
+} from "./adapters/codex-sessions.mjs";
 import { getSubagentTree } from "./adapters/subagent-tree.mjs";
 import { bindSession } from "./core/tasks/model.mjs";
 import {
@@ -127,7 +132,7 @@ try {
 } catch {
   /* unreadable: report the placeholder rather than a number that is not real */
 }
-const APP_NAME = "Clawdeck";
+const APP_NAME = "Ocelin";
 let SCHEMA_VERSION = null;
 // Copyable Claude slash-commands a host project may advertise via
 // panel.config.json `claudeCommands` ({ cmd, hint } entries). Default: none.
@@ -1220,18 +1225,16 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (path === "/api/session-feed") {
-      // Recent transcript of one Claude session, normalized for the CLI-mirror
-      // view. The transcript lives at projects/<slug(worktreePath)>/<session>.jsonl;
-      // both inputs are validated so neither can escape the projects dir.
-      // Token-gated: unlike the event store, this serves prompt text, command
-      // lines and tool-result previews verbatim.
       if (!hasPanelToken(request))
         return sendJson(response, 401, {
           error: "Missing or invalid panel token",
         });
       const sid = (url.searchParams.get("session") || "").trim();
-      if (!/^[0-9a-fA-F-]{8,64}$/.test(sid))
+      if (!/^(?:[0-9a-fA-F-]{8,64}|agent-[a-f0-9]{8,64})$/.test(sid))
         return sendJson(response, 400, { error: "Invalid session id." });
+      const provider = url.searchParams.get("provider") || "claude";
+      if (!["claude", "codex"].includes(provider))
+        return sendJson(response, 400, { error: "Invalid session provider." });
       const wtParam = url.searchParams.get("worktree");
       let basePath = ctx.checkoutRoot;
       if (wtParam) {
@@ -1242,15 +1245,13 @@ const server = http.createServer(async (request, response) => {
           });
         basePath = resolved.cwd;
       }
-      const file = join(
-        homedir(),
-        ".claude",
-        "projects",
-        slugForPath(basePath),
-        `${sid}.jsonl`,
-      );
-      const feed = getSessionFeed(file, { limit: 60 });
-      return sendJson(response, 200, { session: sid, ...feed });
+      const file = monitorTranscript(provider, sid, basePath) || (provider === "codex"
+        ? resolveCodexTranscript(sid, basePath)
+        : join(homedir(), ".claude", "projects", slugForPath(basePath), `${sid}.jsonl`));
+      const feed = file
+        ? getSessionFeed(file, { limit: 60, provider })
+        : { events: [], missing: true };
+      return sendJson(response, 200, { session: sid, provider, ...feed });
     }
 
     if (path === "/api/trace") {
@@ -1261,8 +1262,11 @@ const server = http.createServer(async (request, response) => {
           error: "Missing or invalid panel token",
         });
       const sid = (url.searchParams.get("session") || "").trim();
-      if (!/^[0-9a-fA-F-]{8,64}$/.test(sid))
+      if (!/^(?:[0-9a-fA-F-]{8,64}|agent-[a-f0-9]{8,64})$/.test(sid))
         return sendJson(response, 400, { error: "Invalid session id." });
+      const provider = url.searchParams.get("provider") || "claude";
+      if (!["claude", "codex"].includes(provider))
+        return sendJson(response, 400, { error: "Invalid session provider." });
       const wtParam = url.searchParams.get("worktree");
       let basePath = ctx.checkoutRoot;
       if (wtParam) {
@@ -1278,27 +1282,33 @@ const server = http.createServer(async (request, response) => {
       const maxTurns = Number.isInteger(turnsParam)
         ? Math.max(1, Math.min(50, turnsParam))
         : undefined;
-      const file = join(
-        homedir(),
-        ".claude",
-        "projects",
-        slugForPath(basePath),
-        `${sid}.jsonl`,
-      );
+      const file = monitorTranscript(provider, sid, basePath) || (provider === "codex"
+        ? resolveCodexTranscript(sid, basePath)
+        : join(homedir(), ".claude", "projects", slugForPath(basePath), `${sid}.jsonl`));
       // Liveness = the transcript still being appended to; a dead session must
       // never present its unfinished tail as running tools.
       let sessionLive = false;
       try {
-        sessionLive = agentIsActive({
-          lastMs: statSync(file).mtimeMs,
-          sampleAgeMs: null,
-          now: Date.now(),
-        });
+        sessionLive = provider === "codex"
+          ? codexSessionIsLive(file)
+          : agentIsActive({
+              lastMs: statSync(file).mtimeMs,
+              sampleAgeMs: null,
+              now: Date.now(),
+            });
       } catch {
         /* missing file: adapter reports missing */
       }
-      const trace = getSessionTrace(file, { maxTurns, sessionLive });
-      return sendJson(response, 200, { ...trace, sessionLive });
+      const trace = file
+        ? getSessionTrace(file, { maxTurns, sessionLive, provider })
+        : {
+            missing: true,
+            turns: [],
+            model: null,
+            truncated: false,
+            caps: { maxTurns: maxTurns ?? 20, tailBytes: 4 * 1024 * 1024 },
+          };
+      return sendJson(response, 200, { ...trace, session: sid, provider, sessionLive });
     }
 
     if (path === "/api/tasks") {

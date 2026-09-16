@@ -101,4 +101,4 @@ try {
   stopProcessTree(child.pid);
 }
 
-console.log("Clawdeck package self-test passed.");
+console.log("Ocelin package self-test passed.");

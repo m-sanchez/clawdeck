@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520">
+  <rect width="1200" height="520" rx="24" fill="#18221d"/>
+  <path d="M60 445H1140" stroke="#526449"/>
+  <g font-family="Arial,Helvetica,sans-serif">
+    <text x="65" y="91" fill="#edbd77" font-size="14" letter-spacing="4">LOCAL COMPANION · WINDOWS + BROWSER</text>
+    <text x="60" y="220" fill="#f0eee5" font-size="108" font-weight="600" letter-spacing="-6">ocelin</text>
+    <text x="65" y="303" fill="#f0eee5" font-size="38">Your agents, in view.</text>
+    <text x="65" y="365" fill="#a9b5a8" font-size="22">Codex and Claude. Tray, floating bar, dashboard.</text>
+    <text x="65" y="483" fill="#a9b5a8" font-size="16">Open source · local first · formerly Clawdeck</text>
+  </g>
+  <g transform="translate(880 120) scale(12)" shape-rendering="crispEdges">
+    <path fill="#d9a252" d="M2 1h3v3h6V1h3v1h1v4h1v7h-2v1H2v-1H0V6h1V2h1z"/>
+    <path fill="#edbd77" d="M5 4h6v1H5z"/>
+    <path fill="#bd853f" d="M2 13h12v1H2z"/>
+    <path fill="#885e36" d="M2 2h1v2H2zM12 2h1v2h-1zM4 5h1v1H4zM10 5h1v1h-1z"/>
+    <path fill="#493527" d="M4 7h2v3H4zM10 7h2v3h-2z"/>
+  </g>
+</svg>

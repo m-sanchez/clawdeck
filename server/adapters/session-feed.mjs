@@ -8,6 +8,7 @@
  * the first partial line is dropped, and previews are ANSI-stripped and truncated.
  */
 import { openSync, fstatSync, readSync, closeSync } from "node:fs";
+import { normalizeCodexRecords, parseJsonLines } from "./codex-transcript.mjs";
 
 const TAIL_BYTES = 300000;
 const TEXT_CAP = 600;
@@ -82,7 +83,7 @@ function resultText(block) {
 
 /**
  * @param {string} transcriptPath
- * @param {{ limit?: number }} [opts]
+ * @param {{ limit?: number, provider?: string }} [opts]
  * @returns {{ events: Array<object>, missing?: boolean, branch?: string, model?: string }}
  */
 export function getSessionFeed(transcriptPath, opts = {}) {
@@ -94,9 +95,11 @@ export function getSessionFeed(transcriptPath, opts = {}) {
     return { events: [], missing: true };
   }
   let text;
+  let atStart;
   try {
     const size = fstatSync(fd).size;
     const len = Math.min(TAIL_BYTES, size);
+    atStart = len === size;
     const buf = Buffer.alloc(len);
     readSync(fd, buf, 0, len, size - len);
     text = buf.toString("utf8");
@@ -105,8 +108,9 @@ export function getSessionFeed(transcriptPath, opts = {}) {
   }
 
   const lines = text.split(/\r?\n/);
-  // Drop the first line: when we tail mid-file it is almost always a partial record.
-  lines.shift();
+  if (!atStart) lines.shift();
+  const parsed = parseJsonLines(lines.join("\n"));
+  const records = opts.provider === "codex" ? normalizeCodexRecords(parsed) : parsed;
 
   /** @type {Array<object>} */
   const events = [];
@@ -114,14 +118,8 @@ export function getSessionFeed(transcriptPath, opts = {}) {
   let branch = "";
   let model = "";
 
-  for (const line of lines) {
-    if (!line) continue;
-    let o;
-    try {
-      o = JSON.parse(line);
-    } catch {
-      continue;
-    }
+  for (const o of records) {
+    if (o.omitFromFeed) continue;
     const ts = o.timestamp || null;
     if (o.gitBranch) branch = o.gitBranch;
     const blocks = o.message?.content;

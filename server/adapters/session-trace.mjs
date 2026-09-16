@@ -24,6 +24,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { summarizeTool } from "./session-feed.mjs";
+import { normalizeCodexRecords, parseJsonLines } from "./codex-transcript.mjs";
 
 const CHUNK_BYTES = 512 * 1024;
 const DEFAULT_TAIL_BYTES = 4 * 1024 * 1024;
@@ -31,8 +32,8 @@ const DEFAULT_MAX_TURNS = 20;
 const MAX_SPANS_PER_TURN = 80;
 const MAX_SUBAGENT_META = 40;
 const SUBAGENT_META_MAX_BYTES = 4096;
-const WAIT_TOOLS = new Set(["ExitPlanMode", "AskUserQuestion"]);
-const TASK_TOOLS = new Set(["Task", "Agent"]);
+const WAIT_TOOLS = new Set(["ExitPlanMode", "AskUserQuestion", "request_user_input", "request_user_input_async"]);
+const TASK_TOOLS = new Set(["Task", "Agent", "spawn_agent"]);
 const END_TURN_NEEDLE = '"stop_reason":"end_turn"';
 
 /**
@@ -105,7 +106,7 @@ function readSubagentMeta(transcriptPath) {
 
 /**
  * @param {string} transcriptPath
- * @param {{ maxTurns?: number, maxTailBytes?: number, now?: number, sessionLive?: boolean }} [opts]
+ * @param {{ maxTurns?: number, maxTailBytes?: number, now?: number, sessionLive?: boolean, provider?: string }} [opts]
  * @returns {{ session: string, missing?: boolean, model: string|null, turns: Array<object>, truncated: boolean, caps: { maxTurns: number, tailBytes: number } }}
  */
 export function getSessionTrace(transcriptPath, opts = {}) {
@@ -148,18 +149,13 @@ export function getSessionTrace(transcriptPath, opts = {}) {
 
   const lines = text.split(/\r?\n/);
   if (!atStart) lines.shift(); // partial first record when tailing mid-file
+  const parsed = parseJsonLines(lines.join("\n"));
+  const normalized = opts.provider === "codex" ? normalizeCodexRecords(parsed) : parsed;
 
   // Parse: keep only timestamped user/assistant records, preserving sequence.
   const records = [];
-  for (let seq = 0; seq < lines.length; seq++) {
-    const line = lines[seq];
-    if (!line) continue;
-    let o;
-    try {
-      o = JSON.parse(line);
-    } catch {
-      continue;
-    }
+  for (let seq = 0; seq < normalized.length; seq++) {
+    const o = normalized[seq];
     if (o.type !== "user" && o.type !== "assistant") continue;
     const ts = parseTs(o);
     if (ts == null) continue;
@@ -177,7 +173,7 @@ export function getSessionTrace(transcriptPath, opts = {}) {
   const usable = firstPrompt === -1 ? records : records.slice(firstPrompt);
   if (firstPrompt > 0 && !atStart) truncated = true;
 
-  const agents = readSubagentMeta(transcriptPath);
+  const agents = opts.provider === "codex" ? new Map() : readSubagentMeta(transcriptPath);
   const toolById = new Map();
   const turns = [];
   let current = null;

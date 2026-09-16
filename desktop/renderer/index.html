@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'"
+    />
+    <title>Ocelin</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <ocelin-assistant
+          id="pet"
+          compact
+          state="idle"
+          patrol="off"
+          bubble="off"
+          badge="off"
+          tooltip="off"
+          aria-hidden="true"
+        ></ocelin-assistant
+        ><strong>ocelin<span>YOUR AGENTS, IN VIEW</span></strong>
+      </div>
+      <div class="header-actions">
+        <button
+          id="dashboard"
+          title="Open dashboard"
+          aria-label="Open dashboard"
+        >
+          ↗</button
+        ><button id="settings" title="Settings" aria-label="Settings">⚙</button
+        ><button id="hide" title="Hide window" aria-label="Hide window">
+          −
+        </button>
+      </div>
+    </header>
+    <div id="error" role="alert" hidden></div>
+    <main id="content">
+      <section class="overview">
+        <div>
+          <p class="eyebrow">LOCAL SESSIONS</p>
+          <h1>A little company<br />for your agents.</h1>
+          <p class="intro">
+            Codex and Claude, across your projects. See who’s working and who
+            needs you.
+          </p>
+        </div>
+        <div id="counts" aria-live="polite"></div>
+      </section>
+      <div class="toolbar">
+        <h2>Sessions</h2>
+        <label
+          ><span class="sr-only">Filter sessions</span
+          ><input
+            id="search"
+            type="search"
+            placeholder="Find a project or session…" /></label
+        ><select id="filter" aria-label="Session filter">
+          <option value="recent">Recent & active</option>
+          <option value="attention">Needs attention</option>
+          <option value="all">All discovered</option></select
+        ><button id="refresh">Refresh</button>
+      </div>
+      <div id="sessions" aria-label="Agent sessions"></div>
+      <footer>
+        <span id="health">Discovering local sessions…</span
+        ><span>Private by default · on this computer</span>
+      </footer>
+    </main>
+    <dialog id="preferences">
+      <form method="dialog">
+        <header>
+          <h2>Make Ocelin yours</h2>
+          <button aria-label="Close settings">×</button>
+        </header>
+      </form>
+      <div class="settings-body">
+        <fieldset>
+          <legend>Where Ocelin lives</legend>
+          <p>
+            Choose any combination. Closing a window keeps monitoring active.
+          </p>
+          <label><input type="checkbox" data-pref="tray" /> Windows tray</label
+          ><label
+            ><input type="checkbox" data-pref="bar" /> Floating session
+            bar</label
+          ><label
+            ><input type="checkbox" data-pref="dashboard" /> Full
+            dashboard</label
+          ><label
+            ><input type="checkbox" data-pref="alwaysOnTop" /> Keep compact
+            windows on top</label
+          ><label
+            ><input type="checkbox" data-pref="startup" /> Start when I sign
+            in</label
+          >
+        </fieldset>
+        <fieldset>
+          <legend>Appearance</legend>
+          <label
+            >Density
+            <select data-pref="density">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select></label
+          ><label
+            >Motion
+            <select data-pref="motion">
+              <option value="system">Follow Windows</option>
+              <option value="full">Full</option>
+              <option value="reduced">Reduced</option>
+              <option value="none">Off</option>
+            </select></label
+          ><label
+            >Theme
+            <select data-pref="theme">
+              <option value="system">Follow Windows</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select></label
+          >
+        </fieldset>
+        <fieldset>
+          <legend>Notifications</legend>
+          <label><input type="checkbox" data-pref="quiet" /> Quiet mode</label
+          ><label
+            ><input type="checkbox" data-pref="completions" /> Notify when a
+            turn finishes</label
+          ><label
+            ><input type="checkbox" data-pref="sound" /> Notification
+            sound</label
+          ><label><input type="checkbox" id="mute-codex" /> Mute Codex</label
+          ><label><input type="checkbox" id="mute-claude" /> Mute Claude</label>
+          <p>
+            Windows notification settings also apply. “Turn finished” means the
+            observed response ended.
+          </p>
+        </fieldset>
+        <fieldset>
+          <legend>Sources & integrations</legend>
+          <p>
+            Transcript monitoring works immediately. Optional hooks improve
+            permission and lifecycle signals. Hook changes are previewed before
+            applying.
+          </p>
+          <div id="sources"></div>
+          <div class="buttons">
+            <button data-source="codex">Add Codex sessions folder</button
+            ><button data-source="claude">Add Claude projects folder</button>
+          </div>
+          <div id="integrations"></div>
+        </fieldset>
+        <fieldset>
+          <legend>About Ocelin</legend>
+          <p id="version"></p>
+          <p>
+            A local companion for Codex and Claude. No account or API key
+            needed. Native session return links are not assumed: open the
+            project dashboard or its folder, then continue in the owning app.
+          </p>
+          <button id="quit">Quit Ocelin</button>
+        </fieldset>
+      </div>
+    </dialog>
+    <dialog id="hook-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Integration preview</h2>
+          <button aria-label="Close preview">×</button>
+        </header>
+      </form>
+      <div class="settings-body">
+        <p id="hook-note"></p>
+        <p id="hook-file"></p>
+        <pre id="hook-json"></pre>
+        <button id="hook-apply">Apply these changes</button>
+        <p id="hook-result" role="status"></p>
+      </div>
+    </dialog>
+  </body>
+</html>

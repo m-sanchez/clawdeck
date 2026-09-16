@@ -43,7 +43,7 @@ export function render(app) {
   }
   if (!(app.store.agentOpen instanceof Set)) app.store.agentOpen = new Set();
 
-  const agents = agentsList(app);
+  const agents = agentsList(app).filter((a) => a.provider !== "codex");
   const sel = pickSession(app, agents);
   const meta = el("div", { class: "feed-meta small muted" });
   const host = el("div", { class: "agent-host" }, [

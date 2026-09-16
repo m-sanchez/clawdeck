@@ -77,10 +77,11 @@ export const api = {
     fetch(`/api/ci/log?job=${encodeURIComponent(job)}`).then(asJson),
   reviewThread: (id) =>
     fetch(`/api/review-inbox/thread?id=${encodeURIComponent(id)}`).then(asJson),
-  trace: (session, worktree, turns) => {
+  trace: (session, worktree, turns, provider) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);
     if (turns) q.set("turns", String(turns));
+    if (provider) q.set("provider", provider);
     return fetch(`/api/trace?${q}`).then(asJson);
   },
   subagents: (session, worktree) => {
@@ -88,9 +89,10 @@ export const api = {
     if (worktree) q.set("worktree", worktree);
     return fetch(`/api/subagents?${q}`).then(asJson);
   },
-  sessionFeed: (session, worktree) => {
+  sessionFeed: (session, worktree, provider) => {
     const q = new URLSearchParams({ session });
     if (worktree) q.set("worktree", worktree);
+    if (provider) q.set("provider", provider);
     return fetch(`/api/session-feed?${q}`).then(asJson);
   },
   jobs: () => fetch("/api/jobs").then(asJson),

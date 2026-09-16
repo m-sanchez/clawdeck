@@ -11,6 +11,7 @@ import { getRuns } from "../adapters/runs.mjs";
 import { getLogSources } from "../adapters/logs.mjs";
 import { getReadiness } from "../adapters/readiness.mjs";
 import { getSessions } from "../adapters/sessions.mjs";
+import { getMonitorSessions } from "../monitor/shared.mjs";
 import { getLiveTelemetry } from "../adapters/telemetry-live.mjs";
 import { getPolicy } from "../adapters/policy.mjs";
 import { rollupCost } from "../core/telemetry/rollup.mjs";
@@ -65,6 +66,7 @@ function overlayEventState(sessions, events) {
   const byId = new Map((events?.sessions ?? []).map((s) => [s.sessionId, s]));
   const WORKING = new Set(["starting", "running", "compacting"]);
   for (const a of sessions.agents) {
+    if (a.provider === "codex") continue;
     const proj = byId.get(a.latestSessionId);
     if (!proj) continue;
     a.eventState = proj.state;
@@ -190,16 +192,18 @@ export async function buildSnapshot(ctx, cached) {
   };
   const attention = buildAttention(runs, reviews, validation);
   const telemetry = getLiveTelemetry(ctx, worktrees);
-  const sessions = getSessions(
+  const monitoredSessions = getMonitorSessions(ctx.checkoutRoot, worktrees);
+  const sessions = monitoredSessions || getSessions(
     ctx,
     worktrees,
     process.env.CLAUDE_CODE_SESSION_ID,
     telemetry,
   );
   const events = cached.events ?? { sessions: [], count: 0 };
-  overlayEventState(sessions, events);
+  if (!monitoredSessions) overlayEventState(sessions, events);
   const policy = getPolicy(ctx, worktrees);
   for (const a of sessions.agents) {
+    if (a.provider === "codex") continue;
     const pol = policy.sessions[a.latestSessionId];
     if (pol) {
       a.workflow = pol.workflow;

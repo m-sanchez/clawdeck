@@ -1,15 +1,10 @@
 // @ts-check
-/**
- * Session viewer: mirrors a Claude Code session's transcript the way the CLI
- * renders it (user prompts, assistant text, thinking markers, tool calls with
- * their results). Picks any session the panel can see and polls its feed while
- * the view is open. Read-only.
- */
 import { el, card, clear, relTime, emptyState } from "../lib/dom.mjs";
 import {
   agentsList,
   pickSession,
   sessionPicker,
+  providerLabel,
 } from "../lib/session-picker.mjs";
 
 const POLL_MS = 4000;
@@ -36,7 +31,7 @@ export function render(app) {
   const refresh = () => {
     if (!sel) return;
     app.api
-      .sessionFeed(sel.id, sel.path || undefined)
+      .sessionFeed(sel.id, sel.path || undefined, sel.provider)
       .then((d) => {
         if (!feedHost.isConnected) {
           if (pollTimer) clearInterval(pollTimer);
@@ -59,7 +54,7 @@ export function render(app) {
     clear(feedHost).append(
       emptyState(
         "No sessions to show.",
-        "Sessions appear here as Claude Code works in this checkout or its worktrees.",
+        "Sessions appear here as Claude Code or Codex works in this checkout or its worktrees.",
       ),
     );
   }
@@ -70,7 +65,7 @@ export function render(app) {
       [
         el("p", {
           class: "muted small",
-          text: "A live mirror of a Claude Code session's transcript: prompts, replies, and tool calls with their results. Read-only.",
+          text: "A live mirror of a Claude Code or Codex session: prompts, replies, and tool calls with their results. Read-only.",
         }),
         el("div", { class: "feed-controls" }, [
           el("label", { class: "field" }, [
@@ -96,7 +91,7 @@ function renderMeta(host, sel, d) {
       el("span", { class: "agent-dot on" }),
       el("span", { text: "live" }),
     ]),
-    el("span", { class: "mono", text: d.model || "claude" }),
+    el("span", { class: "mono", text: d.model || providerLabel(sel.provider) }),
     el("span", { text: sel.branch || d.branch || "" }),
     el("span", {
       text: last?.ts
@@ -114,7 +109,7 @@ function renderFeed(host, d) {
     host.append(
       emptyState(
         "Transcript not found.",
-        "This session has no transcript file under ~/.claude/projects for this checkout.",
+        "No local transcript was found for this session in the selected checkout.",
       ),
     );
     return;

@@ -89,7 +89,7 @@ export function render(app) {
 }
 
 /**
- * Ask Clawdeck: one-question chat answered by a local `claude -p` child. The
+ * Ask Ocelin: one-question chat answered by a local `claude -p` child. The
  * thread lives in the store so navigation keeps it; this hub never re-renders
  * on snapshots, so in-flight typing is safe.
  */
@@ -191,7 +191,7 @@ function askCard(app) {
   });
 
   return card(
-    "Ask Clawdeck",
+    "Ask Ocelin",
     [
       thread,
       el("div", { class: "ask-controls" }, [input, askBtn, busy]),
@@ -373,7 +373,7 @@ function assemble(task, blocks, chosen) {
   const ctx = blocks
     .filter((b) => chosen.has(b.key) && !b.empty)
     .map((b) => b.text);
-  if (ctx.length) parts.push(`## Context (Clawdeck)\n${ctx.join("\n\n")}`);
+  if (ctx.length) parts.push(`## Context (Ocelin)\n${ctx.join("\n\n")}`);
   return parts.join("\n\n");
 }
 

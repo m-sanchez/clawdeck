@@ -4,7 +4,7 @@
  * local code.
  *
  * Three visual grammars, deliberately unalike. Provider and git facts are plain
- * text. Anything Clawdeck derived is a pill with a "Why?" disclosure listing the
+ * text. Anything Ocelin derived is a pill with a "Why?" disclosure listing the
  * evidence it was computed from. Anything Claude said sits in its own indented
  * block labelled advisory. Nothing here writes to the forge.
  *
@@ -531,7 +531,7 @@ function draftEditor(app, item, assist, reload) {
   const box = el("textarea", {
     class: "input mono ri-draft",
     rows: "5",
-    placeholder: "Your reply. Saved locally; Clawdeck never posts it.",
+    placeholder: "Your reply. Saved locally; Ocelin never posts it.",
   });
   box.value = existing ?? suggested ?? "";
 
@@ -642,7 +642,7 @@ function unavailableCard(app, data, reload) {
     ],
     "no-remote": [
       "No git forge detected for this checkout.",
-      "Clawdeck reads the origin remote to decide which provider to ask.",
+      "Ocelin reads the origin remote to decide which provider to ask.",
     ],
     "no-token": [
       "A provider token is required to read review threads.",
