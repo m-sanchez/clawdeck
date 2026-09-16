@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 
 const root = resolve(process.argv[2] || "../.ocelin-smoke");
+const dashboardOnly = process.argv.includes("--dashboard-only");
 const dataDir = join(root, "data"),
   codex = join(root, "codex"),
   claude = join(root, "claude");
@@ -62,9 +63,9 @@ await writeFile(
       { provider: "codex", root: codex },
       { provider: "claude", root: claude },
     ],
-    tray: true,
+    tray: !dashboardOnly,
     dashboard: true,
-    bar: true,
+    bar: !dashboardOnly,
     quiet: true,
     motion: "none",
     theme: "dark",

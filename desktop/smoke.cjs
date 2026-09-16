@@ -35,6 +35,22 @@ module.exports = async function smoke({
         keys.some((k) => k.startsWith("claude:")),
     );
     report.checks.push("Codex and concurrent Claude sessions discovered");
+    if (process.argv.includes("--background")) {
+      const initial = windows.get("dashboard");
+      await until(
+        () => !initial.webContents.isLoading(),
+        "initial dashboard loaded",
+      );
+      const p = getState().preferences;
+      await until(
+        () => initial.isVisible() === !(p.tray || p.bar),
+        "background visibility",
+      );
+      assert.equal(initial.ocelinVisible, !(p.tray || p.bar));
+      report.checks.push(
+        "Background startup preserves the chosen recovery surface",
+      );
+    }
     const { Integrations } = await import(
       pathToFileURL(join(core, "server/monitor/integrations.mjs")).href
     );

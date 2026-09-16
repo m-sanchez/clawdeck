@@ -254,11 +254,16 @@ function createWindow(kind) {
       tray ||
       [...windows.values()].some((w) => w !== window && w.isVisible())
     )
-      window.hide();
+      hideWindow(window);
     else showWindow("dashboard");
   });
-  if (kind === "tray") window.on("blur", () => window.hide());
+  if (kind === "tray") window.on("blur", () => hideWindow(window));
   return window;
+}
+function hideWindow(window) {
+  if (!window || window.isDestroyed()) return;
+  window.ocelinVisible = false;
+  window.hide();
 }
 function showWindow(kind, focus = true) {
   const window = windows.get(kind) || createWindow(kind);
@@ -301,17 +306,17 @@ function applySurfaces() {
     );
     tray.on("click", () => {
       const panel = windows.get("tray");
-      panel?.isVisible() ? panel.hide() : showWindow("tray");
+      panel?.isVisible() ? hideWindow(panel) : showWindow("tray");
     });
     tray.on("double-click", () => showWindow("dashboard"));
   } else if (!preferences.value.tray && tray) {
     tray.destroy();
     tray = null;
-    windows.get("tray")?.hide();
+    hideWindow(windows.get("tray"));
   }
   for (const kind of ["bar", "dashboard"]) {
     if (preferences.value[kind]) showWindow(kind, false);
-    else windows.get(kind)?.hide();
+    else hideWindow(windows.get(kind));
   }
   for (const kind of ["bar", "tray"])
     windows.get(kind)?.setAlwaysOnTop(preferences.value.alwaysOnTop);
@@ -383,7 +388,7 @@ async function openProject(key) {
   window.on("close", (event) => {
     if (!quitting) {
       event.preventDefault();
-      window.hide();
+      hideWindow(window);
       showWindow("dashboard");
     }
   });
@@ -492,7 +497,7 @@ async function action(name, args = {}) {
       window &&
       (tray || [...windows.values()].some((w) => w !== window && w.isVisible()))
     )
-      window.hide();
+      hideWindow(window);
     else showWindow("dashboard");
     return true;
   }
@@ -594,9 +599,9 @@ else {
       applySurfaces();
       if (
         process.argv.includes("--background") &&
-        (tray || windows.get("bar")?.isVisible())
+        (preferences.value.tray || preferences.value.bar)
       )
-        windows.get("dashboard")?.hide();
+        hideWindow(windows.get("dashboard"));
       const recover = () => {
         for (const w of windows.values())
           w.setBounds(
