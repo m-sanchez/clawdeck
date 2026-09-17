@@ -17,4 +17,6 @@ The adapter uses a normal-user PowerShell process. The host requires a broad `sy
 
 The package and JSON-lines protocol are tested independently. Explorer rendering requires the external host and its user approval; it is not part of the verified built-in Windows surfaces.
 
+Updating the host executable itself needs a fresh Windows shell: unload the host, replace its files, then sign out and back in before loading the new host. During testing, replacing a loaded host caused one Explorer crash and automatic restart; the host reattached afterward. Updating only `Ocelin.twidget` keeps the existing host binary.
+
 References: [Community SDK](https://github.com/pfcdev/TaskbarWidgets/tree/main/community-sdk), [process protocol](https://github.com/pfcdev/TaskbarWidgets/blob/main/community-sdk/process-runtime.md), [Windows widgets board](https://learn.microsoft.com/en-us/windows/apps/design/widgets/). Ocelin's adapter is original MIT-licensed code, not a bundled copy of the host.

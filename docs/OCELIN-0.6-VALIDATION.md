@@ -30,6 +30,8 @@ This implements the next session-management slice from the [native integration r
 
 The public Windows App Tasks API is experimental and needs an enabled Windows rollout plus package identity. The local MSIX is an unsigned development package; production signing is separate. The Taskbar Widgets host uses private Windows APIs and is optional. Native shell rendering must not be inferred from schema/protocol checks.
 
+Replacing the optional host binary after unloading it caused one Explorer crash in `Windows.UI.Xaml.dll` and automatic shell restart. The new host then attached to both taskbars, with no repeated crash observed during the remaining check. Avoid replacing a host inside a running Explorer session; use a fresh sign-in before loading the replacement. This does not establish general shell stability.
+
 Claude's supported local integration does not expose a general native archive API. Ocelin offers local hiding and native reopening; it does not edit Claude's private descriptors. Agent approvals remain in the owning app. An independent Codex app-server is used for saved history and lifecycle operations, not as a claimed attachment to Desktop's running process.
 
 History previews are bounded, and search covers metadata and first requests rather than complete transcript full-text. The current app remains Electron-based; the research's 150 MiB idle target has not been demonstrated. WSL, remote-only sessions and a full physical multi-monitor/DPI/sleep matrix remain outside this validation.
