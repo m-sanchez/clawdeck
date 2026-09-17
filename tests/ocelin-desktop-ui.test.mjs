@@ -114,6 +114,7 @@ test("resource totals distinguish inaccessible memory and normalize CPU without 
 test("taskbar export is opt-in, aggregate-only and rejects stale memory", () => {
   const state = {
     counts: { running: 2, attention: 1 },
+    taskbarTheme: "light",
     sessions: [{ title: "PRIVATE" }],
     resources: {
       status: "ready",
@@ -127,6 +128,7 @@ test("taskbar export is opt-in, aggregate-only and rejects stale memory", () => 
   const data = taskbarSummary(state, true, now);
   assert.equal(data.memoryBytes, 100);
   assert.equal(data.running, 2);
+  assert.equal(data.theme, "light");
   assert.ok(!JSON.stringify(data).includes("PRIVATE"));
   assert.equal(taskbarSummary(state, false, now).running, null);
   assert.equal(taskbarSummary(state, true, now + 40000).memoryBytes, null);
@@ -150,6 +152,7 @@ test(
         running: 2,
         attention: 1,
         memoryBytes: 1024 ** 3,
+        theme: "light",
       }),
     );
     const child = spawn(
@@ -204,11 +207,18 @@ test(
         if (predicate()) return;
         await new Promise((r) => setTimeout(r, 150));
       }
-      throw new Error(`Widget did not respond: ${stderr}; responses: ${JSON.stringify(rows)}`);
+      throw new Error(
+        `Widget did not respond: ${stderr}; responses: ${JSON.stringify(rows)}`,
+      );
     };
     await wait(
       () => rows.some((r) => r.data?.headline === "2 running | 1 need you"),
       30000,
+    );
+    assert.equal(
+      rows.find((r) => r.data?.headline === "2 running | 1 need you").data
+        .foreground,
+      "#FF202520",
     );
     await writeFile(
       file,
@@ -217,9 +227,15 @@ test(
         status: "ready",
         sampledAt: Date.now() - 40000,
         running: 9,
+        theme: "dark",
       }),
     );
     await wait(() => rows.some((r) => r.data?.headline === "Ocelin offline"));
+    assert.equal(
+      rows.findLast((r) => r.data?.headline === "Ocelin offline").data
+        .foreground,
+      "#FFF0EEE5",
+    );
     child.stdin.write('{"type":"shutdown"}\n');
     assert.equal(await finished, 0);
   },

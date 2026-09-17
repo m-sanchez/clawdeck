@@ -14,6 +14,7 @@ function taskbarSummary(state, enabled, now = Date.now()) {
     groups.every((g) => Number.isFinite(g.memoryBytes) && !g.unavailable);
   return {
     schemaVersion: 1,
+    theme: state.taskbarTheme === "light" ? "light" : "dark",
     sampledAt: now,
     status: !enabled ? "disabled" : ready ? "ready" : "unavailable",
     running: ready ? state.counts.running : null,

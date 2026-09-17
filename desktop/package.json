@@ -1,7 +1,7 @@
 {
   "name": "ocelin-desktop",
   "productName": "Ocelin",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "A Windows companion for local Codex and Claude sessions",
   "private": true,
   "main": "main.cjs",

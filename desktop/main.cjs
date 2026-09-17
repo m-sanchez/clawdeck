@@ -92,6 +92,7 @@ const state = () => ({
   version: app.getVersion(),
   packaged: app.isPackaged,
   resources: resources.value,
+  taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI ? "dark" : "light",
   nativeTasks: nativeTasks.value,
   connections,
   hiddenKeys: [...hiddenKeys],

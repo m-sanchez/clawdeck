@@ -1,7 +1,7 @@
 {
   "schemaVersion": 4,
   "id": "uk.co.miguelsanchez.ocelin",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "minHostVersion": "0.5.4",
   "displayName": "Ocelin sessions",
   "description": "Local Codex and Claude running counts, attention and app RAM from Ocelin.",

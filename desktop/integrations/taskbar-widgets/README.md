@@ -3,11 +3,13 @@
 This optional adapter targets Taskbar Widgets 0.5.4 or newer using its schema v4 native renderer. The host uses private Windows XAML integration and may stop working after Windows updates. It is independent of Ocelin's built-in tile above the taskbar.
 
 1. Install [Taskbar Widgets](https://github.com/pfcdev/TaskbarWidgets) if you want its experimental Explorer integration.
-2. In Ocelin Settings, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Saving the package for manual import remains available.
+2. In Ocelin Settings, enable **Share counts and RAM with the taskbar text strip** and choose **Connect taskbar strip**. Saving the package for manual import remains available.
 3. In Taskbar Widgets Settings, inspect the `Ocelin.twidget` permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position. Its icon button opens Ocelin.
 4. Disable sharing in Ocelin or remove the widget in Taskbar Widgets to disconnect it.
 
-Only aggregate running/attention counts and app RAM leave Ocelin's process, through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.
+Aggregate running/attention counts, app RAM and the Windows light/dark theme leave Ocelin's process through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. The text follows the Windows taskbar theme independently of Ocelin's appearance. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.
+
+Upstream 0.5.36 contains hardcoded Turkish permission-review text. The [English source patch](patches/README.md) preserves its approval flow and provides a reproducible optional host build.
 
 The adapter uses a normal-user PowerShell process. The host requires a broad `system.fullAccess` declaration for process providers and cannot sandbox that grant. The provider reads the fixed summary file, writes JSON responses, and opens only the fixed `ocelin://dashboard` link on click. It accepts no commands or paths from widget data. Review its small source before granting that permission.
 

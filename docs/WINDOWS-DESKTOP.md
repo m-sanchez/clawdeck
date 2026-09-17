@@ -36,9 +36,9 @@ RAM cards show private working set for each app and its recognized child tools. 
 
 Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. **Move freely** keeps it draggable. Both layouts remain selectable.
 
-For native Windows task cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows taskbar tasks**. This uses Microsoft's public, experimental API and reports whether it is connected. It needs a supported Windows rollout and package identity.
+For native Windows hover cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows hover cards (experimental)**. This uses Microsoft's public, experimental API and reports whether Windows stores the tasks. Storage is distinct from visible rendering. It needs a supported Windows rollout and package identity.
 
-For a persistent text strip inside the taskbar, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to install the optional host and review its permissions. This host uses private Windows APIs; Ocelin does not grant its permissions. Only aggregate counts and RAM are shared locally. Both native cards and the strip are selectable.
+For a persistent text strip inside the taskbar, enable **Share counts and RAM with the taskbar text strip** and choose **Connect taskbar strip**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to install the optional host and review its permissions. This host uses private Windows APIs; Ocelin does not grant its permissions. Only aggregate counts, RAM and the system light/dark theme are shared locally. Both native cards and the strip are selectable.
 
 Default discovery reads `%CODEX_HOME%\sessions` (or `~/.codex/sessions`) and `%CLAUDE_CONFIG_DIR%\projects` (or `~/.claude/projects`). Add additional local source folders from Settings. Claude Desktop metadata is joined by `cliSessionId`, not by matching project names. Subagents carry parent identity when present. Codex's optional `session_index.jsonl` supplies native task names.
 

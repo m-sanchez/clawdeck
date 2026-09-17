@@ -5,6 +5,7 @@ $instances = @()
 $reader = [IO.StreamReader]::new([Console]::OpenStandardInput(), [Text.UTF8Encoding]::new($false))
 $pending = $reader.ReadLineAsync()
 $lastSent = [DateTime]::MinValue
+$theme = 'dark'
 while ($true) {
   if ($pending.Wait(500)) {
     $line = $pending.Result
@@ -25,6 +26,7 @@ while ($true) {
     $file = Get-Item -LiteralPath $summaryFile
     if ($file.Length -le 4096) {
       $summary = Get-Content -LiteralPath $summaryFile -Raw | ConvertFrom-Json
+      if ($summary.theme -in @('light', 'dark')) { $theme = $summary.theme }
       $age = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - [double]$summary.sampledAt
       if ($summary.status -eq 'disabled') { $detail = 'Enable sharing in Ocelin' }
       elseif ($summary.schemaVersion -eq 1 -and $summary.status -eq 'ready' -and $age -ge 0 -and $age -lt 35000) {
@@ -37,8 +39,11 @@ while ($true) {
       }
     }
   } catch {}
+  $foreground = if ($theme -eq 'light') { '#FF202520' } else { '#FFF0EEE5' }
+  $secondary = if ($theme -eq 'light') { '#FF47534A' } else { '#FFB9C6BB' }
+  $accent = if ($theme -eq 'light') { '#FF85530B' } else { '#FFEDBD77' }
   foreach ($instance in $instances) {
     if (-not $instance.instanceId) { continue }
-    @{ type = 'snapshot'; instanceId = $instance.instanceId; data = @{ headline = $headline; detail = $detail } } | ConvertTo-Json -Depth 4 -Compress | ForEach-Object { [Console]::WriteLine($_) }
+    @{ type = 'snapshot'; instanceId = $instance.instanceId; data = @{ headline = $headline; detail = $detail; foreground = $foreground; secondary = $secondary; accent = $accent } } | ConvertTo-Json -Depth 4 -Compress | ForEach-Object { [Console]::WriteLine($_) }
   }
 }
