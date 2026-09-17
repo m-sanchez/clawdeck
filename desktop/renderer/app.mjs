@@ -8,6 +8,7 @@ import {
   statusLabel,
 } from "./session-model.mjs";
 import { icon, providerIcon } from "./icons.mjs";
+import { subscriptionView } from "../../ui/shared/subscriptions.mjs";
 import {
   initLibrary,
   attachPreview,
@@ -30,6 +31,7 @@ document.title =
 let state,
   preview,
   rendering = "",
+  allowanceKey = "",
   groupLimit = 60;
 const openActions = new Set(),
   rowLimits = new Map();
@@ -174,6 +176,17 @@ if (surface === "tray") {
 }
 function render(value) {
   state = value;
+  const nextAllowanceKey = JSON.stringify(value.subscriptions) + Math.floor(Date.now() / 60000);
+  if (nextAllowanceKey !== allowanceKey && surface !== "bar") {
+    allowanceKey = nextAllowanceKey;
+    const details = [...$("subscriptions").querySelectorAll("details")];
+    const focused = details.findIndex(d => d.contains(document.activeElement));
+    const expanded = details.map(d => d.open);
+    const view = subscriptionView(value.subscriptions, { providerIcon });
+    [...view.querySelectorAll("details")].forEach((d, i) => { d.open = !!expanded[i]; });
+    $("subscriptions").replaceChildren(view);
+    if (focused >= 0) view.querySelectorAll("summary")[focused]?.focus({ preventScroll: true });
+  }
   document.documentElement.dataset.theme = value.preferences.theme;
   document.body.dataset.density = value.preferences.density;
   document.body.dataset.barLayout = value.preferences.barLayout || "sessions";

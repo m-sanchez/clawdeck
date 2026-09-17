@@ -136,6 +136,13 @@ module.exports = async function smoke({
         "typeof require === 'undefined' && typeof process === 'undefined' && typeof window.ocelin.action === 'function'",
       );
       assert.equal(secure, true);
+      if (kind !== "bar") {
+        await until(async () => window.webContents.executeJavaScript("document.querySelector('#subscriptions').textContent.includes('18% left') && document.querySelector('#subscriptions').textContent.includes('72% left') && document.querySelector('#subscriptions').textContent.includes('44% left')"), `${kind} subscription allowance`);
+        const allowance = await window.webContents.executeJavaScript("({values:[...document.querySelectorAll('#subscriptions progress')].map(p=>p.value),resets:document.querySelector('#subscriptions').textContent.includes('Resets in')})");
+        assert.deepEqual(allowance.values, [18, 72, 44]);
+        assert.equal(allowance.resets, true);
+        report.checks.push(`${kind}: Codex and Claude percentage remaining and reset countdowns`);
+      }
       await until(
         async () =>
           window.webContents.executeJavaScript(
@@ -296,6 +303,8 @@ module.exports = async function smoke({
     assert.equal(panelState.open, "true");
     assert.equal(panelState.animations, 0);
     assert.equal(panelState.focus, "");
+    drawer.focus();
+    await until(() => drawer.isFocused(), "drawer focus for hover checks");
     await drawer.webContents.executeJavaScript(`
       document.querySelector('.session-actions summary').dispatchEvent(new PointerEvent('pointerenter'));
       new Promise(resolve => setTimeout(resolve, 500));
@@ -363,7 +372,7 @@ module.exports = async function smoke({
         const sample = () => {
           const transform = getComputedStyle(document.body).transform;
           window.__panelFrames.push({ duration, at: performance.now() - started, x: transform === 'none' ? 0 : new DOMMatrix(transform).m41 });
-          if (performance.now() - started < duration + 80) requestAnimationFrame(sample);
+          if (performance.now() - started < duration + 80 || document.body.getAnimations().length) requestAnimationFrame(sample);
         };
         requestAnimationFrame(sample);
       });
@@ -378,7 +387,7 @@ module.exports = async function smoke({
     await until(
       async () =>
         drawer.webContents.executeJavaScript(
-          "window.__panelFrames.at(-1)?.at > window.__panelFrames.at(-1)?.duration + 40",
+          "window.__panelFrames.at(-1)?.at > window.__panelFrames.at(-1)?.duration + 40 && window.__panelFrames.at(-1)?.x === 0",
         ),
       "visible drawer animation frames",
     );
@@ -525,6 +534,10 @@ module.exports = async function smoke({
     report.checks.push(
       "Bundled project backend booted and correct session route opened",
     );
+    await project.window.webContents.executeJavaScript("location.hash = '/cost'; void 0");
+    await until(async () => project.window.webContents.executeJavaScript("document.querySelector('.allowances')?.textContent.includes('18% left') && document.querySelector('.allowances')?.textContent.includes('72% left')"), "project Cost subscription allowance");
+    writeFileSync(join(output, "subscription-cost.png"), (await project.window.webContents.capturePage()).toPNG());
+    report.checks.push("Project Cost view shows the same subscription percentages as the desktop");
     project.window.destroy();
     assert.equal(getProject(), null);
     await action("project", { key: selected.key });

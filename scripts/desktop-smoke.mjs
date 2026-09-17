@@ -75,6 +75,15 @@ for (const [id, complete] of [
   );
 }
 const binary = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+await writeFile(join(data, "subscriptions.json"), JSON.stringify({ schemaVersion: 1, providers: {
+  codex: { provider: "codex", status: "ready", sampledAt: Date.now(), plan: "pro", source: "Codex sign-in", windows: [
+    { id: "codex:primary", label: "Weekly", remainingPercent: 18, resetsAt: Date.now() + 7200000, minutes: 10080, extra: false },
+  ] },
+  claude: { provider: "claude", status: "ready", sampledAt: Date.now(), plan: "max", source: "Claude Code sign-in", windows: [
+    { id: "five_hour", label: "Session · 5h", remainingPercent: 72, resetsAt: Date.now() + 3600000, minutes: 300, extra: false },
+    { id: "seven_day", label: "Weekly", remainingPercent: 44, resetsAt: Date.now() + 86400000, minutes: 10080, extra: false },
+  ] },
+} }));
 const packaged = binary && resolve(binary);
 const exe =
   packaged ||

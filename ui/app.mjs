@@ -124,7 +124,7 @@ const HUBS = [
     label: "Cost",
     render: cost,
     auto: true,
-    deps: ["cost", "governor", "quotaPressure", "telemetry"],
+    deps: ["cost", "governor", "quotaPressure", "telemetry", "subscriptions"],
   },
   {
     key: "delivery",

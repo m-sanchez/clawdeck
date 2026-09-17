@@ -33,6 +33,7 @@ const EXPECTED = [
   "cost",
   "governor",
   "quotaPressure",
+  "subscriptions",
   "remoteBranches",
   "recentCommits",
   "commitActivity",

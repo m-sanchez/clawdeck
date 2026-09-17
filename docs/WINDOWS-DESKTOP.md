@@ -20,6 +20,14 @@ Preferences, checkpoints, notification history and acknowledgements live in `%LO
 
 ## Sources and state
 
+### Subscription allowance
+
+Ocelin 0.6.3 shows **percentage remaining** for Codex and Claude at the top of the dashboard and right-edge panel. Each reported session, weekly or model-specific window has its own reset countdown. Hover the countdown for the exact local reset time. Expand **Other model allowances** for separate limits such as Codex Spark. Missing windows are not invented; an expired or stale reading is unavailable until refreshed.
+
+The desktop checks every two minutes. Codex uses its signed-in CLI's `account/rateLimits/read` API. Claude reads its existing Claude Code subscription sign-in and makes a read-only request to Anthropic's usage endpoint. Credentials stay in the background process and are never copied into Ocelin's state, UI, logs or taskbar payload. Ocelin does not refresh Claude credentials itself; open Claude Code if its sign-in expires. The source label identifies the sign-in being measured, which can differ from another app signed into a different account.
+
+The original project **Cost** view reads the same sanitized local snapshot while Ocelin desktop runs. API-equivalent cost estimates remain separate from subscription allowance. This integration does not redeem credits, purchase usage or change either subscription. The Claude OAuth usage endpoint is not a public stable API and may change. References: [Codex account API](https://learn.chatgpt.com/docs/app-server#auth-endpoints), [CodexBar's Claude source investigation](https://github.com/steipete/CodexBar/blob/main/docs/claude.md).
+
 ### Keep the first screen useful
 
 The **Now** view shows recent running and attention signals, grouped by project. Collapse a project or all projects to scan the list. **History** and **Archived & hidden** use a separate, paginated library. Search titles, first requests, projects and IDs; filter by provider, age or missing folder. A discovered transcript is not a running process.

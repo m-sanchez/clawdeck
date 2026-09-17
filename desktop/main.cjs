@@ -271,6 +271,7 @@ function startMonitor() {
       env: {
         ...process.env,
         OCELIN_DATA_DIR: dataDir,
+        ...(smokeTest ? { OCELIN_SMOKE_TEST: "1" } : {}),
         ...(preferences.value.sources
           ? { OCELIN_SOURCES: JSON.stringify(preferences.value.sources) }
           : {}),
@@ -618,6 +619,7 @@ async function openProject(key) {
         PANEL_REPO_ROOT: cwd,
         PANEL_CHECKOUT_ID: "ocelin-desktop",
         PANEL_RUNTIME_DIR: runtime,
+        OCELIN_DATA_DIR: dataDir,
         PANEL_SERVICE_PORT: String(port),
         PANEL_NONCE: nonce,
       },
