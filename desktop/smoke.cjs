@@ -1,5 +1,10 @@
 const assert = require("node:assert/strict");
-const { writeFileSync, mkdirSync } = require("node:fs");
+const {
+  writeFileSync,
+  mkdirSync,
+  renameSync,
+  realpathSync,
+} = require("node:fs");
 const { join } = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { spawnSync } = require("node:child_process");
@@ -29,6 +34,13 @@ module.exports = async function smoke({
   };
   try {
     await until(() => getState().sessions.length >= 3, "fixture sessions");
+    assert.equal(realpathSync(process.cwd()), realpathSync(dataDir));
+    const launchDir = join(dataDir, "..", "widget-launch");
+    renameSync(launchDir, `${launchDir}-released`);
+    renameSync(`${launchDir}-released`, launchDir);
+    report.checks.push(
+      "App and helpers release the widget launch directory before monitoring starts",
+    );
     const keys = getState().sessions.map((s) => s.key);
     assert.ok(
       keys.some((k) => k.startsWith("codex:")) &&
@@ -370,7 +382,9 @@ module.exports = async function smoke({
     assert.equal(getProject(), null);
     await action("project", { key: selected.key });
     assert.ok(getProject() && !getProject().window.isDestroyed());
-    report.checks.push("Released project window stops its backend and reopens cleanly");
+    report.checks.push(
+      "Released project window stops its backend and reopens cleanly",
+    );
     for (const combo of [
       { tray: true, bar: false, dashboard: false },
       { tray: false, bar: true, dashboard: false },

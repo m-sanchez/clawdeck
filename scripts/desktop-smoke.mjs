@@ -1,6 +1,7 @@
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -9,8 +10,11 @@ const data = join(target, "data"),
   codex = join(target, "codex"),
   claude = join(target, "claude");
 const checkout = join(target, "Proyecto español");
+const launchDir = join(target, "widget-launch");
 await Promise.all(
-  [data, codex, claude, checkout].map((p) => mkdir(p, { recursive: true })),
+  [data, codex, claude, checkout, launchDir].map((p) =>
+    mkdir(p, { recursive: true }),
+  ),
 );
 await writeFile(join(checkout, "README.md"), "# Ocelin integration fixture\n");
 const timestamp = new Date().toISOString();
@@ -70,7 +74,7 @@ for (const [id, complete] of [
     rows.map(JSON.stringify).join("\n") + "\n",
   );
 }
-const packaged = process.argv[2];
+const packaged = process.argv[2] && resolve(process.argv[2]);
 const exe =
   packaged ||
   join(root, "desktop", "node_modules", "electron", "dist", "electron.exe");
@@ -84,7 +88,19 @@ const env = {
   ]),
 };
 delete env.ELECTRON_RUN_AS_NODE;
+const protocolRegistration = () => {
+  if (process.platform !== "win32") return null;
+  const result = spawnSync(
+    join(process.env.SystemRoot, "System32", "reg.exe"),
+    ["query", "HKCU\\Software\\Classes\\ocelin\\shell\\open\\command", "/ve"],
+    { windowsHide: true, encoding: "utf8" },
+  );
+  if (result.error) throw result.error;
+  return { status: result.status, stdout: result.stdout };
+};
+const registrationBefore = protocolRegistration();
 const child = spawn(exe, args, {
+  cwd: launchDir,
   windowsHide: true,
   stdio: ["ignore", "pipe", "pipe"],
   env,
@@ -100,6 +116,11 @@ const code = await new Promise((done, reject) => {
   child.on("error", reject);
   child.on("exit", done);
 });
+assert.deepEqual(
+  protocolRegistration(),
+  registrationBefore,
+  "Smoke run must preserve the installed Ocelin protocol handler",
+);
 try {
   console.log(await readFile(join(data, "proof", "report.json"), "utf8"));
 } catch {

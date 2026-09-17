@@ -45,9 +45,14 @@ app.commandLine.appendSwitch("force-renderer-accessibility");
 const core = app.isPackaged
   ? join(process.resourcesPath, "core")
   : resolve(__dirname, "..");
-const dataDir =
+const dataDir = resolve(
   process.env.OCELIN_DATA_DIR ||
-  join(process.env.LOCALAPPDATA || app.getPath("userData"), "Ocelin");
+    join(process.env.LOCALAPPDATA || app.getPath("userData"), "Ocelin"),
+);
+mkdirSync(dataDir, { recursive: true });
+process.chdir(dataDir);
+const smokeTest =
+  process.argv.includes("--smoke-test") && Boolean(process.env.OCELIN_DATA_DIR);
 app.setPath("userData", dataDir);
 app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
 const preferences = new Preferences(dataDir);
@@ -936,7 +941,7 @@ else {
           ),
         );
       } catch {}
-      if (app.isPackaged) {
+      if (app.isPackaged && !smokeTest) {
         app.setAsDefaultProtocolClient("ocelin");
         app.setJumpList([
           {

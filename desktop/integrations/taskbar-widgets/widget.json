@@ -9,7 +9,7 @@
   "category": "Productivity",
   "size": { "width": 198, "height": 44 },
   "renderer": { "type": "native", "entry": "compact.json" },
-  "runtime": { "type": "process", "entry": "provider.ps1", "arguments": [], "protocol": "json-lines-v1", "lifetime": "persistent", "runAs": "user", "workingDirectory": "package" },
+  "runtime": { "type": "process", "entry": "provider.ps1", "arguments": [], "protocol": "json-lines-v1", "lifetime": "persistent", "runAs": "user", "workingDirectory": "data" },
   "permissions": {
     "required": [
       { "id": "system.fullAccess", "reason": "Reads Ocelin's fixed local summary file and opens the fixed ocelin://dashboard link when clicked, using normal user rights. The host does not sandbox process providers." },
