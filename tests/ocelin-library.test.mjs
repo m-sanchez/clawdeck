@@ -9,9 +9,10 @@ import {
   rm,
   appendFile,
   rename,
+  symlink,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, basename } from "node:path";
+import { join, basename, relative } from "node:path";
 import { createRequire } from "node:module";
 import { SessionLibrary } from "../server/library/catalog.mjs";
 import {
@@ -174,6 +175,30 @@ test("paginated Codex previews use native history and explain unavailable histor
   client.call = original;
   preview = await library.preview(`codex:${CODEX_ID}`);
   assert.match(preview.previewWarning, /unavailable/);
+});
+
+test("equivalent local path aliases preserve provider identity and preview containment", async (t) => {
+  const { library, dir, home, path, client, calls } = await fixture(t);
+  const alias = join(dir, "home-alias");
+  await symlink(home, alias, process.platform === "win32" ? "junction" : "dir");
+  const aliasedFile = join(alias, relative(home, path));
+  const original = client.call;
+  client.call = async (method, args) =>
+    method === "thread/read"
+      ? { thread: { path: aliasedFile } }
+      : original(method, args);
+  const key = `codex:${CODEX_ID}`;
+  const preview = await library.preview(key, {
+    key,
+    provider: "codex",
+    transcript: aliasedFile,
+  });
+  assert.equal(preview.response, "Tests passed.");
+  assert.ok(calls.some((c) => c.method === "thread/turns/list"));
+  assert.equal(
+    (await library.plan({ operation: "archive", keys: [key] })).scope,
+    "Codex native history",
+  );
 });
 
 test("Claude text-block requests preview and reversible local hide retain originals", async (t) => {

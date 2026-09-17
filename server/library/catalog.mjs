@@ -228,8 +228,10 @@ export class SessionLibrary {
               ...(cursor ? { cursor } : {}),
             });
             for (const thread of page.data || []) {
-              const file = nativePath(thread.path);
-              if (!safeId(thread.id) || !localPath(file)) continue;
+              const candidate = nativePath(thread.path);
+              if (!safeId(thread.id) || !localPath(candidate)) continue;
+              const file = await realpath(candidate).catch(() => null);
+              if (!file) continue;
               nativeEntries.set(pathKey(file), {
                 key: sessionKey("codex", thread.id),
                 provider: "codex",
@@ -446,12 +448,7 @@ export class SessionLibrary {
         (s) => s.provider === hint.provider,
       )) {
         const root = await realpath(source.root).catch(() => null);
-        if (
-          !root ||
-          !within(root, file) ||
-          pathKey(file) !== pathKey(hint.transcript)
-        )
-          continue;
+        if (!root || !within(root, file)) continue;
         const info = await stat(file);
         const entry = metadata(
           await head(file, info.size),
@@ -520,10 +517,10 @@ export class SessionLibrary {
           threadId: entry.sessionId,
           includeTurns: false,
         });
-        if (
-          !read.thread?.path ||
-          pathKey(nativePath(read.thread.path)) !== pathKey(entry.file)
-        )
+        const nativeFile = read.thread?.path
+          ? await realpath(nativePath(read.thread.path)).catch(() => null)
+          : null;
+        if (!nativeFile || pathKey(nativeFile) !== pathKey(entry.file))
           throw new Error("Native conversation belongs to another Codex home");
         const native = await this.client.call("thread/turns/list", {
           threadId: entry.sessionId,
@@ -620,10 +617,10 @@ export class SessionLibrary {
         ["active", "running", "inProgress"].includes(read.thread?.status?.type)
       )
         throw new Error("Codex reports this conversation is active.");
-      if (
-        !read.thread?.path ||
-        pathKey(nativePath(read.thread.path)) !== pathKey(entry.file)
-      )
+      const nativeFile = read.thread?.path
+        ? await realpath(nativePath(read.thread.path)).catch(() => null)
+        : null;
+      if (!nativeFile || pathKey(nativeFile) !== pathKey(entry.file))
         throw new Error(
           "This conversation belongs to a different Codex home. No changes made.",
         );
