@@ -18,9 +18,9 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
      double startPointerX{};
      double startLeft{};
      double grabOffsetX{};
-@@ -1895,20 +1898,42 @@
+@@ -1895,20 +1898,47 @@
      root.Children().Append(layoutMarker.as<wux::UIElement>());
-
+ 
      auto dragState = std::make_shared<WidgetDragState>();
 -    root.PointerEntered([root](auto const&, auto const&) {
 +    auto updatePointerCursor = [root, dragState](bool hovering) {
@@ -30,11 +30,16 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
 +            !HasNativeExpandedWidget(design);
 +        const auto handCursor = LoadCursor(nullptr, IDC_HAND);
 +        if (actionable && handCursor) {
-+            if (!dragState->cursorOverride) {
++            const bool entering = !dragState->cursorOverride;
++            if (entering) {
 +                dragState->previousCursor = GetCursor();
 +                dragState->cursorOverride = true;
 +            }
 +            SetCursor(handCursor);
++            if (entering) {
++                Wh_Log(L"Native widget hand cursor: %s; active=%d",
++                       design.c_str(), GetCursor() == handCursor ? 1 : 0);
++            }
 +        } else if (dragState->cursorOverride) {
 +            if (GetCursor() == handCursor) SetCursor(dragState->previousCursor);
 +            dragState->cursorOverride = false;
@@ -64,15 +69,15 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
          if (GetWidgetDesignFromRoot(root.as<wux::UIElement>()) == L"parking-lot") {
              // A drag that starts on the visible parked-item row exports the
              // item. Empty space, the dashed edge, and the empty prompt retain
-@@ -1937,6 +1962,7 @@
+@@ -1937,6 +1967,7 @@
          }
-
+ 
          dragState->pressed = true;
 +        updatePointerCursor(false);
          dragState->dragging = false;
          dragState->suppressTap = false;
          dragState->startPointerX = point.Position().X;
-@@ -1952,8 +1978,9 @@
+@@ -1952,8 +1983,9 @@
          RefreshTaskbarObstacleCacheForDrag(root.as<wux::UIElement>(), host);
          root.CapturePointer(args.Pointer());
      });
@@ -83,7 +88,7 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
              return;
          }
          auto host = root.Parent().try_as<wuxc::Canvas>();
-@@ -1996,12 +2023,16 @@
+@@ -1996,12 +2028,16 @@
          }
          args.Handled(true);
      });
@@ -101,7 +106,7 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
          if (!dragState->dragging) {
              dragState->activeGap.reset();
              g_widgetDragOverrides.erase(WidgetElementKey(root.as<wux::UIElement>()));
-@@ -2028,8 +2059,9 @@
+@@ -2028,8 +2064,9 @@
              position.anchorPercent, position.offsetPx);
          args.Handled(true);
      });
@@ -112,7 +117,7 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
              dragState->pressed = false;
              dragState->dragging = false;
              dragState->activeGap.reset();
-@@ -2045,7 +2077,26 @@
+@@ -2045,7 +2082,26 @@
          std::wstring activeDesign = GetWidgetDesignFromRoot(root.as<wux::UIElement>());
          if (FindDynamicWidget(activeDesign)) {
              if (!HasNativeExpandedWidget(activeDesign)) {
@@ -140,7 +145,7 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
              }
          } else if (activeDesign == L"weather-static") {
              ShowWeatherMenu(root);
-@@ -2404,6 +2455,26 @@
+@@ -2404,6 +2460,26 @@
      RefreshDynamicWidgetCatalog();
      auto found = g_dynamicWidgets.find(id);
      return found == g_dynamicWidgets.end() ? nullptr : &found->second;
@@ -165,5 +170,5 @@ diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskb
 +    }
 +    return action;
  }
-
+ 
  bool HasNativeExpandedWidget(const std::wstring& id) {
