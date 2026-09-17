@@ -1,5 +1,6 @@
 node_modules/
 vendor/
+!desktop/renderer/vendor/
 .claude/.runtime/
 *.local.json
 *.tgz
