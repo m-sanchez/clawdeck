@@ -9,13 +9,21 @@ Approved scope: native Windows monitoring for Codex and Claude, with independent
 | Tray | Single owner, attention summary, notification preferences, diagnostics | Implemented; native panel and packaged smoke verified |
 | Floating bar | Session chips, overflow, density, position recovery, reduced motion | Implemented; native controls, rendered output and packaged smoke verified |
 | Dashboard | Existing project views, global selection, shared monitor, Ocelin identity | Implemented; selected-project backend and session route verified |
-| Release | Per-user installer, startup setting, lifecycle checks, docs, GitHub and website | Windows x64 preview installer and browser archive; GitHub release and website accompany v0.4.0 |
+| Release | Per-user installer, startup setting, lifecycle checks, docs, GitHub and website | Windows x64 preview installer and browser archive; GitHub release and website accompany v0.5.0 |
 
 Validation evidence and remaining limits will be recorded in `docs/WINDOWS-DESKTOP.md`. Existing gates remain `node scripts/self-test.mjs` and `npm test`. Desktop adds fixture tests and a packaged Windows smoke check. The historical research remains a proposal record, not release evidence.
 
-Later scope from the accepted research: WSL and remote sources, Explorer embedding, reserved-edge AppBar mode, direct approval controls, and third-party bar integrations.
+Later scope from the accepted research: WSL and remote sources, reserved-edge AppBar mode and direct approval controls. The 0.5 preview adds an optional Taskbar Widgets adapter; its Explorer rendering remains unverified without the external host.
 
-## Evidence
+## 0.5 compact UI and resource visibility
+
+- Core self-test and 676 unit tests passed, including history cleanup, project grouping, stale signals, RAM attribution and the taskbar protocol.
+- Development and packaged Windows checks passed for active-first filtering, collapse persistence, reversible cleanup, measured RAM and the status tile. Light mode fits 320, 420 and 700 pixel windows.
+- The packaged app passed both background-startup modes with system Node removed from PATH. Its unpacked Windows memory helper returned live measurements; bundled hooks and project navigation still worked.
+- The optional Taskbar Widgets package passes the upstream v4 manifest and native layout schemas, ZIP integrity and live JSON-lines protocol tests. It includes the MIT license. Explorer rendering remains unverified without installing and approving the external host.
+- [UI review and rationale](UI-UX-REVIEW.md), including app-level memory attribution and the two selectable taskbar approaches.
+
+## Validation retained from 0.4
 
 - Core self-test passed. Unit suite: 669 tests passed. Test discovery is explicitly scoped to source tests so packaged copies cannot accidentally run as tests.
 - Development and packaged Electron smoke checks passed with isolated Codex/Claude fixtures in two projects, including a path with spaces and Spanish characters.

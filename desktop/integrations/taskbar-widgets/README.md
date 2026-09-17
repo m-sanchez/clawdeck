@@ -1,0 +1,16 @@
+# Ocelin inside the Windows taskbar
+
+This optional adapter targets Taskbar Widgets 0.5.4 or newer using its schema v4 native renderer. The host uses private Windows XAML integration and may stop working after Windows updates. It is independent of Ocelin's built-in tile above the taskbar.
+
+1. Install [Taskbar Widgets](https://github.com/pfcdev/TaskbarWidgets) if you want its experimental Explorer integration.
+2. In Ocelin Settings, enable **Share summary with Taskbar Widgets** and save the widget package.
+3. In Taskbar Widgets Settings, import `Ocelin.twidget`, inspect its permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position.
+4. Disable sharing in Ocelin or remove the widget in Taskbar Widgets to disconnect it.
+
+Only aggregate running/attention counts and app RAM leave Ocelin's process, through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.
+
+The adapter uses a normal-user PowerShell process. The host requires a broad `system.fullAccess` declaration for process providers and cannot sandbox that grant. The provider code only reads the fixed summary file and writes JSON responses to the host; it does not launch or stop programs. Review its small source before granting that permission.
+
+The package and JSON-lines protocol are tested independently. Explorer rendering requires the external host and its user approval; it is not part of the verified built-in Windows surfaces.
+
+References: [Community SDK](https://github.com/pfcdev/TaskbarWidgets/tree/main/community-sdk), [process protocol](https://github.com/pfcdev/TaskbarWidgets/blob/main/community-sdk/process-runtime.md), [Windows widgets board](https://learn.microsoft.com/en-us/windows/apps/design/widgets/). Ocelin's adapter is original MIT-licensed code, not a bundled copy of the host.

@@ -74,6 +74,12 @@ test("interrupt and error never become successful turns", () => {
     assert.equal(s.result.kind, kind);
   }
 });
+test("attention totals include recent errors and exclude stale ones", () => {
+  const monitor = new SessionMonitor({ sources: [], now: () => epoch + 100 });
+  monitor.apply(event("error", 0));
+  monitor.apply(event("error", -3600000, { sessionId: "old-error" }));
+  assert.equal(monitor.snapshot().counts.attention, 1);
+});
 test("incremental reader retains partial UTF-8 and detects growth with unchanged mtime", async (t) => {
   const dir = await temp(t),
     file = join(dir, "s.jsonl"),

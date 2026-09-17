@@ -8,5 +8,6 @@ desktop/assets/*.ico
 desktop/assets/*.png
 .ocelin-smoke/
 desktop/*.log
+desktop/integrations/*.twidget
 .ocelin-test-results.log
 .claude/

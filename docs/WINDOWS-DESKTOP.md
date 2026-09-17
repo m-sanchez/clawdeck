@@ -4,21 +4,35 @@ Ocelin is the new product and mascot identity for Clawdeck. The existing reposit
 
 ## Install and run
 
-Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.4 preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
+Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.5 preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
 
 For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, then `npm start`. `npm run pack` produces an unpacked app; `npm run dist` produces the NSIS installer. The browser core continues to need only Node 20 or newer and no runtime npm dependencies.
 
 ## Choose your surfaces
 
 - **Windows tray:** running and attention counts, a quick panel, and a menu to reopen windows or quit.
-- **Floating bar:** compact session chips, overflow into the dashboard, draggable position, optional always-on-top, and compact or comfortable density.
-- **Dashboard:** global session search and provider identity; select a session to open the existing project dashboard with its feed, trace, worktrees, reviews, cost and delivery views.
+- **Floating bar:** compact session chips or a status tile with running counts and app RAM; move freely or anchor above the Windows taskbar.
+- **Dashboard:** active sessions first, collapsible project groups, provider symbols, live app RAM and searchable history; select a session to open the existing project dashboard with its feed, trace, worktrees, reviews, cost and delivery views.
 
 All three share one collector and notification owner. Closing a window hides it. Explicit Quit stops Ocelin's monitor and project backend, without stopping Codex or Claude. Ocelin retains a recovery surface when every option is switched off. Display changes clamp saved window positions to an available work area. Relaunching a second instance brings back the dashboard.
 
 Preferences, checkpoints, notification history and acknowledgements live in `%LOCALAPPDATA%\Ocelin`. Provider transcripts stay where their provider wrote them. The monitor saves metadata and file offsets, not transcript contents. Saved native task names, session IDs and project paths are local metadata. Uninstall preserves these preferences so reinstalling is reversible.
 
 ## Sources and state
+
+### Keep the first screen useful
+
+The default **Active now** view shows recent running and attention signals, grouped by project. Collapse a project or all projects to scan the list. Switch to **Last 24 hours** or **All discovered** when you want history. A discovered transcript is not a running process.
+
+Under **Settings → Session history**, **Clear older sessions from view** hides finished and stale entries up to that moment. Active work stays visible. New activity brings a session back; **Show older sessions again** restores the view. This does not delete provider conversations or modify their history.
+
+RAM cards show private working set for each app and its recognized child tools. Click a card for process names, PIDs and CPU. Ocelin measures every 12 seconds with one hidden Windows helper; inaccessible or stale measurements stay unavailable. Shared desktop memory is not divided between projects or sessions.
+
+### Taskbar choices
+
+Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. **Move freely** keeps it draggable. Both layouts remain selectable.
+
+For a readout inside the actual taskbar, enable **Share summary with Taskbar Widgets** and **Save taskbar widget package**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to import it into the optional external host and review its permissions. This experimental host uses private Windows APIs; Ocelin does not install it automatically. Only aggregate counts and RAM are shared locally.
 
 Default discovery reads `%CODEX_HOME%\sessions` (or `~/.codex/sessions`) and `%CLAUDE_CONFIG_DIR%\projects` (or `~/.claude/projects`). Add additional local source folders from Settings. Claude Desktop metadata is joined by `cliSessionId`, not by matching project names. Subagents carry parent identity when present. Codex's optional `session_index.jsonl` supplies native task names.
 
@@ -61,7 +75,7 @@ Packaged backend children use Electron's bundled Node mode. Ocelin owns only the
 
 Automated coverage includes independent providers and sessions, late turn events, partial UTF-8 records, growth with unchanged mtime, truncation/rotation, checkpoint recovery, notification deduplication, privacy filtering, selective hook install/removal and stale previews, all surface combinations, and offscreen placement recovery. Existing HTTP authorization, checkout scoping and Codex feed/trace tests remain required.
 
-Native Windows and packaged-build results are recorded in the delivery tracker as they are performed. Signing requires a release certificate. WSL, remote sources, reserved-edge AppBar mode, Explorer embedding, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
+Native Windows and packaged-build results are recorded in the delivery tracker as they are performed. Signing requires a release certificate. The optional Taskbar Widgets adapter is schema- and protocol-tested; rendering inside Explorer still needs the external host and user permission review. WSL, remote sources, reserved-edge AppBar mode, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
 
 ## Sources and attribution
 

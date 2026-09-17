@@ -24,7 +24,8 @@
           tooltip="off"
           aria-hidden="true"
         ></ocelin-assistant
-        ><strong>ocelin<span>YOUR AGENTS, IN VIEW</span></strong>
+        ><strong>ocelin</strong
+        ><span class="brand-caption">Session monitor</span>
       </div>
       <div class="header-actions">
         <button
@@ -42,18 +43,14 @@
     <div id="error" role="alert" hidden></div>
     <main id="content">
       <section class="overview">
-        <div>
-          <p class="eyebrow">LOCAL SESSIONS</p>
-          <h1>A little company<br />for your agents.</h1>
-          <p class="intro">
-            Codex and Claude, across your projects. See who’s working and who
-            needs you.
-          </p>
-        </div>
-        <div id="counts" aria-live="polite"></div>
+        <h1 class="sr-only">Local agent sessions</h1>
+        <div id="counts" aria-label="Session summary"></div>
+        <button id="memory-details" class="text-button">Memory details</button>
       </section>
+      <div id="resources" aria-label="App memory usage"></div>
+      <button id="compact-summary" aria-label="Open session dashboard"></button>
       <div class="toolbar">
-        <h2>Sessions</h2>
+        <h2 id="list-title">Projects</h2>
         <label
           ><span class="sr-only">Filter sessions</span
           ><input
@@ -61,15 +58,26 @@
             type="search"
             placeholder="Find a project or session…" /></label
         ><select id="filter" aria-label="Session filter">
-          <option value="recent">Recent & active</option>
-          <option value="attention">Needs attention</option>
+          <option value="active">Active now</option>
+          <option value="running">Running</option>
+          <option value="attention">Needs you</option>
+          <option value="recent">Last 24 hours</option>
           <option value="all">All discovered</option></select
-        ><button id="refresh">Refresh</button>
+        ><button id="collapse" class="text-button">Collapse all</button
+        ><button
+          id="refresh"
+          aria-label="Refresh sessions"
+          title="Refresh sessions"
+        >
+          Refresh
+        </button>
       </div>
       <div id="sessions" aria-label="Agent sessions"></div>
       <footer>
         <span id="health">Discovering local sessions…</span
-        ><span>Private by default · on this computer</span>
+        ><span id="memory-note"
+          >Memory is shared by app, not assigned to individual sessions.</span
+        >
       </footer>
     </main>
     <dialog id="preferences">
@@ -99,6 +107,31 @@
             ><input type="checkbox" data-pref="startup" /> Start when I sign
             in</label
           >
+          <label
+            >Bar content<select data-pref="barLayout">
+              <option value="sessions">Session chips</option>
+              <option value="summary">Compact status tile</option>
+            </select></label
+          >
+          <label
+            >Bar position<select data-pref="barPlacement">
+              <option value="floating">Move freely</option>
+              <option value="taskbar">Above Windows taskbar</option>
+            </select></label
+          >
+          <p>
+            The built-in tile sits above the taskbar. An optional Taskbar
+            Widgets package can render inside it; see the taskbar integration
+            guide.
+          </p>
+          <label
+            ><input type="checkbox" data-pref="taskbarBridge" /> Share summary
+            with Taskbar Widgets</label
+          >
+          <div class="buttons">
+            <button id="export-widget">Save taskbar widget package</button
+            ><button id="taskbar-guide">Setup guide</button>
+          </div>
         </fieldset>
         <fieldset>
           <legend>Appearance</legend>
@@ -124,6 +157,19 @@
               <option value="dark">Dark</option>
             </select></label
           >
+        </fieldset>
+        <fieldset>
+          <legend>Session history</legend>
+          <p>
+            Active sessions appear first. Clear older finished and stale entries
+            from Ocelin’s views; a session returns when it has new activity.
+            This leaves the original Codex and Claude conversations intact.
+          </p>
+          <div class="buttons">
+            <button id="clear-history">Clear older sessions from view</button
+            ><button id="restore-history">Show older sessions again</button>
+          </div>
+          <p id="history-result" role="status"></p>
         </fieldset>
         <fieldset>
           <legend>Notifications</legend>
@@ -165,6 +211,24 @@
           </p>
           <button id="quit">Quit Ocelin</button>
         </fieldset>
+      </div>
+    </dialog>
+    <dialog id="resource-dialog">
+      <form method="dialog">
+        <header>
+          <h2>App memory & CPU</h2>
+          <button aria-label="Close memory details">×</button>
+        </header>
+      </form>
+      <div class="settings-body">
+        <p class="resource-explainer">
+          Private RAM currently in use by recognized Codex, Claude and Ocelin
+          processes, including their child tools. Desktop apps share processes
+          across projects; these totals cannot be divided reliably between
+          sessions.
+        </p>
+        <div id="resource-processes"></div>
+        <p id="resource-health" role="status"></p>
       </div>
     </dialog>
     <dialog id="hook-dialog">

@@ -129,6 +129,98 @@ module.exports = async function smoke({
       );
     }
     const dashboard = windows.get("dashboard");
+    await until(
+      () => getState().resources?.status === "ready",
+      "Windows memory sample",
+    );
+    assert.ok(
+      getState().resources.groups.find((g) => g.provider === "ocelin")
+        .memoryBytes > 0,
+    );
+    const baseline = await dashboard.webContents.executeJavaScript(
+      "({filter:document.getElementById('filter').value,rows:document.querySelectorAll('#sessions .session').length,history:document.getElementById('counts').innerText,project:document.querySelector('.project-group').dataset.project})",
+    );
+    assert.equal(baseline.filter, "active");
+    assert.ok(!/Discovered|In history/.test(baseline.history));
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('.project-heading').click()",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.querySelector('.project-group').open",
+        ),
+      "project collapsed",
+    );
+    await action("refresh");
+    assert.equal(
+      await dashboard.webContents.executeJavaScript(
+        "document.querySelector('.project-group').open",
+      ),
+      false,
+    );
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('.project-heading').click()",
+    );
+    await action("preferences", { historySince: Date.now() });
+    await dashboard.webContents.executeJavaScript(
+      "document.getElementById('filter').value='all'; document.getElementById('filter').dispatchEvent(new Event('change'))",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.getElementById('sessions').innerText.includes('Turn finished')",
+        ),
+      "old history hidden",
+    );
+    await action("preferences", { historySince: 0 });
+    await dashboard.webContents.executeJavaScript(
+      "document.getElementById('filter').value='active'; document.getElementById('filter').dispatchEvent(new Event('change'))",
+    );
+    await action("preferences", {
+      bar: true,
+      barLayout: "summary",
+      barPlacement: "taskbar",
+    });
+    const bar = windows.get("bar");
+    await until(
+      async () =>
+        bar.webContents.executeJavaScript(
+          "document.body.dataset.barLayout==='summary'",
+        ),
+      "summary tile",
+    );
+    writeFileSync(
+      join(output, "summary-tile.png"),
+      (await bar.webContents.capturePage()).toPNG(),
+    );
+    await action("preferences", {
+      barLayout: "sessions",
+      barPlacement: "floating",
+    });
+    report.checks.push(
+      "Live RAM, active-first view, collapse persistence, reversible history cleanup and status tile verified",
+    );
+    const originalBounds = dashboard.getBounds();
+    await action("preferences", { theme: "light" });
+    for (const width of [700, 420, 320]) {
+      dashboard.setSize(width, 700);
+      await new Promise((r) => setTimeout(r, 150));
+      const layout = await dashboard.webContents.executeJavaScript(
+        "({width:innerWidth,scroll:document.documentElement.scrollWidth})",
+      );
+      assert.ok(
+        layout.scroll <= layout.width,
+        `Dashboard overflow at ${width}: ${JSON.stringify(layout)}`,
+      );
+    }
+    writeFileSync(
+      join(output, "dashboard-narrow-light.png"),
+      (await dashboard.webContents.capturePage()).toPNG(),
+    );
+    dashboard.setBounds(originalBounds);
+    await action("preferences", { theme: "dark" });
+    report.checks.push("Light dashboard fits 320, 420 and 700 pixel windows");
     const rejected = await dashboard.webContents.executeJavaScript(
       "window.ocelin.action('project',{key:'unknown'}).then(()=>false,()=>true)",
     );

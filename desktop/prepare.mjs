@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { ocelotIcon } from "../ui/ocelin/ocelot-art.mjs";
@@ -102,4 +102,57 @@ writeFileSync(`${assets}/ocelin.ico`, Buffer.concat([ico, image]));
 writeFileSync(
   fileURLToPath(new URL("../ui/ocelin/icon.svg", import.meta.url)),
   ocelotIcon(32),
+);
+
+const entries = [],
+  central = [];
+let offset = 0;
+for (const name of [
+  "widget.json",
+  "compact.json",
+  "provider.ps1",
+  "README.md",
+  "LICENSE",
+]) {
+  const filename = Buffer.from(name);
+  const data = readFileSync(
+    new URL(
+      name === "LICENSE"
+        ? "../LICENSE"
+        : `./integrations/taskbar-widgets/${name}`,
+      import.meta.url,
+    ),
+  );
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(33, 12);
+  local.writeUInt32LE(crc32(data), 14);
+  local.writeUInt32LE(data.length, 18);
+  local.writeUInt32LE(data.length, 22);
+  local.writeUInt16LE(filename.length, 26);
+  const directory = Buffer.alloc(46);
+  directory.writeUInt32LE(0x02014b50);
+  directory.writeUInt16LE(20, 4);
+  directory.writeUInt16LE(20, 6);
+  directory.writeUInt16LE(33, 14);
+  directory.writeUInt32LE(crc32(data), 16);
+  directory.writeUInt32LE(data.length, 20);
+  directory.writeUInt32LE(data.length, 24);
+  directory.writeUInt16LE(filename.length, 28);
+  directory.writeUInt32LE(offset, 42);
+  entries.push(local, filename, data);
+  central.push(directory, filename);
+  offset += local.length + filename.length + data.length;
+}
+const directory = Buffer.concat(central),
+  end = Buffer.alloc(22);
+end.writeUInt32LE(0x06054b50);
+end.writeUInt16LE(central.length / 2, 8);
+end.writeUInt16LE(central.length / 2, 10);
+end.writeUInt32LE(directory.length, 12);
+end.writeUInt32LE(offset, 16);
+writeFileSync(
+  new URL("./integrations/Ocelin.twidget", import.meta.url),
+  Buffer.concat([...entries, directory, end]),
 );

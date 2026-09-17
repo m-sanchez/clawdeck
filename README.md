@@ -12,6 +12,8 @@ The browser core keeps zero runtime dependencies. The optional desktop package b
 
 Download the x64 installer from Releases. Sign-in startup and lifecycle hooks are optional. The preview is unsigned; automatic updates are not enabled.
 
+The compact start screen groups active Codex and Claude sessions by project and shows live app RAM. Expand a project for session rows, open memory details for process usage, or clear older sessions from view without deleting provider conversations. The floating bar also has a status-tile mode. An [optional Taskbar Widgets adapter](desktop/integrations/taskbar-widgets/README.md) can display the summary inside the Windows taskbar.
+
 ![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)
 
 ![Ocelin floating session bar with sample sessions](docs/assets/ocelin-bar.png)
@@ -116,10 +118,10 @@ Principles:
 
 ## Quickstart
 
-The 0.4 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
+The 0.5 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.4.0/clawdeck-panel-0.4.0.tgz
+npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.5.0/clawdeck-panel-0.5.0.tgz
 ocelin run --checkout /path/to/your/project
 ```
 
