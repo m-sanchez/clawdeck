@@ -11,8 +11,6 @@ jobs:
   english-host:
     runs-on: windows-latest
     timeout-minutes: 40
-    env:
-      TASKBARWIDGETS_TAURI_TARGET_DIR: ${{ runner.temp }}/taskbarwidgets-tauri-target
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -44,6 +42,8 @@ jobs:
           key: taskbar-windows-c49721c-${{ hashFiles('upstream-taskbar-widgets/src/settings/src-tauri/Cargo.lock') }}
       - name: Build optional host from pinned source
         shell: pwsh
+        env:
+          TASKBARWIDGETS_TAURI_TARGET_DIR: ${{ runner.temp }}/taskbarwidgets-tauri-target
         run: |
           $sourceRoot = (Resolve-Path -LiteralPath upstream-taskbar-widgets).Path
           $workspaceRoot = (Resolve-Path -LiteralPath $env:GITHUB_WORKSPACE).Path + '\'
