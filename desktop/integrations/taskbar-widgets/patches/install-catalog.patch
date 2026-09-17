@@ -58,7 +58,7 @@ diff --git a/src/settings/dist/app.js b/src/settings/dist/app.js
 +      state.settings.activeDesign = installedId;
 +      state.page = "library";
 +      setDirty(true);
-+      await saveSettings();
++      if (!await saveSettings()) throw new Error(state.status || "Widget settings could not be saved");
        closeInstallModal();
 -      setStatus(`${id} ${preview?.isUpdate ? "updated" : "installed"}; validating…`);
 -      setTimeout(async () => {
@@ -92,3 +92,14 @@ diff --git a/src/settings/dist/app.js b/src/settings/dist/app.js
        }
        state.installError = String(error);
        state.installPreview = null;
+@@ -2229,8 +2248,10 @@
+     await invoke("save_settings", { settings: state.settings });
+     locallyEditedWidgetPositions.clear();
+     setDirty(false);
+     setStatus(successMessage);
++    return true;
+   } catch (error) {
+     setStatus(`Save failed: ${error}`);
++    return false;
+   }
+ }

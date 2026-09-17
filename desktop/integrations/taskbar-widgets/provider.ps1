@@ -6,6 +6,7 @@ $reader = [IO.StreamReader]::new([Console]::OpenStandardInput(), [Text.UTF8Encod
 $pending = $reader.ReadLineAsync()
 $lastSent = [DateTime]::MinValue
 $theme = 'dark'
+$lastSnapshots = @{}
 while ($true) {
   if ($pending.Wait(500)) {
     $line = $pending.Result
@@ -13,7 +14,7 @@ while ($true) {
     try {
       $request = $line | ConvertFrom-Json
       if ($request.type -eq 'shutdown') { break }
-      if ($request.type -in @('initialize', 'instancesChanged')) { $instances = @($request.instances) }
+      if ($request.type -in @('initialize', 'instancesChanged')) { $instances = @($request.instances); $lastSnapshots = @{} }
       if ($request.type -eq 'action' -and $request.action -eq 'openOcelin') { Start-Process -FilePath 'ocelin://dashboard' -WindowStyle Hidden }
     } catch {}
     $pending = $reader.ReadLineAsync()
@@ -22,28 +23,39 @@ while ($true) {
   $lastSent = [DateTime]::UtcNow
   $headline = 'Ocelin offline'
   $detail = 'Open Ocelin to connect'
+  $pose = 'sleeping'
+  $motion = $true
   try {
     $file = Get-Item -LiteralPath $summaryFile
     if ($file.Length -le 4096) {
       $summary = Get-Content -LiteralPath $summaryFile -Raw | ConvertFrom-Json
       if ($summary.theme -in @('light', 'dark')) { $theme = $summary.theme }
+      $motion = $summary.motion -ne $false
       $age = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - [double]$summary.sampledAt
       if ($summary.status -eq 'disabled') { $detail = 'Enable sharing in Ocelin' }
       elseif ($summary.schemaVersion -eq 1 -and $summary.status -eq 'ready' -and $age -ge 0 -and $age -lt 35000) {
         $running = [Math]::Max(0, [Math]::Min(9999, [int]$summary.running))
         $attention = [Math]::Max(0, [Math]::Min(9999, [int]$summary.attention))
-        $headline = "$running running"
-        if ($attention -gt 0) { $headline += " | $attention need you" }
+        $pose = if ($attention -gt 0) { 'attention' } elseif ($running -gt 0) { 'coding' } else { 'idle' }
+        $headline = if ($running -gt 0) { "$running running" } else { 'All quiet' }
+        if ($attention -gt 0) { $headline = if ($attention -eq 1) { '1 needs you' } else { "$attention need you" } }
         $ram = if ($null -eq $summary.memoryBytes) { 'RAM unavailable' } elseif ($summary.memoryBytes -ge 1GB) { '{0:N1} GB RAM' -f ($summary.memoryBytes / 1GB) } else { '{0:N0} MB RAM' -f ($summary.memoryBytes / 1MB) }
-        $detail = "Codex + Claude | $ram"
+        $detail = if ($attention -gt 0 -and $running -gt 0) { "$running active | $($ram -replace ' RAM$', '')" } else { $ram }
       }
     }
   } catch {}
   $foreground = if ($theme -eq 'light') { '#FF202520' } else { '#FFF0EEE5' }
   $secondary = if ($theme -eq 'light') { '#FF47534A' } else { '#FFB9C6BB' }
   $accent = if ($theme -eq 'light') { '#FF85530B' } else { '#FFEDBD77' }
+  $extension = if ($motion) { 'gif' } else { 'png' }
+  $pet = Join-Path $PSScriptRoot "assets\$pose.$extension"
+  $data = [ordered]@{ headline = $headline; detail = $detail; foreground = $foreground; secondary = $secondary; accent = $accent; pet = $pet }
+  $signature = $data | ConvertTo-Json -Compress
   foreach ($instance in $instances) {
     if (-not $instance.instanceId) { continue }
-    @{ type = 'snapshot'; instanceId = $instance.instanceId; data = @{ headline = $headline; detail = $detail; foreground = $foreground; secondary = $secondary; accent = $accent } } | ConvertTo-Json -Depth 4 -Compress | ForEach-Object { [Console]::WriteLine($_) }
+    $previous = $lastSnapshots[$instance.instanceId]
+    if ($previous -and $previous.signature -eq $signature -and ([DateTime]::UtcNow - $previous.at).TotalSeconds -lt 20) { continue }
+    @{ type = 'snapshot'; instanceId = $instance.instanceId; data = $data } | ConvertTo-Json -Depth 4 -Compress | ForEach-Object { [Console]::WriteLine($_) }
+    $lastSnapshots[$instance.instanceId] = @{ signature = $signature; at = [DateTime]::UtcNow }
   }
 }

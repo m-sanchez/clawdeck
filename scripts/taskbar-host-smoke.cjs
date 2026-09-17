@@ -30,6 +30,7 @@ async function simulate(source, options = {}) {
     displayName: "Ocelin", settings: [],
   };
   const context = vm.createContext({
+    locallyEditedWidgetPositions: new Set(),
     widgetCatalog: [{ id: "codex-status" }],
     defaultWidgets: [structuredClone(builtin)],
     defaults: {
@@ -74,6 +75,11 @@ async function simulate(source, options = {}) {
         }
         return {};
       }
+      if (name === "save_settings") {
+        if (options.saveFailure) throw new Error("Access denied while saving settings");
+        saved.push(JSON.parse(JSON.stringify(args.settings)));
+        return;
+      }
       assert.equal(name, "load_state");
       readCount++;
       assert.ok(readCount <= 20, "Catalog polling must remain bounded");
@@ -95,17 +101,14 @@ async function simulate(source, options = {}) {
     },
     setDirty: (dirty) => { context.state.dirty = dirty; },
     setStatus: (status) => { context.state.status = status; },
-    saveSettings: async () => {
-      saved.push(JSON.parse(JSON.stringify(context.state.settings)));
-      context.state.dirty = false;
-    },
     render() {},
     renderInstallModal() {},
   });
   for (const name of [
     "widgetById", "isKnownWidget", "applyRuntimeCatalog", "mergeSettings",
-    "normalizeWidgets", "normalizeRotation", "widgetState", "clampNumber",
+    "normalizeWidgets", "normalizeRotation", "widgetState", "activeWidget", "clampNumber",
     "closeInstallModal", "waitForInstalledWidget", "bindInstallModal",
+    "saveSettings",
   ]) {
     vm.runInContext(extract(source, name), context);
   }
@@ -151,6 +154,17 @@ async function main() {
     assert.match(result.state.status, /Open Settings, load the runtime, then enable the installed widget in the library/);
     if (options.invalid) assert.match(result.state.status, /Package approval does not match/);
   }
+  for (const options of [{}, { enable: false }, { update: true }]) {
+    const result = await simulate(source, { ...options, saveFailure: true });
+    assert.equal(result.saved.length, 0);
+    assert.equal(result.calls.filter(([name]) => name === "save_settings").length, 1);
+    assert.equal(result.state.settings.widgets[0].enabled, false);
+    assert.equal(result.state.dirty, true);
+    assert.match(result.state.status, /Installed .*setup could not finish/);
+    assert.match(result.state.status, /Save failed: Error: Access denied while saving settings/);
+    assert.match(result.state.status, /Open Settings, load the runtime, then enable the installed widget in the library/);
+    assert.doesNotMatch(result.state.status, /installed and enabled|updated to/);
+  }
   const rejected = await simulate(source, { installFailure: true });
   assert.equal(rejected.saved.length, 0);
   assert.equal(rejected.calls.some(([name]) => name === "control_runtime"), false);
@@ -160,7 +174,7 @@ async function main() {
     failedUpdate.calls.filter(([name]) => name === "control_runtime").map(([, args]) => args.action),
     ["unload", "load"],
   );
-  console.log("Taskbar host smoke passed: exact catalog identity, disabled choice, approval arguments, bounded failures and runtime recovery; all external actions mocked.");
+  console.log("Taskbar host smoke passed: exact catalog identity, disabled choice, approval arguments, save failures, bounded failures and runtime recovery; all external actions mocked.");
 }
 
 main().catch((error) => {

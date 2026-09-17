@@ -9,6 +9,8 @@ This optional adapter targets Taskbar Widgets 0.5.4 or newer using its schema v4
 
 Aggregate running/attention counts, app RAM and the Windows light/dark theme leave Ocelin's process through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. The text follows the Windows taskbar theme independently of Ocelin's appearance. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.
 
+The pixel mascot uses the same approved artwork as Ocelin: typing for running work, waving for attention, idle when quiet and sleeping when disconnected. Native GIF playback avoids an extra browser process. Static PNGs are used when Ocelin or Windows requests reduced motion. Unchanged snapshots are held for up to 20 seconds so animation can continue smoothly.
+
 Upstream 0.5.36 contains hardcoded Turkish permission-review text and can enable the wrong widget after a first installation with its runtime stopped. The [source patches](patches/README.md) preserve its approval flow, translate the review and wait for the correct widget before enabling it. The optional host build is reproducible.
 
 The adapter uses a normal-user PowerShell process. The host requires a broad `system.fullAccess` declaration for process providers and cannot sandbox that grant. The provider reads the fixed summary file, writes JSON responses, and opens only the fixed `ocelin://dashboard` link on click. It accepts no commands or paths from widget data. Review its small source before granting that permission.

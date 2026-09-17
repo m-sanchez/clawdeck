@@ -30,6 +30,9 @@ function taskbarSummary(state, enabled, now = Date.now()) {
   return {
     schemaVersion: 1,
     theme: state.taskbarTheme === "light" ? "light" : "dark",
+    motion:
+      !["none", "reduced"].includes(state.preferences?.motion) &&
+      !state.reducedMotion,
     sampledAt: now,
     status: !enabled ? "disabled" : ready ? "ready" : "unavailable",
     running: ready ? state.counts.running : null,

@@ -224,6 +224,12 @@ module.exports = async function smoke({
     assert.equal(getState().preferences.bar, false);
     await action("preferences", { bar: true });
     await until(() => bar.isVisible(), "closed floating bar restored");
+    await action("hide", { surface: "dashboard" });
+    assert.equal(dashboard.isVisible(), false);
+    await action("hide", { surface: "bar" });
+    assert.equal(dashboard.isVisible(), false);
+    await action("preferences", { bar: true });
+    await until(() => bar.isVisible(), "bar restored with dashboard recovery");
     report.checks.push(
       "Anchored tile is movable; dragging releases its anchor; button and window dismissal persist with recovery",
     );

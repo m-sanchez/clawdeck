@@ -132,6 +132,16 @@ test("taskbar export is opt-in, aggregate-only and rejects stale memory", () => 
   assert.equal(data.memoryBytes, 100);
   assert.equal(data.running, 2);
   assert.equal(data.theme, "light");
+  assert.equal(data.motion, true);
+  assert.equal(
+    taskbarSummary({ ...state, preferences: { motion: "none" } }, true, now)
+      .motion,
+    false,
+  );
+  assert.equal(
+    taskbarSummary({ ...state, reducedMotion: true }, true, now).motion,
+    false,
+  );
   assert.ok(!JSON.stringify(data).includes("PRIVATE"));
   assert.equal(taskbarSummary(state, false, now).running, null);
   assert.equal(taskbarSummary(state, true, now + 40000).memoryBytes, null);
@@ -231,14 +241,29 @@ test(
       );
     };
     await wait(
-      () => rows.some((r) => r.data?.headline === "2 running | 1 need you"),
+      () => rows.some((r) => r.data?.headline === "1 needs you"),
       30000,
     );
     assert.equal(
-      rows.find((r) => r.data?.headline === "2 running | 1 need you").data
-        .foreground,
+      rows.find((r) => r.data?.headline === "1 needs you").data.foreground,
       "#FF202520",
     );
+    assert.match(rows.at(-1).data.pet, /assets[\\/]attention\.gif$/);
+    await writeFile(
+      file,
+      JSON.stringify({
+        schemaVersion: 1,
+        status: "ready",
+        sampledAt: Date.now(),
+        running: 2,
+        attention: 0,
+        memoryBytes: 1024 ** 3,
+        theme: "light",
+        motion: false,
+      }),
+    );
+    await wait(() => rows.some((r) => r.data?.headline === "2 running"));
+    assert.match(rows.at(-1).data.pet, /assets[\\/]coding\.png$/);
     await writeFile(
       file,
       JSON.stringify({

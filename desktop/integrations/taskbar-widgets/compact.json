@@ -1,24 +1,29 @@
 {
   "type": "row",
-  "gap": 8,
+  "gap": 6,
+  "height": 44,
+  "verticalAlignment": "center",
   "children": [
     {
-      "type": "button",
-      "glyph": "\uE950",
-      "action": "openOcelin",
-      "tooltip": "Open Ocelin",
-      "width": 28,
-      "height": 28,
-      "fontSize": 18,
-      "color": { "bind": "data.accent", "fallback": "#FF85530B" }
+      "type": "image",
+      "source": { "bind": "data.pet" },
+      "width": 52,
+      "height": 42,
+      "stretch": "uniform",
+      "backgroundColor": "#00000000"
     },
     {
       "type": "column",
-      "gap": 2,
+      "gap": 0,
+      "width": 112,
+      "verticalAlignment": "center",
       "children": [
         {
           "type": "text",
           "fontSize": 12,
+          "fontWeight": "semibold",
+          "width": 112,
+          "trimming": "characterEllipsis",
           "color": { "bind": "data.foreground", "fallback": "#FF202520" },
           "segments": [
             { "bind": "data.headline", "fallback": "Ocelin offline" }
@@ -26,13 +31,24 @@
         },
         {
           "type": "text",
-          "fontSize": 10,
+          "fontSize": 11,
+          "width": 112,
+          "trimming": "characterEllipsis",
           "color": { "bind": "data.secondary", "fallback": "#FF47534A" },
           "segments": [
             { "bind": "data.detail", "fallback": "Open Ocelin to connect" }
           ]
         }
       ]
+    },
+    {
+      "type": "button",
+      "glyph": "\uE8A7",
+      "action": "openOcelin",
+      "width": 22,
+      "height": 28,
+      "fontSize": 12,
+      "color": { "bind": "data.secondary", "fallback": "#FF47534A" }
     }
   ]
 }

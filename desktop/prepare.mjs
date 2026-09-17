@@ -115,6 +115,9 @@ for (const name of [
   "provider.ps1",
   "README.md",
   "LICENSE",
+  ...["idle", "coding", "attention", "sleeping"].flatMap((state) =>
+    ["gif", "png"].map((extension) => `assets/${state}.${extension}`),
+  ),
 ]) {
   const filename = Buffer.from(name);
   const data = readFileSync(

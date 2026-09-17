@@ -9,6 +9,7 @@ const {
   screen,
   nativeImage,
   nativeTheme,
+  systemPreferences,
   Notification,
   utilityProcess,
   shell,
@@ -93,6 +94,7 @@ const state = () => ({
   packaged: app.isPackaged,
   resources: resources.value,
   taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI ? "dark" : "light",
+  reducedMotion: systemPreferences.getAnimationSettings().prefersReducedMotion,
   nativeTasks: nativeTasks.value,
   connections,
   hiddenKeys: [...hiddenKeys],
@@ -449,7 +451,10 @@ function createWindow(kind) {
 }
 function dismissBar() {
   preferences.update({ bar: false });
-  applySurfaces();
+  hideWindow(windows.get("bar"));
+  if (!tray && ![...windows.values()].some((window) => window.isVisible()))
+    showWindow("dashboard");
+  publish();
 }
 function hideWindow(window) {
   if (!window || window.isDestroyed()) return;
