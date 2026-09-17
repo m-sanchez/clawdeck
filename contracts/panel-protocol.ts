@@ -194,6 +194,23 @@ export interface ReadinessAxis {
   unknown: Array<{ id: string; title: string; reason?: string }>;
 }
 
+export interface SubscriptionAllowance {
+  provider: "codex" | "claude";
+  status: "ready" | "unavailable";
+  message: string | null;
+  sampledAt: number | null;
+  plan: string | null;
+  source?: string | null;
+  windows: Array<{
+    id: string;
+    label: string;
+    remainingPercent: number | null;
+    resetsAt: number | null;
+    minutes: number | null;
+    extra: boolean;
+  }>;
+}
+
 export interface PanelSnapshot {
   checkout: { id: string; root: string; branch?: string; isWorktree: boolean };
   runs: RunSummary[];
@@ -234,6 +251,7 @@ export interface PanelSnapshot {
    * Missing data is `unknown`, never zero.
    */
   quotaPressure: QuotaPressure;
+  subscriptions: Record<"codex" | "claude", SubscriptionAllowance> | null;
   remoteBranches: unknown[];
   recentCommits: unknown[];
   commitActivity: unknown[];

@@ -2,6 +2,7 @@
 import { el, card, pill, emptyState } from "../lib/dom.mjs";
 import { sparkline } from "../lib/charts.mjs";
 import { masonry } from "../lib/masonry.mjs";
+import { subscriptionView } from "../shared/subscriptions.mjs";
 
 const usd = (n) => "$" + (Number(n) || 0).toFixed(2);
 const pct = (n) => Math.round((Number(n) || 0) * 100) + "%";
@@ -461,5 +462,5 @@ export function render(app) {
     ].filter(Boolean),
   );
   requestAnimationFrame(() => masonry(cardTiles, { minCol: 380 }));
-  return el("div", { class: "view cp-view" }, [tiles, provenance, cardTiles]);
+  return el("div", { class: "view cp-view" }, [subscriptionView(snap.subscriptions), tiles, provenance, cardTiles]);
 }

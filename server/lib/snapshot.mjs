@@ -279,6 +279,7 @@ export async function buildSnapshot(ctx, cached) {
     cost,
     governor,
     quotaPressure,
+    subscriptions: cached.subscriptions ?? null,
     remoteBranches,
     recentCommits,
     commitActivity,

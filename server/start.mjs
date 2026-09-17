@@ -63,6 +63,7 @@ import { getWorktrees } from "./adapters/worktrees.mjs";
 import { slugForPath, agentIsActive } from "./adapters/sessions.mjs";
 import { getSessionFeed } from "./adapters/session-feed.mjs";
 import { monitorTranscript } from "./monitor/shared.mjs";
+import { readSubscriptionSnapshot } from "./monitor/subscriptions.mjs";
 import { getSessionTrace } from "./adapters/session-trace.mjs";
 import {
   resolveCodexTranscript,
@@ -596,6 +597,7 @@ function dirSize(dir) {
 async function currentSnapshot() {
   // The checkout adapter resolves the branch; no extra git call needed here.
   const snapshot = await buildSnapshot(ctx, {
+    subscriptions: await readSubscriptionSnapshot(),
     reviews: reviewsCache,
     validation: readValidationCache(),
     jobs: jobs.list(),
