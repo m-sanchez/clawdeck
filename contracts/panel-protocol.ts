@@ -201,6 +201,9 @@ export interface SubscriptionAllowance {
   sampledAt: number | null;
   plan: string | null;
   source?: string | null;
+  profileId?: string | null;
+  profileLabel?: string | null;
+  accountLabel?: string | null;
   windows: Array<{
     id: string;
     label: string;
@@ -251,7 +254,7 @@ export interface PanelSnapshot {
    * Missing data is `unknown`, never zero.
    */
   quotaPressure: QuotaPressure;
-  subscriptions: Record<"codex" | "claude", SubscriptionAllowance> | null;
+  subscriptions: (Record<"codex" | "claude", SubscriptionAllowance> & { profiles?: SubscriptionAllowance[] }) | null;
   remoteBranches: unknown[];
   recentCommits: unknown[];
   commitActivity: unknown[];

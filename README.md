@@ -16,6 +16,8 @@ Download the x64 installer from Releases. Sign-in startup and lifecycle hooks ar
 
 **Subscription allowance** shows the percentage left for each reported Codex and Claude session, weekly and model-specific limit, with reset countdowns. The desktop refreshes signed-in provider readings every two minutes; the project Cost page uses the same local snapshot. Missing or expired readings stay unavailable. [Usage sources and account scope](docs/WINDOWS-DESKTOP.md#subscription-allowance).
 
+Connect additional signed-in local profiles in **Settings → Account profiles** for separate allowance cards and source labels on sessions. Use **Open workspace** at the top of the panel to return to the original project tools, or **Choose folder…** to open another project.
+
 Windows options include the tray, Ctrl Alt O quick panel, floating bar, dashboard, a [native App Tasks development bridge](desktop/native/README.md), and the [optional Taskbar Widgets strip](desktop/integrations/taskbar-widgets/README.md). Native shell features have additional OS/package requirements. [What 0.6 implements and how it was validated](docs/OCELIN-0.6-VALIDATION.md).
 
 ![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)

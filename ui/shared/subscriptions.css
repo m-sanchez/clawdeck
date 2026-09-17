@@ -48,6 +48,13 @@
   text-transform: capitalize;
   color: var(--muted, #a9b5a8);
 }
+.allowance-account {
+  display: grid;
+  gap: 2px;
+  margin: -4px 0 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .allowance-window + .allowance-window {
   margin-top: 12px;
 }

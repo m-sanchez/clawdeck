@@ -176,16 +176,23 @@ if (surface === "tray") {
 }
 function render(value) {
   state = value;
-  const nextAllowanceKey = JSON.stringify(value.subscriptions) + Math.floor(Date.now() / 60000);
+  renderWorkspaceLauncher(value);
+  const nextAllowanceKey =
+    JSON.stringify(value.subscriptions) + Math.floor(Date.now() / 60000);
   if (nextAllowanceKey !== allowanceKey && surface !== "bar") {
     allowanceKey = nextAllowanceKey;
     const details = [...$("subscriptions").querySelectorAll("details")];
-    const focused = details.findIndex(d => d.contains(document.activeElement));
-    const expanded = details.map(d => d.open);
+    const focused = details.findIndex((d) =>
+      d.contains(document.activeElement),
+    );
+    const expanded = details.map((d) => d.open);
     const view = subscriptionView(value.subscriptions, { providerIcon });
-    [...view.querySelectorAll("details")].forEach((d, i) => { d.open = !!expanded[i]; });
+    [...view.querySelectorAll("details")].forEach((d, i) => {
+      d.open = !!expanded[i];
+    });
     $("subscriptions").replaceChildren(view);
-    if (focused >= 0) view.querySelectorAll("summary")[focused]?.focus({ preventScroll: true });
+    if (focused >= 0)
+      view.querySelectorAll("summary")[focused]?.focus({ preventScroll: true });
   }
   document.documentElement.dataset.theme = value.preferences.theme;
   document.body.dataset.density = value.preferences.density;
@@ -251,8 +258,109 @@ function render(value) {
       ),
     ),
   );
+  renderAccountProfiles(value);
   renderResources();
   renderSessions();
+}
+let accountProfileKey = "";
+let workspaceKey = "";
+function renderWorkspaceLauncher(value) {
+  const projects = groupSessions(value.sessions, {
+    filter: "all",
+    historySince: 0,
+  }).filter((p) => p.sessions.some((s) => s.cwd));
+  const key = JSON.stringify([
+    value.preferences.lastProjectPath,
+    projects.map((p) => [p.key, p.title, p.sessions[0]?.key]),
+  ]);
+  if (key === workspaceKey) return;
+  workspaceKey = key;
+  const selected =
+    $("workspace-project").value || value.preferences.lastProjectKey;
+  $("workspace-project").replaceChildren(
+    ...projects.map((p) => {
+      const option = node("option", "", p.title);
+      option.value = p.sessions.find((s) => s.cwd).key;
+      option.title = p.key;
+      return option;
+    }),
+  );
+  if (
+    value.preferences.lastProjectPath &&
+    !projects.some((p) => p.cwd === value.preferences.lastProjectPath)
+  ) {
+    const option = node(
+      "option",
+      "",
+      `Last opened · ${value.preferences.lastProjectPath.split(/[\\/]/).pop()}`,
+    );
+    option.value = "last";
+    $("workspace-project").append(option);
+  }
+  if ([...$("workspace-project").options].some((o) => o.value === selected))
+    $("workspace-project").value = selected;
+  $("workspace-open").disabled = !$("workspace-project").options.length;
+  if (!$("workspace-project").options.length)
+    $("workspace-project").append(
+      node("option", "", "Choose a project folder to begin"),
+    );
+}
+const accountProfileDrafts = new Map();
+function renderAccountProfiles(value) {
+  const readings = [
+    value.subscriptions?.codex,
+    value.subscriptions?.claude,
+    ...(value.subscriptions?.profiles || []),
+  ].filter(Boolean);
+  const key = JSON.stringify([
+    value.accountProfiles,
+    readings.map((p) => [p.profileId, p.accountLabel]),
+  ]);
+  if (key === accountProfileKey) return;
+  accountProfileKey = key;
+  $("account-profiles").replaceChildren(
+    ...(value.accountProfiles || []).map((profile) => {
+      const row = node("div", "account-profile");
+      row.dataset.profile = profile.id;
+      const reading = readings.find((p) => p.profileId === profile.id);
+      row.append(
+        node(
+          "strong",
+          "",
+          `${profile.provider === "codex" ? "Codex" : "Claude"} · ${profile.label}`,
+        ),
+        node("p", "", reading?.accountLabel || "Account identity unavailable"),
+        node("p", "source", profile.home),
+      );
+      if (!profile.builtin) {
+        const input = document.createElement("input");
+        input.value = accountProfileDrafts.get(profile.id) ?? profile.label;
+        input.maxLength = 48;
+        input.setAttribute("aria-label", `Name for ${profile.label}`);
+        input.addEventListener("input", () =>
+          accountProfileDrafts.set(profile.id, input.value),
+        );
+        const buttons = node("div", "buttons");
+        buttons.append(
+          input,
+          button("Rename", async () => {
+            if (
+              await action("account-profile-rename", {
+                id: profile.id,
+                label: input.value,
+              })
+            )
+              accountProfileDrafts.delete(profile.id);
+          }),
+          button("Disconnect", () =>
+            action("account-profile-remove", { id: profile.id }),
+          ),
+        );
+        row.append(buttons);
+      }
+      return row;
+    }),
+  );
 }
 function renderResources() {
   const r = state.resources;
@@ -382,6 +490,16 @@ function sessionRow(s) {
   );
   const label = node("div", "session-name");
   label.append(title);
+  if (s.profiles?.length) {
+    const profile = node(
+      "span",
+      "session-profile",
+      s.profiles.map((p) => p.label).join(" · "),
+    );
+    profile.title =
+      "Source profile. The account that originally ran this conversation is not verified.";
+    label.append(profile);
+  }
   if (s.parentId) label.append(node("span", "subagent", "↳ subagent"));
   const status = node("span", "status", statusLabel(s));
   status.title = `${s.label}\n${s.quality === "hook" ? "Lifecycle hook" : "Inferred from transcript"}`;
@@ -541,6 +659,23 @@ function renderSessions() {
         summary.append(
           node("span", "group-signal running", `${g.running} running`),
         );
+      const workspace = button(
+        "Workspace ↗",
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void action("workspace", { key: g.sessions.find((s) => s.cwd)?.key });
+        },
+        "project-workspace",
+      );
+      workspace.setAttribute(
+        "aria-label",
+        `Open full workspace for ${g.title}`,
+      );
+      workspace.title =
+        "Overview, activity, worktrees, review, cost and delivery";
+      workspace.disabled = !g.sessions.some((s) => s.cwd);
+      summary.append(workspace);
       group.append(summary);
       const list = node("div", "project-sessions");
       const fill = () => {
@@ -674,6 +809,20 @@ $("settings").addEventListener("click", async () => {
   $("preferences").showModal();
 });
 $("quit").addEventListener("click", () => action("quit"));
+$("workspace-open").addEventListener("click", async () => {
+  const button = $("workspace-open");
+  button.disabled = true;
+  button.textContent = "Opening…";
+  try {
+    await action("workspace", { key: $("workspace-project").value });
+  } finally {
+    button.disabled = false;
+    button.textContent = "Open workspace ↗";
+  }
+});
+$("workspace-choose").addEventListener("click", () =>
+  action("workspace-choose"),
+);
 for (const input of document.querySelectorAll("[data-pref]"))
   input.addEventListener("change", () =>
     action("preferences", {
@@ -691,6 +840,16 @@ for (const b of document.querySelectorAll("[data-source]"))
   b.addEventListener("click", () =>
     action("source", { provider: b.dataset.source }),
   );
+for (const b of document.querySelectorAll("[data-account-provider]"))
+  b.addEventListener("click", async () => {
+    if (
+      await action("account-profile-add", {
+        provider: b.dataset.accountProvider,
+        label: $("account-profile-label").value,
+      })
+    )
+      $("account-profile-label").value = "";
+  });
 for (const provider of ["codex", "claude"]) {
   const row = node("div", "buttons");
   for (const remove of [false, true])

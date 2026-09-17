@@ -2,6 +2,8 @@ import { readFile, stat, mkdir, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { CodexClient } from "../library/codex-client.mjs";
+import profilesModule from "./profiles.cjs";
+const { accountProfiles } = profilesModule;
 
 export const SUBSCRIPTION_INTERVAL = 120000;
 export const SUBSCRIPTION_TTL = 300000;
@@ -53,7 +55,7 @@ const window = (id, label, used, resetsAt, minutes) => ({
 });
 const duration = (minutes) =>
   minutes === 300
-    ? "Session · 5h"
+    ? "5-hour window"
     : minutes === 10080
       ? "Weekly"
       : minutes > 0
@@ -105,7 +107,7 @@ export function codexSubscription(result, account, now = Date.now()) {
 
 export function claudeSubscription(result, plan, now = Date.now()) {
   const labels = {
-    five_hour: "Session · 5h",
+    five_hour: "5-hour window",
     seven_day: "Weekly",
     seven_day_opus: "Opus · weekly",
     seven_day_sonnet: "Sonnet · weekly",
@@ -157,43 +159,49 @@ export async function readSubscriptionSnapshot(
 ) {
   try {
     const value = await boundedJson(join(directory, "subscriptions.json"));
-    if (value.schemaVersion !== 1) return emptySubscriptions();
-    return Object.fromEntries(
-      ["codex", "claude"].map((provider) => {
-        const saved = value.providers?.[provider];
-        if (!saved || !Array.isArray(saved.windows))
-          return [provider, empty(provider)];
-        return [
+    if (![1, 2].includes(value.schemaVersion)) return emptySubscriptions();
+    const clean = (provider, saved) => {
+      if (!saved || !Array.isArray(saved.windows)) return empty(provider);
+      return {
+        provider,
+        profileId: safeText(saved.profileId),
+        profileLabel: safeText(saved.profileLabel),
+        accountLabel: safeText(saved.accountLabel),
+        status: saved.status === "ready" ? "ready" : "unavailable",
+        message: safeText(saved.message),
+        plan: safeText(saved.plan),
+        source: safeText(saved.source),
+        sampledAt: Number.isFinite(saved.sampledAt) ? saved.sampledAt : null,
+        windows: saved.windows
+          .slice(0, 12)
+          .filter((w) => w && typeof w === "object")
+          .map((w) => ({
+            id: safeText(w.id),
+            label: safeText(w.label),
+            remainingPercent: percent(w.remainingPercent),
+            resetsAt:
+              Number.isFinite(w.resetsAt) &&
+              w.resetsAt > 0 &&
+              w.resetsAt < 8.64e15
+                ? w.resetsAt
+                : null,
+            minutes: Number.isFinite(w.minutes) ? w.minutes : null,
+            extra: w.extra === true,
+          })),
+      };
+    };
+    return {
+      ...Object.fromEntries(
+        ["codex", "claude"].map((provider) => [
           provider,
-          {
-            provider,
-            status: saved.status === "ready" ? "ready" : "unavailable",
-            message: safeText(saved.message),
-            plan: safeText(saved.plan),
-            source: safeText(saved.source),
-            sampledAt: Number.isFinite(saved.sampledAt)
-              ? saved.sampledAt
-              : null,
-            windows: saved.windows
-              .slice(0, 12)
-              .filter((w) => w && typeof w === "object")
-              .map((w) => ({
-                id: safeText(w.id),
-                label: safeText(w.label),
-                remainingPercent: percent(w.remainingPercent),
-                resetsAt:
-                  Number.isFinite(w.resetsAt) &&
-                  w.resetsAt > 0 &&
-                  w.resetsAt < 8.64e15
-                    ? w.resetsAt
-                    : null,
-                minutes: Number.isFinite(w.minutes) ? w.minutes : null,
-                extra: w.extra === true,
-              })),
-          },
-        ];
-      }),
-    );
+          clean(provider, value.providers?.[provider]),
+        ]),
+      ),
+      profiles: (Array.isArray(value.profiles) ? value.profiles : [])
+        .slice(0, 8)
+        .filter((p) => ["codex", "claude"].includes(p?.provider))
+        .map((p) => clean(p.provider, p)),
+    };
   } catch {
     return emptySubscriptions();
   }
@@ -208,6 +216,9 @@ export class SubscriptionMonitor {
     client = new CodexClient({ env, timeout: 45000 }),
     onUpdate = () => {},
     fixture = false,
+    profiles = [],
+    clientFactory = (profileEnv) =>
+      new CodexClient({ env: profileEnv, timeout: 45000 }),
   } = {}) {
     Object.assign(this, {
       dataDir,
@@ -217,12 +228,16 @@ export class SubscriptionMonitor {
       client,
       onUpdate,
       fixture,
+      clientFactory,
     });
+    this.profiles = accountProfiles(profiles, env);
+    this.clients = new Set([client]);
+    this.generation = 0;
     this.value = emptySubscriptions();
   }
-  async codex() {
+  async codex(client = this.client) {
     try {
-      const before = await this.client.call("account/read", {
+      const before = await client.call("account/read", {
         refreshToken: false,
       });
       if (
@@ -230,26 +245,29 @@ export class SubscriptionMonitor {
         !["chatgpt", "chatgptAuthTokens"].includes(before.account.type)
       )
         return empty("codex", "Sign in to a ChatGPT subscription in Codex.");
-      const result = await this.client.call("account/rateLimits/read", {});
-      const after = await this.client.call("account/read", {
+      const result = await client.call("account/rateLimits/read", {});
+      const after = await client.call("account/read", {
         refreshToken: false,
       });
       if (JSON.stringify(before.account) !== JSON.stringify(after.account))
         return empty("codex", "Account changed. Checking again shortly.");
-      return codexSubscription(result, after.account, this.now());
+      return {
+        ...codexSubscription(result, after.account, this.now()),
+        accountLabel: safeText(after.account.email),
+      };
     } catch {
       return empty(
         "codex",
         "Cannot read Codex allowance. Open Codex and check its sign-in.",
       );
     } finally {
-      this.client.stop();
+      client.stop();
     }
   }
-  async claude() {
+  async claude(home, identify = false) {
     try {
       const file = join(
-        this.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
+        home || this.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"),
         ".credentials.json",
       );
       const credentials = (await boundedJson(file)).claudeAiOauth;
@@ -275,7 +293,7 @@ export class SubscriptionMonitor {
           headers: {
             Authorization: `Bearer ${credentials.accessToken}`,
             "anthropic-beta": "oauth-2025-04-20",
-            "User-Agent": "Ocelin/0.6.3",
+            "User-Agent": "Ocelin/0.6.4",
           },
         },
       );
@@ -288,14 +306,40 @@ export class SubscriptionMonitor {
         );
       const body = await response.text();
       if (body.length > 128 * 1024) throw new Error("Response too large");
+      let accountLabel = null;
+      if (identify) {
+        try {
+          const profile = await this.fetcher(
+            "https://api.anthropic.com/api/oauth/profile",
+            {
+              method: "GET",
+              redirect: "error",
+              signal: AbortSignal.timeout(15000),
+              headers: {
+                Authorization: `Bearer ${credentials.accessToken}`,
+                "anthropic-beta": "oauth-2025-04-20",
+                "User-Agent": "Ocelin/0.6.4",
+              },
+            },
+          );
+          if (profile.ok) {
+            const text = await profile.text();
+            if (text.length <= 128 * 1024)
+              accountLabel = safeText(JSON.parse(text).account?.email);
+          }
+        } catch {}
+      }
       const current = (await boundedJson(file)).claudeAiOauth;
       if (current?.accessToken !== credentials.accessToken)
         return empty("claude", "Account changed. Checking again shortly.");
-      return claudeSubscription(
-        JSON.parse(body),
-        credentials.subscriptionType,
-        this.now(),
-      );
+      return {
+        ...claudeSubscription(
+          JSON.parse(body),
+          credentials.subscriptionType,
+          this.now(),
+        ),
+        accountLabel,
+      };
     } catch {
       return empty(
         "claude",
@@ -303,30 +347,92 @@ export class SubscriptionMonitor {
       );
     }
   }
+  async readProfile(profile) {
+    let result;
+    if (profile.provider === "claude")
+      result = await this.claude(profile.home, true);
+    else if (profile.builtin) result = await this.codex();
+    else {
+      const env = { ...this.env, CODEX_HOME: profile.home };
+      for (const key of [
+        "CODEX_ACCESS_TOKEN",
+        "CODEX_API_KEY",
+        "OPENAI_API_KEY",
+      ])
+        delete env[key];
+      const client = this.clientFactory(env);
+      this.clients.add(client);
+      try {
+        result = await this.codex(client);
+      } finally {
+        this.clients.delete(client);
+      }
+    }
+    return { ...result, profileId: profile.id, profileLabel: profile.label };
+  }
+  setProfiles(profiles) {
+    this.generation++;
+    this.profiles = accountProfiles(profiles, this.env);
+    for (const client of this.clients) client.stop();
+    this.value = {
+      ...emptySubscriptions(),
+      profiles: this.profiles
+        .filter((p) => !p.builtin)
+        .map((p) => ({
+          ...empty(p.provider),
+          profileId: p.id,
+          profileLabel: p.label,
+        })),
+    };
+    this.onUpdate(this.value);
+    if (!this.pending) void this.refresh();
+  }
   async refresh() {
     if (this.pending) return this.pending;
+    const generation = this.generation;
     this.pending = (async () => {
       if (this.fixture)
         this.value = await readSubscriptionSnapshot(this.dataDir);
       else {
-        await Promise.all(
-          ["codex", "claude"].map(async (provider) => {
-            const value = await this[provider]();
-            if (!this.stopped) {
-              this.value[provider] = value;
-              this.onUpdate(this.value);
-            }
-          }),
-        );
-        if (this.stopped) return;
+        const profiles = [...this.profiles];
+        this.value.profiles ||= [];
+        for (let i = 0; i < profiles.length; i += 2) {
+          if (this.stopped || generation !== this.generation) return;
+          await Promise.all(
+            profiles.slice(i, i + 2).map(async (profile) => {
+              const value = await this.readProfile(profile);
+              if (!this.stopped && generation === this.generation) {
+                if (profile.builtin) this.value[profile.provider] = value;
+                else
+                  this.value.profiles = [
+                    ...this.value.profiles.filter(
+                      (p) => p.profileId !== profile.id,
+                    ),
+                    value,
+                  ].sort(
+                    (a, b) =>
+                      profiles.findIndex((p) => p.id === a.profileId) -
+                      profiles.findIndex((p) => p.id === b.profileId),
+                  );
+                this.onUpdate(this.value);
+              }
+            }),
+          );
+        }
+        if (this.stopped || generation !== this.generation) return;
         await mkdir(this.dataDir, { recursive: true });
         const file = join(this.dataDir, "subscriptions.json");
         const temp = `${file}.${process.pid}.tmp`;
         await writeFile(
           temp,
-          JSON.stringify({ schemaVersion: 1, providers: this.value }),
+          JSON.stringify({
+            schemaVersion: 2,
+            providers: { codex: this.value.codex, claude: this.value.claude },
+            profiles: this.value.profiles,
+          }),
           { mode: 0o600 },
         );
+        if (this.stopped || generation !== this.generation) return;
         await rename(temp, file);
       }
       if (!this.stopped) this.onUpdate(this.value);
@@ -334,6 +440,8 @@ export class SubscriptionMonitor {
       .catch(() => {})
       .finally(() => {
         this.pending = null;
+        if (!this.stopped && generation !== this.generation)
+          void this.refresh();
       });
     return this.pending;
   }
@@ -346,6 +454,6 @@ export class SubscriptionMonitor {
   stop() {
     this.stopped = true;
     clearInterval(this.timer);
-    this.client.stop();
+    for (const client of this.clients) client.stop();
   }
 }

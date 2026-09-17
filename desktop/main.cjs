@@ -28,7 +28,10 @@ const { Worker } = require("node:worker_threads");
 const { Preferences, recoverBounds } = require("./lib/preferences.cjs");
 const { panelBounds, panelDuration } = require("./lib/panel.cjs");
 const { Resources } = require("./lib/resources.cjs");
-const { TaskbarBridge, widgetSetupArguments } = require("./lib/taskbar-bridge.cjs");
+const {
+  TaskbarBridge,
+  widgetSetupArguments,
+} = require("./lib/taskbar-bridge.cjs");
 const { NativeTasks } = require("./lib/native-tasks.cjs");
 const {
   sessionLink,
@@ -57,6 +60,17 @@ const smokeTest =
 app.setPath("userData", dataDir);
 app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
 const preferences = new Preferences(dataDir);
+const { accountProfiles, profileSources, profileLabel } = require(
+  join(core, "server", "monitor", "profiles.cjs"),
+);
+const sources = () =>
+  profileSources(
+    preferences.value.sources ??
+      (process.env.OCELIN_SOURCES
+        ? JSON.parse(process.env.OCELIN_SOURCES)
+        : null),
+    preferences.value.accountProfiles,
+  );
 const taskbarBridge = new TaskbarBridge(dataDir);
 const nativeTasks = new NativeTasks(
   dataDir,
@@ -93,13 +107,18 @@ const icon = () =>
   nativeImage.createFromPath(join(__dirname, "assets", "ocelin.png"));
 const state = () => ({
   ...snapshot,
-  sessions: snapshot.sessions.filter(s => Date.now() - s.lastTs < 86400000 || !s.stale),
+  sessions: snapshot.sessions.filter(
+    (s) => Date.now() - s.lastTs < 86400000 || !s.stale,
+  ),
   preferences: preferences.value,
+  accountProfiles: accountProfiles(preferences.value.accountProfiles),
   error,
   version: app.getVersion(),
   packaged: app.isPackaged,
   resources: resources.value,
-  taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI ? "dark" : "light",
+  taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
+    ? "dark"
+    : "light",
   reducedMotion: systemPreferences.getAnimationSettings().prefersReducedMotion,
   nativeTasks: nativeTasks.value,
   connections,
@@ -127,19 +146,17 @@ function publish() {
 }
 function libraryRequest(type, args = {}) {
   if (!library) {
-    library = backgroundWorker(
-      join(core, "server", "library", "worker.mjs"),
-      {
-        env: {
-          ...process.env,
-          OCELIN_DATA_DIR: dataDir,
-          ...(preferences.value.sources
-            ? { OCELIN_SOURCES: JSON.stringify(preferences.value.sources) }
-            : {}),
-        },
-        name: "Ocelin session library",
+    library = backgroundWorker(join(core, "server", "library", "worker.mjs"), {
+      env: {
+        ...process.env,
+        OCELIN_DATA_DIR: dataDir,
+        OCELIN_SOURCES: JSON.stringify(sources()),
+        OCELIN_ACCOUNT_PROFILES: JSON.stringify(
+          preferences.value.accountProfiles,
+        ),
       },
-    );
+      name: "Ocelin session library",
+    });
     library.postMessage({ type: "snapshot", sessions: snapshot.sessions });
     library.on("message", (message) => {
       const pending = libraryRequests.get(message.id);
@@ -265,20 +282,18 @@ function request(type, args = {}) {
   });
 }
 function startMonitor() {
-  monitor = backgroundWorker(
-    join(core, "server", "monitor", "worker.mjs"),
-    {
-      env: {
-        ...process.env,
-        OCELIN_DATA_DIR: dataDir,
-        ...(smokeTest ? { OCELIN_SMOKE_TEST: "1" } : {}),
-        ...(preferences.value.sources
-          ? { OCELIN_SOURCES: JSON.stringify(preferences.value.sources) }
-          : {}),
-      },
-      name: "Ocelin session monitor",
+  monitor = backgroundWorker(join(core, "server", "monitor", "worker.mjs"), {
+    env: {
+      ...process.env,
+      OCELIN_DATA_DIR: dataDir,
+      ...(smokeTest ? { OCELIN_SMOKE_TEST: "1" } : {}),
+      OCELIN_SOURCES: JSON.stringify(sources()),
+      OCELIN_ACCOUNT_PROFILES: JSON.stringify(
+        preferences.value.accountProfiles,
+      ),
     },
-  );
+    name: "Ocelin session monitor",
+  });
   monitor.postMessage({ type: "preferences", value: preferences.value });
   monitor.stderr.on("data", (chunk) => {
     error = `Monitor: ${String(chunk).slice(0, 300)}`;
@@ -338,8 +353,13 @@ function startMonitor() {
 }
 function backgroundWorker(file, options) {
   const worker = new Worker(file, { ...options, stdout: true, stderr: true });
-  worker.kill = () => { void worker.terminate(); };
-  worker.on("error", failure => { error = `${options.name}: ${failure.message}`; publish(); });
+  worker.kill = () => {
+    void worker.terminate();
+  };
+  worker.on("error", (failure) => {
+    error = `${options.name}: ${failure.message}`;
+    publish();
+  });
   return worker;
 }
 function secure(window) {
@@ -365,15 +385,21 @@ function createWindow(kind) {
           height: 96,
         }
       : {
-            x: work.x + 60,
-            y: work.y + 60,
-            width: Math.min(1120, work.width),
-            height: Math.min(800, work.height),
-          };
+          x: work.x + 60,
+          y: work.y + 60,
+          width: Math.min(1120, work.width),
+          height: Math.min(800, work.height),
+        };
   const window = new BrowserWindow({
     ...(kind === "tray"
-      ? panelBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea)
-      : recoverBounds(preferences.value.bounds[kind], screen.getAllDisplays(), fallback)),
+      ? panelBounds(
+          screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,
+        )
+      : recoverBounds(
+          preferences.value.bounds[kind],
+          screen.getAllDisplays(),
+          fallback,
+        )),
     title: "Ocelin",
     icon: icon(),
     show: false,
@@ -384,7 +410,8 @@ function createWindow(kind) {
     minHeight: kind === "tray" ? 0 : kind === "bar" ? 62 : 360,
     skipTaskbar: kind !== "dashboard",
     alwaysOnTop:
-      kind === "tray" || (kind !== "dashboard" && preferences.value.alwaysOnTop),
+      kind === "tray" ||
+      (kind !== "dashboard" && preferences.value.alwaysOnTop),
     transparent: kind === "tray",
     backgroundColor: kind === "tray" ? "#00000000" : "#171a19",
     autoHideMenuBar: true,
@@ -398,7 +425,9 @@ function createWindow(kind) {
   });
   windows.set(kind, window);
   window.ocelinSurface = kind;
-  window.once("closed", () => { if (windows.get(kind) === window) windows.delete(kind); });
+  window.once("closed", () => {
+    if (windows.get(kind) === window) windows.delete(kind);
+  });
   secure(window);
   window.webContents.on("console-message", (details) => {
     if (details?.level === "error")
@@ -479,7 +508,10 @@ function hideWindow(window) {
   clearTimeout(window.ocelinBlur);
   window.ocelinVisible = false;
   if (window.ocelinSurface === "tray")
-    window.webContents.send("ocelin:panel-open", { visible: false, duration: 0 });
+    window.webContents.send("ocelin:panel-open", {
+      visible: false,
+      duration: 0,
+    });
   window.hide();
   clearTimeout(window.ocelinSleep);
   window.ocelinSleep = setTimeout(() => {
@@ -507,7 +539,11 @@ function showWindow(kind, focus = true) {
   window.ocelinVisible = true;
   window.ocelinFocus = focus;
   if (kind === "tray")
-    window.setBounds(panelBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea));
+    window.setBounds(
+      panelBounds(
+        screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea,
+      ),
+    );
   if (kind === "tray" ? window.ocelinReady : !window.webContents.isLoading())
     presentWindow(window);
 }
@@ -596,11 +632,14 @@ async function closeProject() {
   old.worker.postMessage({ type: "stop" });
   setTimeout(() => old.worker.kill(), 2000).unref();
 }
-async function openProject(key) {
-  const target = await request("target", { key });
+async function openProject(key, overview = false, directory = null) {
+  const target = directory
+    ? { cwd: directory }
+    : await request("target", { key });
   const cwd = await realpath(target.cwd);
   if (/^[/\\]{2}/.test(cwd) || !(await stat(cwd)).isDirectory())
     throw new Error("Project directory is unavailable");
+  preferences.save({ lastProjectKey: key || null, lastProjectPath: cwd });
   await closeProject();
   const port = await freePort();
   const nonce = randomBytes(24).toString("hex");
@@ -682,7 +721,9 @@ async function openProject(key) {
   }
   const token = readFileSync(join(runtime, "panel.token"), "utf8").trim();
   await window.loadURL(
-    `${origin}/?desktop=1&provider=${target.provider}&session=${encodeURIComponent(target.sessionId)}#token=${token}&/activity/session`,
+    overview
+      ? `${origin}/?desktop=1#token=${token}&/overview`
+      : `${origin}/?desktop=1&provider=${target.provider}&session=${encodeURIComponent(target.sessionId)}#token=${token}&/activity/session`,
   );
   window.show();
   return true;
@@ -714,17 +755,27 @@ async function action(name, args = {}) {
       .map((root) => join(root, "TaskbarWidgets.exe"))
       .find(existsSync);
     if (host) {
-      const bundled = JSON.parse(readFileSync(
-        join(__dirname, "integrations", "taskbar-widgets", "widget.json"),
-        "utf8",
-      ));
+      const bundled = JSON.parse(
+        readFileSync(
+          join(__dirname, "integrations", "taskbar-widgets", "widget.json"),
+          "utf8",
+        ),
+      );
       let installed;
       if (process.env.LOCALAPPDATA) {
         try {
-          installed = JSON.parse(readFileSync(
-            join(process.env.LOCALAPPDATA, "TaskbarWidgets", "CommunityWidgets", bundled.id, "widget.json"),
-            "utf8",
-          ));
+          installed = JSON.parse(
+            readFileSync(
+              join(
+                process.env.LOCALAPPDATA,
+                "TaskbarWidgets",
+                "CommunityWidgets",
+                bundled.id,
+                "widget.json",
+              ),
+              "utf8",
+            ),
+          );
         } catch {}
       }
       for (const hostArgs of [
@@ -745,11 +796,18 @@ async function action(name, args = {}) {
       return true;
     }
     const failure = await shell.openPath(destination);
-    if (failure) throw new Error("Install Taskbar Widgets first, then use Connect taskbar strip to review the Ocelin package.");
+    if (failure)
+      throw new Error(
+        "Install Taskbar Widgets first, then use Connect taskbar strip to review the Ocelin package.",
+      );
     return true;
   }
   if (name === "session-open") return openSession(args.key);
-  if (name === "session-preview") return libraryRequest("preview", { key: args.key, hint: snapshot.sessions.find(s => s.key === args.key) });
+  if (name === "session-preview")
+    return libraryRequest("preview", {
+      key: args.key,
+      hint: snapshot.sessions.find((s) => s.key === args.key),
+    });
   if (name === "library-query") return libraryRequest("query", args);
   if (name === "library-plan") return libraryRequest("plan", args);
   if (name === "library-apply") {
@@ -802,12 +860,24 @@ async function action(name, args = {}) {
     return state();
   }
   if (name === "acknowledge") return request("acknowledge", { key: args.key });
-  if (name === "project") {
+  if (["project", "workspace", "workspace-choose"].includes(name)) {
     if (projectOpening)
       throw new Error("A project is opening; try again when it is ready");
     projectOpening = true;
     try {
-      return await openProject(args.key);
+      if (name === "workspace-choose") {
+        const chosen = await dialog.showOpenDialog({
+          title: "Choose a project for the full workspace",
+          properties: ["openDirectory"],
+        });
+        if (chosen.canceled) return false;
+        return await openProject(null, true, chosen.filePaths[0]);
+      }
+      const directory =
+        name === "workspace" && args.key === "last"
+          ? preferences.value.lastProjectPath
+          : null;
+      return await openProject(args.key, name === "workspace", directory);
     } finally {
       projectOpening = false;
     }
@@ -869,7 +939,71 @@ async function action(name, args = {}) {
     if (!sources.some((s) => s.provider === args.provider && s.root === root))
       sources.push({ provider: args.provider, root });
     preferences.save({ sources });
-    await request("sources", { value: sources });
+    await request("sources", {
+      value: profileSources(sources, preferences.value.accountProfiles),
+    });
+    library?.postMessage({ type: "stop" });
+    publish();
+    return true;
+  }
+  if (
+    name === "account-profile-add" &&
+    ["codex", "claude"].includes(args.provider)
+  ) {
+    const result = await dialog.showOpenDialog({
+      title: `Select the ${args.provider === "codex" ? "Codex home" : "Claude configuration"} folder for this account`,
+      properties: ["openDirectory"],
+    });
+    if (result.canceled) return false;
+    const home = await realpath(result.filePaths[0]);
+    if (/^[/\\]{2}/.test(home))
+      throw new Error("Choose a local profile folder.");
+    const items = accountProfiles(preferences.value.accountProfiles);
+    const candidate = accountProfiles([
+      { provider: args.provider, home, label: args.label },
+    ]).find((p) => !p.builtin);
+    if (!candidate || items.some((p) => p.id === candidate.id))
+      throw new Error("That profile is already connected.");
+    if (items.length >= 10)
+      throw new Error("Up to eight additional profiles can be connected.");
+    const marker = args.provider === "codex" ? "sessions" : "projects";
+    const credential =
+      args.provider === "codex" ? "auth.json" : ".credentials.json";
+    if (
+      !existsSync(join(home, marker)) &&
+      !existsSync(join(home, credential)) &&
+      !existsSync(join(home, "config.toml"))
+    )
+      throw new Error(
+        `Choose the profile folder containing ${marker} or ${credential}.`,
+      );
+    preferences.save({
+      accountProfiles: [...items.filter((p) => !p.builtin), candidate],
+    });
+    await request("profiles", {
+      profiles: preferences.value.accountProfiles,
+      sources: sources(),
+    });
+    library?.postMessage({ type: "stop" });
+    publish();
+    return true;
+  }
+  if (["account-profile-remove", "account-profile-rename"].includes(name)) {
+    const profiles = accountProfiles(preferences.value.accountProfiles).filter(
+      (p) => !p.builtin,
+    );
+    if (!profiles.some((p) => p.id === args.id))
+      throw new Error("Unknown account profile.");
+    const next =
+      name === "account-profile-remove"
+        ? profiles.filter((p) => p.id !== args.id)
+        : profiles.map((p) =>
+            p.id === args.id
+              ? { ...p, label: profileLabel(args.label, p.label) }
+              : p,
+          );
+    preferences.save({ accountProfiles: next });
+    await request("profiles", { profiles: next, sources: sources() });
     library?.postMessage({ type: "stop" });
     publish();
     return true;
@@ -1007,7 +1141,9 @@ else {
       startMonitor();
       resources.start();
       applySurfaces({
-        panelLaunch: process.argv.some((value) => activation(value)?.type === "panel"),
+        panelLaunch: process.argv.some(
+          (value) => activation(value)?.type === "panel",
+        ),
       });
       await refreshConnections();
       globalShortcut.register("CommandOrControl+Alt+O", () =>
@@ -1023,7 +1159,9 @@ else {
       const recover = () => {
         for (const w of windows.values()) {
           if (w.ocelinSurface === "tray") {
-            w.setBounds(panelBounds(screen.getDisplayMatching(w.getBounds()).workArea));
+            w.setBounds(
+              panelBounds(screen.getDisplayMatching(w.getBounds()).workArea),
+            );
             continue;
           }
           w.setBounds(
