@@ -154,7 +154,7 @@ export function normalizeCodexRecords(records) {
       if (p.role === "assistant")
         assistant({
           content: [{ type: "text", text }],
-          ...(!hasEnds && p.phase === "final"
+          ...(!hasEnds && ["final", "final_answer"].includes(p.phase)
             ? { stop_reason: "end_turn" }
             : {}),
         });
@@ -227,7 +227,9 @@ export function codexState(records, mtimeMs, now = Date.now()) {
       if (["function_call", "custom_tool_call"].includes(p.type))
         state = "running";
       if (p.type === "message" && p.role === "assistant")
-        state = p.phase === "final" ? "idle" : "running";
+        state = ["final", "final_answer"].includes(p.phase)
+          ? "idle"
+          : "running";
     }
   }
   const fresh = lastMs > 0 && now - lastMs < 12 * 60 * 1000;

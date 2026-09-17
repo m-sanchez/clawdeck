@@ -245,6 +245,67 @@ module.exports = async function smoke({
     );
     assert.equal(rejected, true);
     report.checks.push("Unknown session target rejected through renderer IPC");
+    const libraryPage = await action("library-query", { view: "history" });
+    assert.ok(libraryPage.entries.length >= 3);
+    const claudeSession = libraryPage.entries.find(
+      (s) => s.provider === "claude",
+    );
+    const peek = await action("session-preview", { key: claudeSession.key });
+    assert.ok(peek.request.includes("Windows integration"));
+    const link = await action("session-open", { key: claudeSession.key });
+    assert.equal(
+      link.url,
+      `claude://resume?session=${claudeSession.sessionId}`,
+    );
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('[data-view=history]').click()",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "document.querySelectorAll('.library-row').length >= 3",
+        ),
+      "history rows",
+    );
+    await action("show", { surface: "dashboard" });
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('.library-row .session-title').focus()",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.getElementById('session-peek').hidden && document.getElementById('session-peek').textContent.includes('Latest request')",
+        ),
+      "zero-click transcript preview",
+    );
+    writeFileSync(
+      join(output, "history-preview.png"),
+      (await dashboard.webContents.capturePage()).toPNG(),
+    );
+    const hide = await action("library-plan", {
+      operation: "hide",
+      keys: [claudeSession.key],
+    });
+    await action("library-apply", { id: hide.id });
+    assert.ok(
+      (await action("library-query", { view: "archived" })).entries.some(
+        (s) => s.key === claudeSession.key && s.hidden,
+      ),
+    );
+    await action("library-apply", {
+      id: (
+        await action("library-plan", {
+          operation: "unhide",
+          keys: [claudeSession.key],
+        })
+      ).id,
+    });
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('[data-view=now]').click()",
+    );
+    report.checks.push(
+      "Native URI dispatch, history, hover transcript preview, hide and restore through renderer IPC",
+    );
     const selected = getState().sessions.find((s) => s.provider === "codex");
     await action("project", { key: selected.key });
     const project = getProject();
@@ -274,6 +335,11 @@ module.exports = async function smoke({
     report.checks.push(
       "Bundled project backend booted and correct session route opened",
     );
+    project.window.destroy();
+    assert.equal(getProject(), null);
+    await action("project", { key: selected.key });
+    assert.ok(getProject() && !getProject().window.isDestroyed());
+    report.checks.push("Released project window stops its backend and reopens cleanly");
     for (const combo of [
       { tray: true, bar: false, dashboard: false },
       { tray: false, bar: true, dashboard: false },
@@ -314,6 +380,18 @@ module.exports = async function smoke({
   } catch (error) {
     report.ok = false;
     report.error = error.stack;
+    const dashboard = windows.get("dashboard");
+    if (dashboard && !dashboard.isDestroyed()) {
+      report.ui = await dashboard.webContents
+        .executeJavaScript(
+          "({error:document.getElementById('error').textContent,peek:document.getElementById('session-peek').textContent,hidden:document.getElementById('session-peek').hidden,dialog:[...document.querySelectorAll('dialog[open]')].map(d=>d.id),focus:document.activeElement?.outerHTML})",
+        )
+        .catch(() => null);
+      writeFileSync(
+        join(output, "failure.png"),
+        (await dashboard.webContents.capturePage()).toPNG(),
+      );
+    }
   }
   writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2));
   app.once("will-quit", (event) => {

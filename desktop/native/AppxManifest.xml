@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap uap3 rescap">
+  <Identity Name="Ocelin.AppTasks.Local" Publisher="CN=Ocelin Local, OID.2.25.311729368913984317654407730594956997722=1" Version="0.6.0.1" ProcessorArchitecture="x64" />
+  <Properties><DisplayName>Ocelin</DisplayName><PublisherDisplayName>Ocelin</PublisherDisplayName><Logo>Assets\ocelin.png</Logo></Properties>
+  <Resources><Resource Language="en-us" /></Resources>
+  <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.26100.0" MaxVersionTested="10.0.26200.0" /></Dependencies>
+  <Capabilities><rescap:Capability Name="runFullTrust" /></Capabilities>
+  <Applications>
+    <Application Id="Taskbar" Executable="Ocelin.Taskbar.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Ocelin" Description="Native Windows taskbar status for local AI sessions" BackgroundColor="transparent" Square150x150Logo="Assets\ocelin.png" Square44x44Logo="Assets\ocelin.png" AppListEntry="none" />
+      <Extensions><uap3:Extension Category="windows.appExtension"><uap3:AppExtension Name="com.microsoft.apptaskprovider" PublicFolder="Public" Id="Ocelin.Taskbar" DisplayName="Ocelin task status" /></uap3:Extension></Extensions>
+    </Application>
+  </Applications>
+</Package>

@@ -1,5 +1,7 @@
 # Clawdeck on Windows: research and delivery plan
 
+Historical proposal, superseded by the [17 September native integration research](OCELIN-NEXT-RESEARCH.md). In particular, the newer report investigates Microsoft's `Windows.UI.Shell.Tasks` API, which this comparison missed, and makes exact-session access and history management acceptance gates.
+
 Research date: 16 September 2026. Status: proposal, not an implemented desktop release.
 
 The requested product is a Windows companion for existing Codex and Claude coding sessions, with **tray panel, floating session bar, and full desktop dashboard independently selectable**. A user can enable one, two, or all three. They share a session catalog, attention state, preferences, and notification owner.

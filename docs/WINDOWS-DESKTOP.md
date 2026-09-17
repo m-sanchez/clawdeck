@@ -4,7 +4,7 @@ Ocelin is the new product and mascot identity for Clawdeck. The existing reposit
 
 ## Install and run
 
-Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.5 preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
+Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.6 integration preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
 
 For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, then `npm start`. `npm run pack` produces an unpacked app; `npm run dist` produces the NSIS installer. The browser core continues to need only Node 20 or newer and no runtime npm dependencies.
 
@@ -12,17 +12,21 @@ For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, th
 
 - **Windows tray:** running and attention counts, a quick panel, and a menu to reopen windows or quit.
 - **Floating bar:** compact session chips or a status tile with running counts and app RAM; move freely or anchor above the Windows taskbar.
-- **Dashboard:** active sessions first, collapsible project groups, provider symbols, live app RAM and searchable history; select a session to open the existing project dashboard with its feed, trace, worktrees, reviews, cost and delivery views.
+- **Dashboard:** active sessions first, collapsible project groups, provider symbols, live app RAM and searchable history; hover to preview a conversation, click to continue in its provider, or use the secondary project dashboard action for feed, trace, worktrees, reviews, cost and delivery views.
 
 All three share one collector and notification owner. Closing a window hides it. Explicit Quit stops Ocelin's monitor and project backend, without stopping Codex or Claude. Ocelin retains a recovery surface when every option is switched off. Display changes clamp saved window positions to an available work area. Relaunching a second instance brings back the dashboard.
 
-Preferences, checkpoints, notification history and acknowledgements live in `%LOCALAPPDATA%\Ocelin`. Provider transcripts stay where their provider wrote them. The monitor saves metadata and file offsets, not transcript contents. Saved native task names, session IDs and project paths are local metadata. Uninstall preserves these preferences so reinstalling is reversible.
+Preferences, checkpoints, notification history and acknowledgements live in `%LOCALAPPDATA%\Ocelin`. Provider transcripts stay where their provider wrote them. The monitor saves metadata and file offsets. The separate history index caches titles and bounded first-request text locally; previews read provider history on demand. Saved native task names, session IDs and project paths are local metadata. Uninstall preserves these preferences so reinstalling is reversible.
 
 ## Sources and state
 
 ### Keep the first screen useful
 
-The default **Active now** view shows recent running and attention signals, grouped by project. Collapse a project or all projects to scan the list. Switch to **Last 24 hours** or **All discovered** when you want history. A discovered transcript is not a running process.
+The **Now** view shows recent running and attention signals, grouped by project. Collapse a project or all projects to scan the list. **History** and **Archived & hidden** use a separate, paginated library. Search titles, first requests, projects and IDs; filter by provider, age or missing folder. A discovered transcript is not a running process.
+
+Hover or keyboard-focus a conversation to preview recent text without opening another screen. Click it to continue in the exact provider task. Codex paginated sessions use the native history API. Known archived Claude tasks are labelled as restoring when opened. Project dashboards and folders remain secondary actions.
+
+Select conversations to preview **Hide in Ocelin**, **Show again**, **Archive in Codex** or **Restore in Codex**. Hiding is local visibility only. Native archive requires the Codex CLI, confirmed completion and validated child-task scope. It preserves original history and frees no disk space. Claude native archive and permanent deletion are not offered.
 
 Under **Settings → Session history**, **Clear older sessions from view** hides finished and stale entries up to that moment. Active work stays visible. New activity brings a session back; **Show older sessions again** restores the view. This does not delete provider conversations or modify their history.
 
@@ -32,11 +36,13 @@ RAM cards show private working set for each app and its recognized child tools. 
 
 Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. **Move freely** keeps it draggable. Both layouts remain selectable.
 
-For a readout inside the actual taskbar, enable **Share summary with Taskbar Widgets** and **Save taskbar widget package**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to import it into the optional external host and review its permissions. This experimental host uses private Windows APIs; Ocelin does not install it automatically. Only aggregate counts and RAM are shared locally.
+For native Windows task cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows taskbar tasks**. This uses Microsoft's public, experimental API and reports whether it is connected. It needs a supported Windows rollout and package identity.
+
+For a persistent text strip inside the taskbar, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to install the optional host and review its permissions. This host uses private Windows APIs; Ocelin does not grant its permissions. Only aggregate counts and RAM are shared locally. Both native cards and the strip are selectable.
 
 Default discovery reads `%CODEX_HOME%\sessions` (or `~/.codex/sessions`) and `%CLAUDE_CONFIG_DIR%\projects` (or `~/.claude/projects`). Add additional local source folders from Settings. Claude Desktop metadata is joined by `cliSessionId`, not by matching project names. Subagents carry parent identity when present. Codex's optional `session_index.jsonl` supplies native task names.
 
-Discovery is bounded to 2,000 recent transcript files per source, selected by modification time from at most 20,000 entries. Settings reports a reached limit. Historical entries older than 30 days are pruned from Ocelin's metadata. Reconciliation runs approximately every 30 seconds; active files are incrementally read on a three-second cycle after the previous cycle finishes. Initial discovery of a large history takes longer. Checkpoints restore the last known state while reconciliation runs.
+Live monitoring is bounded to 2,000 recent transcript files per source, selected by modification time from at most 20,000 entries. Settings reports a reached limit. Historical entries older than 30 days are pruned from Ocelin's metadata. Reconciliation runs approximately every 30 seconds; active files are incrementally read on a three-second cycle after the previous cycle finishes. Initial discovery of a large history takes longer. Checkpoints restore the last known state while reconciliation runs. The separate history library includes older and archived conversations, scans up to 100,000 files per source, and returns at most 100 entries per page. Its search covers metadata and first requests, not full transcript text.
 
 | Signal | Meaning |
 | --- | --- |
@@ -58,24 +64,24 @@ Installed versions inspected during development: Codex CLI 0.153.2, Claude Code 
 
 | Host | Local transcript monitoring | Optional lifecycle coverage | Return navigation |
 | --- | --- | --- | --- |
-| Codex CLI / native Codex local tasks | Implemented | Session, prompt, tool, permission, stop, interrupt; provider trust required | Ocelin project feed and project folder |
-| Claude Code CLI | Implemented | Session, prompt, tool, permission, stop, failure, permission notification | Ocelin project feed and project folder |
-| Claude Desktop Code local sessions | Implemented when a local CLI transcript exists | Depends on the host loading the configured hooks; last-received diagnostic is authoritative | Ocelin project feed and project folder |
+| Codex CLI / native Codex local tasks | Implemented | Session, prompt, tool, permission, stop, interrupt; provider trust required | Exact conversation in the installed provider Desktop app; project feed and folder as secondary actions |
+| Claude Code CLI | Implemented | Session, prompt, tool, permission, stop, failure, permission notification | Exact conversation in the installed provider Desktop app; project feed and folder as secondary actions |
+| Claude Desktop Code local sessions | Implemented when a local CLI transcript exists | Depends on the host loading the configured hooks; last-received diagnostic is authoritative | Exact conversation in the installed provider Desktop app; project feed and folder as secondary actions |
 | WSL, remote/cloud-only sessions | Not included | Not included | Not included |
 
-Exact native task deep links are not assumed. Ocelin does not click approval buttons, resume tasks, or synthesize keystrokes in either provider.
+Exact native task routes are dispatched to the owning Desktop app. Claude's resume route may restore a natively archived task, which is labelled when that metadata is available. Ocelin does not click approval buttons or synthesize keystrokes in either provider. Ctrl Alt O opens the quick panel; notification clicks return to their specific conversation.
 
 ## Boundaries and packaging
 
 The desktop package is isolated under `desktop/`; the core server and UI still use built-ins only. Sandboxed renderers have no Node access. IPC validates the window, frame, action and arguments. Folder/project actions resolve known session IDs, rather than accept arbitrary paths from a renderer. Navigation is restricted. The existing backend stays token-gated and bound to `127.0.0.1` with strict Host validation. A selected project starts one owned utility-process backend; no project backends or git polling are started for the global tray/bar monitor.
 
-Packaged backend children use Electron's bundled Node mode. Ocelin owns only the utility processes it starts and never stops a standalone dashboard. The approved Ocelin art extends the original state/motion implementation; the canonical Clawd reference remains unchanged.
+The monitor and history library use worker threads in the desktop process. A selected project backend uses Electron's bundled Node mode. Hidden windows release their renderers after 30 seconds. Ocelin owns only the workers and utility processes it starts and never stops a standalone dashboard. The approved Ocelin art extends the original state/motion implementation; the canonical Clawd reference remains unchanged.
 
 ## Validation and preview limits
 
 Automated coverage includes independent providers and sessions, late turn events, partial UTF-8 records, growth with unchanged mtime, truncation/rotation, checkpoint recovery, notification deduplication, privacy filtering, selective hook install/removal and stale previews, all surface combinations, and offscreen placement recovery. Existing HTTP authorization, checkout scoping and Codex feed/trace tests remain required.
 
-Native Windows and packaged-build results are recorded in the delivery tracker as they are performed. Signing requires a release certificate. The optional Taskbar Widgets adapter is schema- and protocol-tested; rendering inside Explorer still needs the external host and user permission review. WSL, remote sources, reserved-edge AppBar mode, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
+Native Windows and packaged-build results are recorded in the [0.6 validation notes](OCELIN-0.6-VALIDATION.md). Signing requires a release certificate. The optional Taskbar Widgets adapter is schema- and protocol-tested; rendering inside Explorer still needs the external host and user permission review. WSL, remote sources, reserved-edge AppBar mode, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
 
 ## Sources and attribution
 

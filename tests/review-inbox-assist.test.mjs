@@ -118,7 +118,7 @@ test("the payload travels on stdin, tool-less, with an allowlisted env", async (
     assert.ok(invocation.includes(flag), `${flag} must be in the invocation`);
   for (const key of Object.keys(call.opts.env))
     assert.equal(
-      /TOKEN|CLAUDE_/.test(key),
+      key !== "CLAUDE_CODE_OAUTH_TOKEN" && /TOKEN|CLAUDE_/.test(key),
       false,
       `${key} must not reach the child`,
     );

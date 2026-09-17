@@ -1,7 +1,7 @@
 {
   "type": "row", "gap": 8,
   "children": [
-    { "type": "icon", "glyph": "\uE950", "fontSize": 18, "color": "#FFEDBD77" },
+    { "type": "button", "glyph": "\uE950", "action": "openOcelin", "tooltip": "Open Ocelin", "width": 28, "height": 28, "fontSize": 18, "color": "#FFEDBD77" },
     { "type": "column", "gap": 2, "children": [
       { "type": "text", "fontSize": 12, "color": "#FFF0EEE5", "segments": [{ "bind": "data.headline", "fallback": "Ocelin offline" }] },
       { "type": "text", "fontSize": 10, "color": "#FFAAB8AC", "segments": [{ "bind": "data.detail", "fallback": "Open Ocelin to connect" }] }

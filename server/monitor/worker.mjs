@@ -1,4 +1,7 @@
 import { SessionMonitor } from "./collector.mjs";
+import { parentPort } from "node:worker_threads";
+
+const port = process.parentPort || parentPort;
 
 const monitor = new SessionMonitor({
   dataDir: process.env.OCELIN_DATA_DIR,
@@ -7,13 +10,13 @@ const monitor = new SessionMonitor({
     : undefined,
 });
 await monitor.load();
-process.parentPort.postMessage({
+port.postMessage({
   type: "snapshot",
   snapshot: monitor.snapshot(),
 });
 let preferences = {};
 let chain = Promise.resolve();
-const send = (value) => process.parentPort.postMessage(value);
+const send = (value) => port.postMessage(value);
 const enqueue = (fn) => {
   chain = chain
     .then(fn)
@@ -24,8 +27,9 @@ async function refresh(force = false) {
   for (const session of await monitor.notifications(preferences))
     send({ type: "notification", session });
 }
-process.parentPort.on("message", ({ data }) =>
-  enqueue(async () => {
+port.on("message", (raw) => {
+  const data = raw.data || raw;
+  return enqueue(async () => {
     try {
       let value;
       if (data.type === "preferences") {
@@ -52,8 +56,8 @@ process.parentPort.on("message", ({ data }) =>
     } catch (error) {
       send({ type: "reply", id: data.id, error: error.message });
     }
-  }),
-);
+  });
+});
 async function cycle(force = false) {
   enqueue(() => refresh(force));
   await chain;

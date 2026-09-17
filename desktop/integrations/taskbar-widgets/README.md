@@ -3,13 +3,13 @@
 This optional adapter targets Taskbar Widgets 0.5.4 or newer using its schema v4 native renderer. The host uses private Windows XAML integration and may stop working after Windows updates. It is independent of Ocelin's built-in tile above the taskbar.
 
 1. Install [Taskbar Widgets](https://github.com/pfcdev/TaskbarWidgets) if you want its experimental Explorer integration.
-2. In Ocelin Settings, enable **Share summary with Taskbar Widgets** and save the widget package.
-3. In Taskbar Widgets Settings, import `Ocelin.twidget`, inspect its permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position.
+2. In Ocelin Settings, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Saving the package for manual import remains available.
+3. In Taskbar Widgets Settings, inspect the `Ocelin.twidget` permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position. Its icon button opens Ocelin.
 4. Disable sharing in Ocelin or remove the widget in Taskbar Widgets to disconnect it.
 
 Only aggregate running/attention counts and app RAM leave Ocelin's process, through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.
 
-The adapter uses a normal-user PowerShell process. The host requires a broad `system.fullAccess` declaration for process providers and cannot sandbox that grant. The provider code only reads the fixed summary file and writes JSON responses to the host; it does not launch or stop programs. Review its small source before granting that permission.
+The adapter uses a normal-user PowerShell process. The host requires a broad `system.fullAccess` declaration for process providers and cannot sandbox that grant. The provider reads the fixed summary file, writes JSON responses, and opens only the fixed `ocelin://dashboard` link on click. It accepts no commands or paths from widget data. Review its small source before granting that permission.
 
 The package and JSON-lines protocol are tested independently. Explorer rendering requires the external host and its user approval; it is not part of the verified built-in Windows surfaces.
 

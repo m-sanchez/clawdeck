@@ -110,7 +110,8 @@ export function getSessionFeed(transcriptPath, opts = {}) {
   const lines = text.split(/\r?\n/);
   if (!atStart) lines.shift();
   const parsed = parseJsonLines(lines.join("\n"));
-  const records = opts.provider === "codex" ? normalizeCodexRecords(parsed) : parsed;
+  const records =
+    opts.provider === "codex" ? normalizeCodexRecords(parsed) : parsed;
 
   /** @type {Array<object>} */
   const events = [];
@@ -154,6 +155,10 @@ export function getSessionFeed(transcriptPath, opts = {}) {
         if (t) events.push({ kind: "user", ts, text: t });
       } else if (Array.isArray(blocks)) {
         for (const b of blocks) {
+          if (b.type === "text") {
+            const t = clip(b.text, TEXT_CAP);
+            if (t) events.push({ kind: "user", ts, text: t });
+          }
           if (b.type !== "tool_result") continue;
           const raw = resultText(b);
           const res = {

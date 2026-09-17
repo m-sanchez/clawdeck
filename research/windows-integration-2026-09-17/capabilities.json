@@ -1,0 +1,68 @@
+{
+  "codexReadOnlyProbe": {
+    "testedAt": "2026-09-17T05:35:15.672Z",
+    "cliVersion": "0.153.2",
+    "initialization": {
+      "ok": true
+    },
+    "list": {
+      "ok": true,
+      "returnedCount": 10
+    },
+    "loaded": {
+      "ok": true,
+      "returnedCount": 0
+    },
+    "limitations": [
+      "Independent app-server; no claim of attachment to Desktop runtime.",
+      "Only read methods were invoked; no model turn, resume, archive, delete or approval."
+    ],
+    "metadata": {
+      "ok": true,
+      "runtimeStatus": "notLoaded"
+    },
+    "turns": {
+      "ok": true,
+      "returnedCount": 2
+    }
+  },
+  "codexSchema": {
+    "version": "0.153.2",
+    "methodsPresent": [
+      "thread/list",
+      "thread/read",
+      "thread/turns/list",
+      "thread/archive",
+      "thread/unarchive",
+      "thread/delete"
+    ],
+    "mutationMethodsExecuted": false
+  },
+  "codexDaemon": {
+    "version": "0.153.2",
+    "availableOnWindows": false,
+    "message": "daemon lifecycle is only supported on Unix platforms"
+  },
+  "codexDesktopLink": {
+    "version": "26.908.4834.0",
+    "protocolRegistered": "codex",
+    "handlerAcceptsThreadId": true,
+    "endToEndNavigationTested": false
+  },
+  "sqliteProbe": {
+    "nodeVersion": "24.9.0",
+    "builtInFTS5": true,
+    "packagedElectronTested": false
+  },
+  "scope": "No provider session resumed, archived or deleted; no model turns; no shell extension installed.",
+  "windowsTaskbar": {
+    "testedAt": "2026-09-17T05:46:00.1350369Z",
+    "windowsVersion": "25H2",
+    "windowsBuild": "26200.9457",
+    "appTaskTypePresent": true,
+    "appTaskIsSupported": true,
+    "error": null,
+    "visibleTaskCreated": false,
+    "scope": "Read-only availability check; no package registration, task creation or Explorer modification."
+  }
+}

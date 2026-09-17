@@ -14,16 +14,25 @@ const {
   shell,
   dialog,
   powerMonitor,
+  globalShortcut,
 } = require("electron");
 const { join, resolve, relative, extname, isAbsolute } = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { randomBytes } = require("node:crypto");
-const { readFileSync, mkdirSync } = require("node:fs");
+const { readFileSync, mkdirSync, existsSync } = require("node:fs");
+const { spawn } = require("node:child_process");
 const { stat, realpath, writeFile } = require("node:fs/promises");
 const { createServer } = require("node:net");
+const { Worker } = require("node:worker_threads");
 const { Preferences, recoverBounds } = require("./lib/preferences.cjs");
 const { Resources } = require("./lib/resources.cjs");
 const { TaskbarBridge } = require("./lib/taskbar-bridge.cjs");
+const { NativeTasks } = require("./lib/native-tasks.cjs");
+const {
+  sessionLink,
+  activation,
+  activationUri,
+} = require("./lib/session-links.cjs");
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -42,6 +51,20 @@ app.setPath("userData", dataDir);
 app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
 const preferences = new Preferences(dataDir);
 const taskbarBridge = new TaskbarBridge(dataDir);
+const nativeTasks = new NativeTasks(
+  dataDir,
+  join(
+    app.isPackaged ? process.resourcesPath : __dirname,
+    "native",
+    "activate.ps1",
+  ),
+  () => publish(),
+);
+let library,
+  librarySequence = 0,
+  hiddenKeys = new Set(),
+  connections = {};
+const libraryRequests = new Map();
 const windows = new Map();
 let tray,
   monitor,
@@ -63,14 +86,20 @@ const icon = () =>
   nativeImage.createFromPath(join(__dirname, "assets", "ocelin.png"));
 const state = () => ({
   ...snapshot,
+  sessions: snapshot.sessions.filter(s => Date.now() - s.lastTs < 86400000 || !s.stale),
   preferences: preferences.value,
   error,
   version: app.getVersion(),
   packaged: app.isPackaged,
   resources: resources.value,
+  nativeTasks: nativeTasks.value,
+  connections,
+  hiddenKeys: [...hiddenKeys],
 });
 function publish() {
   taskbarBridge.publish(state(), preferences.value.taskbarBridge);
+  nativeTasks.publish(state(), preferences.value.nativeTasks);
+  library?.postMessage({ type: "snapshot", sessions: snapshot.sessions });
   for (const window of windows.values())
     if (!window.isDestroyed()) window.webContents.send("ocelin:state", state());
   if (tray)
@@ -78,6 +107,137 @@ function publish() {
       `Ocelin · ${snapshot.counts.running} running · ${snapshot.counts.attention} need you${resources.value.status === "ready" && resources.value.memoryBytes != null && Date.now() - resources.value.sampledAt < 35000 ? ` · ${(resources.value.memoryBytes / 1024 ** 3).toFixed(1)} GB apps + tools` : ""}`,
     );
   if (project) project.worker.postMessage({ type: "snapshot", snapshot });
+  const dashboard = windows.get("dashboard");
+  if (dashboard && !dashboard.isDestroyed()) {
+    dashboard.setOverlayIcon(
+      snapshot.counts.attention ? icon() : null,
+      `${snapshot.counts.attention} sessions need you`,
+    );
+    dashboard.setProgressBar(snapshot.counts.running ? 2 : -1);
+  }
+}
+function libraryRequest(type, args = {}) {
+  if (!library) {
+    library = backgroundWorker(
+      join(core, "server", "library", "worker.mjs"),
+      {
+        env: {
+          ...process.env,
+          OCELIN_DATA_DIR: dataDir,
+          ...(preferences.value.sources
+            ? { OCELIN_SOURCES: JSON.stringify(preferences.value.sources) }
+            : {}),
+        },
+        name: "Ocelin session library",
+      },
+    );
+    library.postMessage({ type: "snapshot", sessions: snapshot.sessions });
+    library.on("message", (message) => {
+      const pending = libraryRequests.get(message.id);
+      if (!pending) return;
+      libraryRequests.delete(message.id);
+      clearTimeout(pending.timeout);
+      message.error
+        ? pending.reject(new Error(message.error))
+        : pending.resolve(message.value);
+    });
+    library.on("exit", () => {
+      library = null;
+      for (const pending of libraryRequests.values()) {
+        clearTimeout(pending.timeout);
+        pending.reject(new Error("Session library stopped; try again"));
+      }
+      libraryRequests.clear();
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const id = ++librarySequence;
+    const timeout =
+      type === "apply" || type === "plan"
+        ? null
+        : setTimeout(() => {
+            libraryRequests.delete(id);
+            reject(
+              new Error(
+                "The session library is still indexing. Try again shortly.",
+              ),
+            );
+          }, 60000);
+    libraryRequests.set(id, { resolve, reject, timeout });
+    library.postMessage({ id, type, args });
+  });
+}
+async function openSession(key) {
+  const session =
+    snapshot.sessions.find((s) => s.key === key) ||
+    (await libraryRequest("target", { key }));
+  const url = sessionLink(session);
+  if (process.argv.includes("--smoke-test") && process.env.OCELIN_DATA_DIR)
+    return { url };
+  try {
+    await shell.openExternal(url);
+  } catch {
+    throw new Error(
+      `Windows could not open ${session.provider === "codex" ? "Codex" : "Claude"}. Install its Desktop app and try again.`,
+    );
+  }
+  return { opened: true, provider: session.provider };
+}
+async function activate(args) {
+  const route = args.map(activation).find(Boolean);
+  if (route?.type === "session") {
+    try {
+      await openSession(route.key);
+      return;
+    } catch (e) {
+      error = e.message;
+      publish();
+    }
+  }
+  showWindow("dashboard");
+}
+async function refreshConnections() {
+  const { detectProviderApps } = require("./lib/provider-apps.cjs");
+  const installed = await detectProviderApps();
+  for (const provider of ["codex", "claude"]) {
+    let owned = [];
+    let configured = [];
+    try {
+      owned = JSON.parse(
+        readFileSync(
+          join(dataDir, "hooks", `${provider}-ownership.json`),
+          "utf8",
+        ),
+      );
+    } catch {}
+    try {
+      const config = JSON.parse(
+        readFileSync(
+          join(
+            integrations.homes[provider],
+            provider === "codex" ? "hooks.json" : "settings.json",
+          ),
+          "utf8",
+        ),
+      );
+      configured = Object.values(config.hooks || {}).flatMap((groups) =>
+        Array.isArray(groups)
+          ? groups.flatMap((g) => (g.hooks || []).map((h) => h.command))
+          : [],
+      );
+    } catch {}
+    connections[provider] = {
+      nativeOpen: Boolean(
+        installed[provider] ||
+        app.getApplicationNameForProtocol(`${provider}://`),
+      ),
+      hooksInstalled: owned.some((command) => configured.includes(command)),
+      lastHookAt:
+        snapshot.diagnostics.find((d) => d.provider === provider)?.lastHookAt ||
+        0,
+    };
+  }
+  publish();
 }
 function request(type, args = {}) {
   return new Promise((resolveRequest, reject) => {
@@ -92,9 +252,8 @@ function request(type, args = {}) {
   });
 }
 function startMonitor() {
-  monitor = utilityProcess.fork(
+  monitor = backgroundWorker(
     join(core, "server", "monitor", "worker.mjs"),
-    [],
     {
       env: {
         ...process.env,
@@ -103,8 +262,7 @@ function startMonitor() {
           ? { OCELIN_SOURCES: JSON.stringify(preferences.value.sources) }
           : {}),
       },
-      serviceName: "Ocelin session monitor",
-      stdio: "pipe",
+      name: "Ocelin session monitor",
     },
   );
   monitor.postMessage({ type: "preferences", value: preferences.value });
@@ -141,7 +299,11 @@ function startMonitor() {
         silent: !preferences.value.sound,
       });
       toast.on("click", () => {
-        showWindow("dashboard");
+        openSession(s.key).catch((e) => {
+          error = e.message;
+          showWindow("dashboard");
+          publish();
+        });
       });
       toast.show();
     }
@@ -159,6 +321,12 @@ function startMonitor() {
       setTimeout(startMonitor, 3000);
     }
   });
+}
+function backgroundWorker(file, options) {
+  const worker = new Worker(file, { ...options, stdout: true, stderr: true });
+  worker.kill = () => { void worker.terminate(); };
+  worker.on("error", failure => { error = `${options.name}: ${failure.message}`; publish(); });
+  return worker;
 }
 function secure(window) {
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -221,6 +389,7 @@ function createWindow(kind) {
     },
   });
   windows.set(kind, window);
+  window.once("closed", () => { if (windows.get(kind) === window) windows.delete(kind); });
   secure(window);
   window.webContents.on("console-message", (details) => {
     if (details?.level === "error")
@@ -270,9 +439,15 @@ function hideWindow(window) {
   if (!window || window.isDestroyed()) return;
   window.ocelinVisible = false;
   window.hide();
+  clearTimeout(window.ocelinSleep);
+  window.ocelinSleep = setTimeout(() => {
+    if (!window.isDestroyed() && !window.isVisible()) window.destroy();
+  }, 30000);
+  window.ocelinSleep.unref();
 }
 function showWindow(kind, focus = true) {
   const window = windows.get(kind) || createWindow(kind);
+  clearTimeout(window.ocelinSleep);
   window.ocelinVisible = true;
   window.ocelinFocus = focus;
   if (kind === "tray" && tray) {
@@ -372,7 +547,7 @@ async function closeProject() {
   if (!project) return;
   const old = project;
   project = null;
-  old.window.destroy();
+  if (!old.window.isDestroyed()) old.window.destroy();
   old.worker.postMessage({ type: "stop" });
   setTimeout(() => old.worker.kill(), 2000).unref();
 }
@@ -419,6 +594,9 @@ async function openProject(key) {
     },
   });
   project = { worker, window, cwd, port, nonce };
+  window.once("closed", () => {
+    if (project?.window === window) void closeProject();
+  });
   window.on("close", (event) => {
     if (!quitting) {
       event.preventDefault();
@@ -474,6 +652,36 @@ function trusted(event) {
   );
 }
 async function action(name, args = {}) {
+  if (name === "install-widget") {
+    const destination = join(dataDir, "integrations", "Ocelin.twidget");
+    mkdirSync(join(dataDir, "integrations"), { recursive: true });
+    await writeFile(destination, readFileSync(join(__dirname, "integrations", "Ocelin.twidget")));
+    const roots = [join(process.env.LOCALAPPDATA || "", "Programs", "TaskbarWidgets"), join(process.env.LOCALAPPDATA || "", "TaskbarWidgets"), join(process.env.ProgramFiles || "", "TaskbarWidgets")];
+    const host = roots.map(root => join(root, "TaskbarWidgets.exe")).find(existsSync);
+    if (host) {
+      const child = spawn(host, ["--install-widget", destination], { windowsHide: true, detached: true, stdio: "ignore" });
+      await new Promise((resolve, reject) => { child.once("spawn", resolve); child.once("error", reject); });
+      child.unref();
+      return true;
+    }
+    const failure = await shell.openPath(destination);
+    if (failure) throw new Error("Install Taskbar Widgets first, then use Connect taskbar strip to review the Ocelin package.");
+    return true;
+  }
+  if (name === "session-open") return openSession(args.key);
+  if (name === "session-preview") return libraryRequest("preview", { key: args.key, hint: snapshot.sessions.find(s => s.key === args.key) });
+  if (name === "library-query") return libraryRequest("query", args);
+  if (name === "library-plan") return libraryRequest("plan", args);
+  if (name === "library-apply") {
+    const result = await libraryRequest("apply", args);
+    hiddenKeys = new Set(result.hiddenKeys);
+    publish();
+    return result;
+  }
+  if (name === "connections") {
+    await refreshConnections();
+    return connections;
+  }
   if (name === "taskbar-guide") {
     await shell.openExternal(
       "https://github.com/m-sanchez/clawdeck/blob/main/desktop/integrations/taskbar-widgets/README.md",
@@ -495,7 +703,10 @@ async function action(name, args = {}) {
   }
   if (name === "preferences") {
     const previousStartup = preferences.value.startup;
+    const previousNative = preferences.value.nativeTasks;
     preferences.update(args);
+    if (!previousNative && preferences.value.nativeTasks)
+      nativeTasks.lastLaunch = 0;
     if (preferences.value.startup !== previousStartup) {
       if (!app.isPackaged) {
         preferences.save({ startup: false });
@@ -571,12 +782,17 @@ async function action(name, args = {}) {
       sources.push({ provider: args.provider, root });
     preferences.save({ sources });
     await request("sources", { value: sources });
+    library?.postMessage({ type: "stop" });
     publish();
     return true;
   }
   if (name === "hook-preview")
     return integrations.preview(args.provider, args.remove === true);
-  if (name === "hook-apply") return integrations.apply(args.id);
+  if (name === "hook-apply") {
+    const result = await integrations.apply(args.id);
+    await refreshConnections();
+    return result;
+  }
   if (name === "quit") {
     app.quit();
     return true;
@@ -586,17 +802,23 @@ async function action(name, args = {}) {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on("second-instance", () => showWindow("dashboard"));
+  app.on("second-instance", (_event, argv) => {
+    void activate(argv);
+  });
   app.on("window-all-closed", () => {});
   app.on("activate", () => showWindow("dashboard"));
   app.on("before-quit", () => {
     quitting = true;
     resources.stop();
+    globalShortcut.unregisterAll();
     taskbarBridge.publish(state(), false);
+    nativeTasks.publish(state(), false);
     monitor?.postMessage({ type: "stop" });
+    library?.postMessage({ type: "stop" });
     if (project) project.worker.postMessage({ type: "stop" });
     setTimeout(() => {
       monitor?.kill();
+      library?.kill();
       project?.worker.kill();
     }, 2000).unref();
     tray?.destroy();
@@ -646,6 +868,34 @@ else {
         runtime: process.execPath,
         captureFile: join(core, "hooks", "ocelin-capture.cjs"),
       });
+      try {
+        hiddenKeys = new Set(
+          Object.keys(
+            JSON.parse(
+              readFileSync(join(dataDir, "library-hidden.json"), "utf8"),
+            ),
+          ),
+        );
+      } catch {}
+      if (app.isPackaged) {
+        app.setAsDefaultProtocolClient("ocelin");
+        app.setJumpList([
+          {
+            type: "tasks",
+            items: [
+              {
+                type: "task",
+                title: "Open Ocelin",
+                description: "Codex and Claude sessions",
+                program: process.execPath,
+                args: "ocelin://dashboard",
+                iconPath: process.execPath,
+                iconIndex: 0,
+              },
+            ],
+          },
+        ]);
+      }
       ipcMain.handle("ocelin:state", (event) => {
         if (!trusted(event)) throw new Error("Untrusted sender");
         return state();
@@ -663,6 +913,12 @@ else {
       startMonitor();
       resources.start();
       applySurfaces();
+      await refreshConnections();
+      globalShortcut.register("CommandOrControl+Alt+O", () =>
+        showWindow("tray"),
+      );
+      if (process.argv.some((value) => activation(value)))
+        void activate(process.argv);
       if (
         process.argv.includes("--background") &&
         (preferences.value.tray || preferences.value.bar)

@@ -1,0 +1,396 @@
+{
+  "collectedOn": "2026-09-17",
+  "scope": "Reference material only; upstream applications not executed; selected paths inspected.",
+  "files": [
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "LICENSE",
+      "bytes": 34523,
+      "sha256": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/LICENSE",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "README.md",
+      "bytes": 14549,
+      "sha256": "d375480c63cd35d6370ef7b224a33bc78eae6ad36a72d77bae4ba58d061f501c",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/README.md",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "src/main/ipc/handlers/agentSessions.ts",
+      "bytes": 37503,
+      "sha256": "9e00a261a467f8ac485f9faa601d3013ba582bd2ba5835670c95b9af1579d31d",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/src/main/ipc/handlers/agentSessions.ts",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "src/renderer/components/AgentSessionsBrowser/components/SessionListView.tsx",
+      "bytes": 4293,
+      "sha256": "6b2e9ad8aff7574b7954afe04dd9dae093671c388bd307654b2ccea7bc474d7e",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/src/renderer/components/AgentSessionsBrowser/components/SessionListView.tsx",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "src/renderer/components/AgentSessionsBrowser/hooks/useAgentSessionsResume.ts",
+      "bytes": 1882,
+      "sha256": "1177d6c9a8f0afcaa5bb296e513da236c4f6bbc97c7c8eb8ddab4fd896790d3d",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/src/renderer/components/AgentSessionsBrowser/hooks/useAgentSessionsResume.ts",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "RunMaestro/Maestro",
+      "commit": "290253d288b5d4f89ecddc658259f2624871790c",
+      "path": "src/renderer/components/AgentSessionsBrowser/hooks/useAgentSessionsSearch.ts",
+      "bytes": 1967,
+      "sha256": "c3c070d60d0935c3709ac1690b4b3735602e0605a3cfb935b7de0482ece07e28",
+      "source": "https://github.com/RunMaestro/Maestro/blob/290253d288b5d4f89ecddc658259f2624871790c/src/renderer/components/AgentSessionsBrowser/hooks/useAgentSessionsSearch.ts",
+      "licenseObserved": "AGPL-3.0",
+      "localPath": null
+    },
+    {
+      "repository": "epilande/ccmux",
+      "commit": "75b7fd3743c5bf4f3915df4f60c83f161ab8842b",
+      "path": "LICENSE",
+      "bytes": 1065,
+      "sha256": "1ab02a35c31af7c45c695a5f0d24581f0c6a21102ab311d9f037e84ad3566569",
+      "source": "https://github.com/epilande/ccmux/blob/75b7fd3743c5bf4f3915df4f60c83f161ab8842b/LICENSE",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/epilande__ccmux/LICENSE"
+    },
+    {
+      "repository": "epilande/ccmux",
+      "commit": "75b7fd3743c5bf4f3915df4f60c83f161ab8842b",
+      "path": "README.md",
+      "bytes": 98851,
+      "sha256": "4ec62a18b4d11134aae35608e49696868aaaa30342f91646f142bd71cf8a7a28",
+      "source": "https://github.com/epilande/ccmux/blob/75b7fd3743c5bf4f3915df4f60c83f161ab8842b/README.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "epilande/ccmux",
+      "commit": "75b7fd3743c5bf4f3915df4f60c83f161ab8842b",
+      "path": "docs/architecture.md",
+      "bytes": 178623,
+      "sha256": "e4a6f4da09538152bbd5810670dec03e13c4892b336f424842c6d8cb77b48808",
+      "source": "https://github.com/epilande/ccmux/blob/75b7fd3743c5bf4f3915df4f60c83f161ab8842b/docs/architecture.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "epilande/ccmux",
+      "commit": "75b7fd3743c5bf4f3915df4f60c83f161ab8842b",
+      "path": "src/daemon/notification-action.ts",
+      "bytes": 31296,
+      "sha256": "8fc6921cd441e4ffbf87755148f67c0f402dc845463f22990e6df81f6ff5126e",
+      "source": "https://github.com/epilande/ccmux/blob/75b7fd3743c5bf4f3915df4f60c83f161ab8842b/src/daemon/notification-action.ts",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/epilande__ccmux/src/daemon/notification-action.ts"
+    },
+    {
+      "repository": "epilande/ccmux",
+      "commit": "75b7fd3743c5bf4f3915df4f60c83f161ab8842b",
+      "path": "src/daemon/transcript-search.ts",
+      "bytes": 10822,
+      "sha256": "a9cc54022be05da85d6615e0e0f70fee365bcfc160986967a27fd362606b7c6f",
+      "source": "https://github.com/epilande/ccmux/blob/75b7fd3743c5bf4f3915df4f60c83f161ab8842b/src/daemon/transcript-search.ts",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/epilande__ccmux/src/daemon/transcript-search.ts"
+    },
+    {
+      "repository": "junxit/agentic-session-explorer",
+      "commit": "f88f5637840e494de7d7728b279d767cdac11913",
+      "path": "LICENSE",
+      "bytes": 1063,
+      "sha256": "1bed2cb97ceea4dc100216ce4209c5ec28f568312fc3a72bd087456f99409d60",
+      "source": "https://github.com/junxit/agentic-session-explorer/blob/f88f5637840e494de7d7728b279d767cdac11913/LICENSE",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/junxit__agentic-session-explorer/LICENSE"
+    },
+    {
+      "repository": "junxit/agentic-session-explorer",
+      "commit": "f88f5637840e494de7d7728b279d767cdac11913",
+      "path": "README.md",
+      "bytes": 17755,
+      "sha256": "1808994f1586ae2089cd6183575c0506f8ca631406cc5235edb0ea2eb4cd6ca2",
+      "source": "https://github.com/junxit/agentic-session-explorer/blob/f88f5637840e494de7d7728b279d767cdac11913/README.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "junxit/agentic-session-explorer",
+      "commit": "f88f5637840e494de7d7728b279d767cdac11913",
+      "path": "src/sx/adapters/claude.py",
+      "bytes": 52747,
+      "sha256": "3c449ca2212b5afb0f7ac5c91cd0f22ddb20acf397ab9b6378e5e43b435c8618",
+      "source": "https://github.com/junxit/agentic-session-explorer/blob/f88f5637840e494de7d7728b279d767cdac11913/src/sx/adapters/claude.py",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "junxit/agentic-session-explorer",
+      "commit": "f88f5637840e494de7d7728b279d767cdac11913",
+      "path": "src/sx/adapters/codex.py",
+      "bytes": 12396,
+      "sha256": "c2adb10ab5b1ea2a87afad99750e7c2059638c7a5eaba95d5f7069d5a93139e2",
+      "source": "https://github.com/junxit/agentic-session-explorer/blob/f88f5637840e494de7d7728b279d767cdac11913/src/sx/adapters/codex.py",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "junxit/agentic-session-explorer",
+      "commit": "f88f5637840e494de7d7728b279d767cdac11913",
+      "path": "src/sx/service.py",
+      "bytes": 26064,
+      "sha256": "9c33bbb957471804fac89ce494310ab671052bf183fb2e0c39582f48b6308109",
+      "source": "https://github.com/junxit/agentic-session-explorer/blob/f88f5637840e494de7d7728b279d767cdac11913/src/sx/service.py",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/junxit__agentic-session-explorer/src/sx/service.py"
+    },
+    {
+      "repository": "kbwo/ccmanager",
+      "commit": "2e50f4cad1d578e24580da61ff324db4befc8ba1",
+      "path": "LICENSE",
+      "bytes": 1072,
+      "sha256": "adea7b7b4f8aff5062751eb25c6423fccbc3b7bda519e916e6384aee87e6721e",
+      "source": "https://github.com/kbwo/ccmanager/blob/2e50f4cad1d578e24580da61ff324db4befc8ba1/LICENSE",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/kbwo__ccmanager/LICENSE"
+    },
+    {
+      "repository": "kbwo/ccmanager",
+      "commit": "2e50f4cad1d578e24580da61ff324db4befc8ba1",
+      "path": "README.md",
+      "bytes": 18344,
+      "sha256": "594805def4e16bd16891bae9fcf036997eca96ed5fce490d0a8f943f2f706512",
+      "source": "https://github.com/kbwo/ccmanager/blob/2e50f4cad1d578e24580da61ff324db4befc8ba1/README.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "kbwo/ccmanager",
+      "commit": "2e50f4cad1d578e24580da61ff324db4befc8ba1",
+      "path": "src/services/sessionManager.ts",
+      "bytes": 37940,
+      "sha256": "f1577c19980933dfb336dfb04579935037f051a34fb191b50f88ba1c36aca6b7",
+      "source": "https://github.com/kbwo/ccmanager/blob/2e50f4cad1d578e24580da61ff324db4befc8ba1/src/services/sessionManager.ts",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "kbwo/ccmanager",
+      "commit": "2e50f4cad1d578e24580da61ff324db4befc8ba1",
+      "path": "src/services/sessionRestoreStore.ts",
+      "bytes": 6383,
+      "sha256": "541d0c5040bf59581546351c4106daac6ca5c7cd03ec3baee810f577905c49fa",
+      "source": "https://github.com/kbwo/ccmanager/blob/2e50f4cad1d578e24580da61ff324db4befc8ba1/src/services/sessionRestoreStore.ts",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/kbwo__ccmanager/src/services/sessionRestoreStore.ts"
+    },
+    {
+      "repository": "luckeyfaraday/sessions-search",
+      "commit": "0005a9e516fc855da6a425af09dcffb30ad82453",
+      "path": "LICENSE",
+      "bytes": 1070,
+      "sha256": "2dbdc5f39db3590371c8d9993f449bf4c9c9efaef2a9cda888a442228000470c",
+      "source": "https://github.com/luckeyfaraday/sessions-search/blob/0005a9e516fc855da6a425af09dcffb30ad82453/LICENSE",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/luckeyfaraday__sessions-search/LICENSE"
+    },
+    {
+      "repository": "luckeyfaraday/sessions-search",
+      "commit": "0005a9e516fc855da6a425af09dcffb30ad82453",
+      "path": "README.md",
+      "bytes": 3588,
+      "sha256": "035e1136c9654896e38d8f68994bd89d60f44cd70db1677a00aaa6466ae55dc2",
+      "source": "https://github.com/luckeyfaraday/sessions-search/blob/0005a9e516fc855da6a425af09dcffb30ad82453/README.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "luckeyfaraday/sessions-search",
+      "commit": "0005a9e516fc855da6a425af09dcffb30ad82453",
+      "path": "sessions_search/db.py",
+      "bytes": 3366,
+      "sha256": "d405bb04aa0113fc304acf085d3fb1aca9fd937e5e46bc8ef19f6926de442b69",
+      "source": "https://github.com/luckeyfaraday/sessions-search/blob/0005a9e516fc855da6a425af09dcffb30ad82453/sessions_search/db.py",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/luckeyfaraday__sessions-search/sessions_search/db.py"
+    },
+    {
+      "repository": "luckeyfaraday/sessions-search",
+      "commit": "0005a9e516fc855da6a425af09dcffb30ad82453",
+      "path": "sessions_search/indexer.py",
+      "bytes": 4527,
+      "sha256": "09158e2dce8cadb4bf12d934da0e8355469ce371f871216cf43b80e38f16ea7e",
+      "source": "https://github.com/luckeyfaraday/sessions-search/blob/0005a9e516fc855da6a425af09dcffb30ad82453/sessions_search/indexer.py",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/luckeyfaraday__sessions-search/sessions_search/indexer.py"
+    },
+    {
+      "repository": "luckeyfaraday/sessions-search",
+      "commit": "0005a9e516fc855da6a425af09dcffb30ad82453",
+      "path": "sessions_search/tui.py",
+      "bytes": 7832,
+      "sha256": "e91d600b6aa236d1ffb4cf30643a93dbeb8f4a7cc4a8532637505e62ea6858d3",
+      "source": "https://github.com/luckeyfaraday/sessions-search/blob/0005a9e516fc855da6a425af09dcffb30ad82453/sessions_search/tui.py",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "manaflow-ai/cmux",
+      "commit": "3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b",
+      "path": "CLI/AgentHookNotificationPolicy.swift",
+      "bytes": 23143,
+      "sha256": "b09d2d8f1b18fdebe17e541b705238d19c976e3e1f50815fe2c3203e6938a0f3",
+      "source": "https://github.com/manaflow-ai/cmux/blob/3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b/CLI/AgentHookNotificationPolicy.swift",
+      "licenseObserved": "GPL-3.0-or-later",
+      "localPath": null
+    },
+    {
+      "repository": "manaflow-ai/cmux",
+      "commit": "3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b",
+      "path": "CLI/CMUXCLI+CodexResumeBindingVerification.swift",
+      "bytes": 12781,
+      "sha256": "a0bfda72caeab9439c74057169e7210d44fde6cc691e55c26c788269d87115c7",
+      "source": "https://github.com/manaflow-ai/cmux/blob/3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b/CLI/CMUXCLI+CodexResumeBindingVerification.swift",
+      "licenseObserved": "GPL-3.0-or-later",
+      "localPath": null
+    },
+    {
+      "repository": "manaflow-ai/cmux",
+      "commit": "3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b",
+      "path": "LICENSE",
+      "bytes": 36050,
+      "sha256": "f306eceb0a2964828e2fc3315a2924d1a685f538d5b5d5f4b5bb17d4da2865ea",
+      "source": "https://github.com/manaflow-ai/cmux/blob/3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b/LICENSE",
+      "licenseObserved": "GPL-3.0-or-later",
+      "localPath": null
+    },
+    {
+      "repository": "manaflow-ai/cmux",
+      "commit": "3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b",
+      "path": "README.md",
+      "bytes": 23711,
+      "sha256": "c3de3115a35edad770505667b34f9af9e41585747ce4249cde8188151085664a",
+      "source": "https://github.com/manaflow-ai/cmux/blob/3773d55f41fa0f8fb2f6c8e588e4cc7862cb099b/README.md",
+      "licenseObserved": "GPL-3.0-or-later",
+      "localPath": null
+    },
+    {
+      "repository": "ovenmakemeheat/windhawk-taskbar-ai-usage",
+      "commit": "11e5256963557968022ac17b5b8fc1535d7e3acd",
+      "path": "README.md",
+      "bytes": 16815,
+      "sha256": "258e12023ab79baf21287872e52b0639f66f754a46a78f70a38a87f198c113f5",
+      "source": "https://github.com/ovenmakemeheat/windhawk-taskbar-ai-usage/blob/11e5256963557968022ac17b5b8fc1535d7e3acd/README.md",
+      "licenseObserved": "MIT marker on inspected .cpp; no root LICENSE",
+      "localPath": null
+    },
+    {
+      "repository": "ovenmakemeheat/windhawk-taskbar-ai-usage",
+      "commit": "11e5256963557968022ac17b5b8fc1535d7e3acd",
+      "path": "mods/taskbar-left-text.wh.cpp",
+      "bytes": 32163,
+      "sha256": "a15f718346d387a3b37b632fc2cf2f28167f1fcde49f6771f33356493754b108",
+      "source": "https://github.com/ovenmakemeheat/windhawk-taskbar-ai-usage/blob/11e5256963557968022ac17b5b8fc1535d7e3acd/mods/taskbar-left-text.wh.cpp",
+      "licenseObserved": "MIT marker on inspected .cpp; no root LICENSE",
+      "localPath": null
+    },
+    {
+      "repository": "pfcdev/TaskbarWidgets",
+      "commit": "c49721cc1cfcdd53d6ad42226410148153c38055",
+      "path": "LICENSE",
+      "bytes": 1060,
+      "sha256": "f8d8e6389c056e18ca1300c5caf35e26d9c27a94c9e02b0a8aae68b892a3095f",
+      "source": "https://github.com/pfcdev/TaskbarWidgets/blob/c49721cc1cfcdd53d6ad42226410148153c38055/LICENSE",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/pfcdev__TaskbarWidgets/LICENSE"
+    },
+    {
+      "repository": "pfcdev/TaskbarWidgets",
+      "commit": "c49721cc1cfcdd53d6ad42226410148153c38055",
+      "path": "community-sdk/process-runtime.md",
+      "bytes": 2321,
+      "sha256": "a6502b42c02beaa3734441b2af646b043f2ae07b5d8f8f8fac6a05fdb9e93a77",
+      "source": "https://github.com/pfcdev/TaskbarWidgets/blob/c49721cc1cfcdd53d6ad42226410148153c38055/community-sdk/process-runtime.md",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "pfcdev/TaskbarWidgets",
+      "commit": "c49721cc1cfcdd53d6ad42226410148153c38055",
+      "path": "docs/architecture.md",
+      "bytes": 2935,
+      "sha256": "945185116f2fa624e6853dda39df606b56c6e222e48fa8733ca98c48375da6fb",
+      "source": "https://github.com/pfcdev/TaskbarWidgets/blob/c49721cc1cfcdd53d6ad42226410148153c38055/docs/architecture.md",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/pfcdev__TaskbarWidgets/docs/architecture.md"
+    },
+    {
+      "repository": "pfcdev/TaskbarWidgets",
+      "commit": "c49721cc1cfcdd53d6ad42226410148153c38055",
+      "path": "docs/windows-private-api-risks.md",
+      "bytes": 1005,
+      "sha256": "15f428be6ba848e7c1a62a7cdd727f034a615c4d0e63a4ad576f3e01994feb9e",
+      "source": "https://github.com/pfcdev/TaskbarWidgets/blob/c49721cc1cfcdd53d6ad42226410148153c38055/docs/windows-private-api-risks.md",
+      "licenseObserved": "MIT",
+      "localPath": "upstream/pfcdev__TaskbarWidgets/docs/windows-private-api-risks.md"
+    },
+    {
+      "repository": "pfcdev/TaskbarWidgets",
+      "commit": "c49721cc1cfcdd53d6ad42226410148153c38055",
+      "path": "src/native/taskbar-hook/taskbar_widgets_hook.cpp",
+      "bytes": 410652,
+      "sha256": "19d0d4028f09a3ed1123b473a6b18745f2ec278e83a67fcd780e150cd4d4d7a2",
+      "source": "https://github.com/pfcdev/TaskbarWidgets/blob/c49721cc1cfcdd53d6ad42226410148153c38055/src/native/taskbar-hook/taskbar_widgets_hook.cpp",
+      "licenseObserved": "MIT",
+      "localPath": null
+    },
+    {
+      "repository": "zhongyang219/TrafficMonitor",
+      "commit": "188b8773b959733bfc0e4f506c762d9a255883d4",
+      "path": "LICENSE",
+      "bytes": 2605,
+      "sha256": "7523fa7601abdf090a91ca365d3a768e5418292dc151038d0629e67240a33fe6",
+      "source": "https://github.com/zhongyang219/TrafficMonitor/blob/188b8773b959733bfc0e4f506c762d9a255883d4/LICENSE",
+      "licenseObserved": "Anti-996",
+      "localPath": null
+    },
+    {
+      "repository": "zhongyang219/TrafficMonitor",
+      "commit": "188b8773b959733bfc0e4f506c762d9a255883d4",
+      "path": "TrafficMonitor/TaskbarHelper.cpp",
+      "bytes": 3169,
+      "sha256": "6534ddb4c709a5e63c5e81e0a585f96f26346cb0fa4e5a6ab0dfa0e846153d0d",
+      "source": "https://github.com/zhongyang219/TrafficMonitor/blob/188b8773b959733bfc0e4f506c762d9a255883d4/TrafficMonitor/TaskbarHelper.cpp",
+      "licenseObserved": "Anti-996",
+      "localPath": null
+    },
+    {
+      "repository": "zhongyang219/TrafficMonitor",
+      "commit": "188b8773b959733bfc0e4f506c762d9a255883d4",
+      "path": "TrafficMonitor/Win11TaskbarDlg.cpp",
+      "bytes": 4956,
+      "sha256": "952999ad931d50c83d9241cbbf374b0ba2aea4833f9e7f9f01741b73ced0ea8e",
+      "source": "https://github.com/zhongyang219/TrafficMonitor/blob/188b8773b959733bfc0e4f506c762d9a255883d4/TrafficMonitor/Win11TaskbarDlg.cpp",
+      "licenseObserved": "Anti-996",
+      "localPath": null
+    }
+  ]
+}

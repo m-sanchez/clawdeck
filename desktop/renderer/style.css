@@ -52,6 +52,180 @@
 body {
   margin: 0;
 }
+.muted {
+  color: var(--muted);
+}
+.primary {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 650;
+}
+#view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0 10px;
+  margin-top: 6px;
+}
+#view-tabs [aria-selected="true"] {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.view-hint {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: auto;
+}
+.library-toolbar,
+.selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0 0;
+}
+#library-search {
+  flex: 1;
+  min-width: 220px;
+}
+.selection-toolbar button {
+  font-size: 11px;
+  padding: 5px 7px;
+}
+#selection-count,
+#library-status {
+  color: var(--muted);
+  font-size: 11px;
+}
+.library-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 22px minmax(0, 1fr) 65px 75px 28px;
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  border-bottom: 1px solid var(--line);
+  padding: 8px;
+}
+.library-row:hover,
+.library-row:focus-within {
+  background: var(--panel);
+}
+.library-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.library-name .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.library-size {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
+}
+.session-peek {
+  position: fixed;
+  z-index: 30;
+  right: 18px;
+  top: 145px;
+  width: min(390px, calc(100vw - 32px));
+  max-height: calc(100vh - 170px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 18px;
+  box-shadow: 0 18px 50px #0006;
+}
+.peek-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.peek-close {
+  margin-left: auto;
+}
+.eyebrow {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 650;
+}
+.session-peek h2 {
+  font-size: 17px;
+  line-height: 1.4;
+  margin: 12px 0 5px;
+  overflow-wrap: anywhere;
+}
+.peek-project {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.peek-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+  max-height: 145px;
+  overflow: auto;
+  font-size: 12px;
+  margin: 7px 0 18px;
+}
+.peek-tool {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.session-peek > .muted {
+  font-size: 11px;
+}
+.session-peek .primary {
+  width: 100%;
+  margin-top: 8px;
+}
+.connection-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#cleanup-items {
+  max-height: 240px;
+  overflow: auto;
+  padding-left: 20px;
+}
+#cleanup-items li {
+  padding: 5px 0;
+}
+body[data-surface="bar"] #view-tabs,
+body[data-surface="bar"] #library-view,
+body[data-surface="bar"] #session-peek {
+  display: none;
+}
+body[data-surface="tray"] .view-hint {
+  display: none;
+}
+@media (max-width: 620px) {
+  .view-hint,
+  .library-size {
+    display: none;
+  }
+  .library-row {
+    grid-template-columns: 18px 20px minmax(0, 1fr) 62px 24px;
+    gap: 6px;
+  }
+  .session-peek {
+    top: 100px;
+    max-height: calc(100vh - 125px);
+  }
+}
 button,
 input,
 select {

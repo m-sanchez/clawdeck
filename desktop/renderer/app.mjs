@@ -8,6 +8,12 @@ import {
   statusLabel,
 } from "./session-model.mjs";
 import { icon, providerIcon } from "./icons.mjs";
+import {
+  initLibrary,
+  attachPreview,
+  libraryView,
+  showLibrary,
+} from "./library.mjs";
 const api = window.ocelin;
 const $ = (id) => document.getElementById(id);
 const surface =
@@ -88,6 +94,7 @@ function motion() {
   );
 }
 function setFilter(filter) {
+  if (libraryView() !== "now") void showLibrary("now");
   $("filter").value = filter;
   groupLimit = 60;
   renderSessions();
@@ -151,6 +158,26 @@ function render(value) {
       value.preferences.mutedProviders.includes(provider);
   $("version").textContent =
     `Ocelin ${value.version} · ${value.packaged ? "Windows desktop" : "Development build"}`;
+  $("native-status").textContent =
+    value.nativeTasks?.message || "Native taskbar tasks are off";
+  $("connection-status").replaceChildren(
+    ...["codex", "claude"].map((provider) => {
+      const connection = value.connections?.[provider] || {};
+      const hook = value.diagnostics.find(
+        (d) => d.provider === provider,
+      )?.lastHookAt;
+      const row = node("p", "connection-row");
+      row.append(
+        providerIcon(provider),
+        node(
+          "span",
+          "",
+          `${provider === "codex" ? "Codex" : "Claude"}: ${connection.nativeOpen ? "app connected" : "Desktop app not detected"} · ${hook ? `hook received ${age(hook)}` : connection.hooksInstalled ? "hooks installed; waiting for provider trust / next event" : "transcripts only; install hooks for lifecycle signals"}`,
+        ),
+      );
+      return row;
+    }),
+  );
   $("sources").replaceChildren(
     ...value.diagnostics.map((s) =>
       node(
@@ -271,7 +298,7 @@ function renderResources() {
 }
 async function openSession(s, b) {
   b.disabled = true;
-  await action("project", { key: s.key });
+  await action("session-open", { key: s.key });
   b.disabled = false;
 }
 function sessionRow(s) {
@@ -323,6 +350,9 @@ function sessionRow(s) {
   );
   const actions = node("div", "buttons");
   actions.append(button("Open folder", () => action("folder", { key: s.key })));
+  actions.append(
+    button("Project dashboard", () => action("project", { key: s.key })),
+  );
   if (s.unseen)
     actions.append(
       button("Mark seen", () => action("acknowledge", { key: s.key })),
@@ -342,16 +372,23 @@ function sessionRow(s) {
     details.open ? openActions.add(s.key) : openActions.delete(s.key);
   });
   row.append(providerIcon(s.provider), label, status, timestamp, details);
+  attachPreview(row, s);
   return row;
 }
 function renderSessions() {
   if (!state) return;
   const filter = $("filter").value;
-  const groups = groupSessions(state.sessions, {
-    search: $("search").value,
-    filter,
-    historySince: state.preferences.historySince,
-  });
+  const groups = groupSessions(
+    state.sessions.filter(
+      (s) =>
+        !state.hiddenKeys?.includes(s.key) || isRunning(s) || needsAttention(s),
+    ),
+    {
+      search: $("search").value,
+      filter,
+      historySince: state.preferences.historySince,
+    },
+  );
   $("list-title").textContent =
     `${groups.length} ${groups.length === 1 ? "project" : "projects"}`;
   for (const b of $("counts").children)
@@ -503,8 +540,8 @@ function renderSessions() {
     if (filter !== "all")
       empty.append(
         button(
-          "Browse recent sessions",
-          () => setFilter("recent"),
+          "Browse saved conversations",
+          () => showLibrary("history"),
           "text-button",
         ),
       );
@@ -554,6 +591,7 @@ $("restore-history").addEventListener("click", async () => {
       "Older sessions are available in the history filters again.";
 });
 $("export-widget").addEventListener("click", () => action("export-widget"));
+$("install-widget").addEventListener("click", () => action("install-widget"));
 $("taskbar-guide").addEventListener("click", () => action("taskbar-guide"));
 $("compact-summary").addEventListener("click", () =>
   action("show", { surface: "dashboard" }),
@@ -624,5 +662,6 @@ $("hook-apply").addEventListener("click", async () => {
 });
 motionQuery.addEventListener("change", motion);
 document.addEventListener("visibilitychange", motion);
+initLibrary(action, renderSessions);
 api.subscribe(render);
 render(await api.state());

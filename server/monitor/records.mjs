@@ -23,7 +23,9 @@ export function recordEvents(provider, record, context) {
       if (safeId(p.id)) context.sessionId = p.id;
       if (typeof p.cwd === "string") context.cwd = p.cwd;
       context.parentId =
-        p.source?.subagent?.thread_spawn?.parent_thread_id || null;
+        p.parent_thread_id ||
+        p.source?.subagent?.thread_spawn?.parent_thread_id ||
+        null;
       emit("idle");
     }
     if (record.type === "event_msg") {
@@ -45,7 +47,11 @@ export function recordEvents(provider, record, context) {
       }
       if (["function_call_output", "custom_tool_call_output"].includes(p.type))
         emit("running");
-      if (p.type === "message" && p.role === "assistant" && p.phase === "final")
+      if (
+        p.type === "message" &&
+        p.role === "assistant" &&
+        ["final", "final_answer"].includes(p.phase)
+      )
         emit("complete");
     }
   } else {

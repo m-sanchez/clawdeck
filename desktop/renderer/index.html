@@ -25,7 +25,7 @@
           aria-hidden="true"
         ></ocelin-assistant
         ><strong>ocelin</strong
-        ><span class="brand-caption">Session monitor</span>
+        ><span class="brand-caption">Your agents, at a glance</span>
       </div>
       <div class="header-actions">
         <button
@@ -49,30 +49,81 @@
       </section>
       <div id="resources" aria-label="App memory usage"></div>
       <button id="compact-summary" aria-label="Open session dashboard"></button>
-      <div class="toolbar">
-        <h2 id="list-title">Projects</h2>
-        <label
-          ><span class="sr-only">Filter sessions</span
-          ><input
-            id="search"
-            type="search"
-            placeholder="Find a project or session…" /></label
-        ><select id="filter" aria-label="Session filter">
-          <option value="active">Active now</option>
-          <option value="running">Running</option>
-          <option value="attention">Needs you</option>
-          <option value="recent">Last 24 hours</option>
-          <option value="all">All discovered</option></select
-        ><button id="collapse" class="text-button">Collapse all</button
-        ><button
-          id="refresh"
-          aria-label="Refresh sessions"
-          title="Refresh sessions"
-        >
-          Refresh
+      <nav id="view-tabs" role="tablist" aria-label="Session views">
+        <button data-view="now" role="tab" aria-selected="true">Now</button>
+        <button data-view="history" role="tab" aria-selected="false">
+          History
         </button>
+        <button data-view="archived" role="tab" aria-selected="false">
+          Archived & hidden
+        </button>
+        <span class="view-hint"
+          >Hover to preview · click to continue · Ctrl Alt O</span
+        >
+      </nav>
+      <div id="live-view">
+        <div class="toolbar">
+          <h2 id="list-title">Projects</h2>
+          <label
+            ><span class="sr-only">Filter sessions</span
+            ><input
+              id="search"
+              type="search"
+              placeholder="Find a project or session…" /></label
+          ><select id="filter" aria-label="Session filter">
+            <option value="active">Active now</option>
+            <option value="running">Running</option>
+            <option value="attention">Needs you</option>
+            <option value="recent">Last 24 hours</option>
+            <option value="all">Recent discovery</option></select
+          ><button id="collapse" class="text-button">Collapse all</button
+          ><button
+            id="refresh"
+            aria-label="Refresh sessions"
+            title="Refresh sessions"
+          >
+            Refresh
+          </button>
+        </div>
+        <div id="sessions" aria-label="Agent sessions"></div>
       </div>
-      <div id="sessions" aria-label="Agent sessions"></div>
+      <section id="library-view" hidden aria-label="Saved conversation library">
+        <div class="library-toolbar">
+          <input
+            id="library-search"
+            type="search"
+            aria-label="Search saved conversations"
+            placeholder="Search titles, requests, projects or IDs…"
+          />
+          <select id="library-provider" aria-label="Provider">
+            <option value="all">All agents</option>
+            <option value="codex">Codex</option>
+            <option value="claude">Claude</option>
+          </select>
+          <select id="library-age" aria-label="Conversation age">
+            <option value="0">Any age</option>
+            <option value="7">Older than a week</option>
+            <option value="30">Older than a month</option>
+            <option value="90">Older than 3 months</option>
+          </select>
+          <label
+            ><input id="library-missing" type="checkbox" /> Missing
+            folder</label
+          >
+        </div>
+        <div class="selection-toolbar">
+          <button id="select-page">Select visible</button
+          ><button id="clear-selection">Clear</button
+          ><span id="selection-count">0 selected</span>
+          <button data-bulk="hide">Hide in Ocelin</button
+          ><button data-bulk="unhide">Show again</button>
+          <button data-bulk="archive">Archive in Codex</button
+          ><button data-bulk="unarchive">Restore in Codex</button>
+        </div>
+        <p id="library-status" role="status"></p>
+        <div id="library-rows"></div>
+        <button id="library-more" hidden>Load more conversations</button>
+      </section>
       <footer>
         <span id="health">Discovering local sessions…</span
         ><span id="memory-note"
@@ -120,15 +171,21 @@
             </select></label
           >
           <p>
-            The built-in tile sits above the taskbar. An optional Taskbar
-            Widgets package can render inside it; see the taskbar integration
-            guide.
+            Native Windows tasks show running sessions and attention cards in
+            the taskbar. The optional text strip uses Taskbar Widgets. You can
+            enable either or both.
           </p>
+          <label
+            ><input type="checkbox" data-pref="nativeTasks" /> Native Windows
+            taskbar tasks</label
+          >
+          <p id="native-status" role="status"></p>
           <label
             ><input type="checkbox" data-pref="taskbarBridge" /> Share summary
             with Taskbar Widgets</label
           >
           <div class="buttons">
+            <button id="install-widget">Connect taskbar strip</button>
             <button id="export-widget">Save taskbar widget package</button
             ><button id="taskbar-guide">Setup guide</button>
           </div>
@@ -195,6 +252,7 @@
             applying.
           </p>
           <div id="sources"></div>
+          <div id="connection-status"></div>
           <div class="buttons">
             <button data-source="codex">Add Codex sessions folder</button
             ><button data-source="claude">Add Claude projects folder</button>
@@ -206,8 +264,9 @@
           <p id="version"></p>
           <p>
             A local companion for Codex and Claude. No account or API key
-            needed. Native session return links are not assumed: open the
-            project dashboard or its folder, then continue in the owning app.
+            needed. Click a conversation to continue in its owning app. Press
+            Ctrl Alt O for the quick panel. Transcript previews stay on this
+            computer.
           </p>
           <button id="quit">Quit Ocelin</button>
         </fieldset>
@@ -244,6 +303,27 @@
         <pre id="hook-json"></pre>
         <button id="hook-apply">Apply these changes</button>
         <p id="hook-result" role="status"></p>
+      </div>
+    </dialog>
+    <aside
+      id="session-peek"
+      class="session-peek"
+      aria-label="Conversation preview"
+      hidden
+    ></aside>
+    <dialog id="cleanup-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="cleanup-title">Review selection</h2>
+          <button aria-label="Close cleanup preview">×</button>
+        </header>
+      </form>
+      <div class="settings-body">
+        <p id="cleanup-scope"></p>
+        <p id="cleanup-note"></p>
+        <ul id="cleanup-items"></ul>
+        <button id="cleanup-apply" class="primary">Apply this selection</button>
+        <p id="cleanup-result" role="status"></p>
       </div>
     </dialog>
   </body>
