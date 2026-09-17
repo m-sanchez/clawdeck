@@ -1,5 +1,6 @@
 node_modules/
 vendor/
+!desktop/renderer/vendor/
 .claude/.runtime/
 *.local.json
 *.tgz
@@ -8,5 +9,6 @@ desktop/assets/*.ico
 desktop/assets/*.png
 .ocelin-smoke/
 desktop/*.log
+desktop/integrations/*.twidget
 .ocelin-test-results.log
 .claude/

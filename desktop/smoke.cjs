@@ -114,6 +114,13 @@ module.exports = async function smoke({
         "typeof require === 'undefined' && typeof process === 'undefined' && typeof window.ocelin.action === 'function'",
       );
       assert.equal(secure, true);
+      await until(
+        async () =>
+          window.webContents.executeJavaScript(
+            "[...document.querySelectorAll('.provider-icon img')].every(i => i.complete && i.naturalWidth > 0)",
+          ),
+        `${kind} official provider icons`,
+      );
       const layout = await window.webContents.executeJavaScript(
         "({surface:document.body.dataset.surface,width:innerWidth,scroll:document.documentElement.scrollWidth,limbs:document.querySelector('ocelin-assistant').shadowRoot.querySelectorAll('.clawd-arm,.clawd-leg').length})",
       );
@@ -129,6 +136,110 @@ module.exports = async function smoke({
       );
     }
     const dashboard = windows.get("dashboard");
+    assert.equal(
+      (await require("electron").net.fetch("ocelin://app/vendor/unknown.svg"))
+        .status,
+      404,
+    );
+    await until(
+      () => getState().resources?.status === "ready",
+      "Windows memory sample",
+    );
+    assert.ok(
+      getState().resources.groups.find((g) => g.provider === "ocelin")
+        .memoryBytes > 0,
+    );
+    const baseline = await dashboard.webContents.executeJavaScript(
+      "({filter:document.getElementById('filter').value,rows:document.querySelectorAll('#sessions .session').length,history:document.getElementById('counts').innerText,project:document.querySelector('.project-group').dataset.project})",
+    );
+    assert.equal(baseline.filter, "active");
+    assert.ok(!/Discovered|In history/.test(baseline.history));
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('.project-heading').click()",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.querySelector('.project-group').open",
+        ),
+      "project collapsed",
+    );
+    await action("refresh");
+    assert.equal(
+      await dashboard.webContents.executeJavaScript(
+        "document.querySelector('.project-group').open",
+      ),
+      false,
+    );
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('.project-heading').click()",
+    );
+    await action("preferences", { historySince: Date.now() });
+    await dashboard.webContents.executeJavaScript(
+      "document.getElementById('filter').value='all'; document.getElementById('filter').dispatchEvent(new Event('change'))",
+    );
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.getElementById('sessions').innerText.includes('Turn finished')",
+        ),
+      "old history hidden",
+    );
+    await action("preferences", { historySince: 0 });
+    await dashboard.webContents.executeJavaScript(
+      "document.getElementById('filter').value='active'; document.getElementById('filter').dispatchEvent(new Event('change'))",
+    );
+    await action("preferences", {
+      bar: true,
+      barLayout: "summary",
+      barPlacement: "taskbar",
+    });
+    const bar = windows.get("bar");
+    await until(
+      async () =>
+        bar.webContents.executeJavaScript(
+          "document.body.dataset.barLayout==='summary'",
+        ),
+      "summary tile",
+    );
+    writeFileSync(
+      join(output, "summary-tile.png"),
+      (await bar.webContents.capturePage()).toPNG(),
+    );
+    await action("preferences", {
+      barLayout: "sessions",
+      barPlacement: "floating",
+    });
+    report.checks.push(
+      "Live RAM, active-first view, collapse persistence, reversible history cleanup and status tile verified",
+    );
+    const originalBounds = dashboard.getBounds();
+    await action("preferences", { theme: "light" });
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "getComputedStyle(document.querySelector('.provider-on-light')).display !== 'none' && getComputedStyle(document.querySelector('.provider-on-dark')).display === 'none'",
+        ),
+      "official light-mode Codex icon",
+    );
+    for (const width of [700, 420, 320]) {
+      dashboard.setSize(width, 700);
+      await new Promise((r) => setTimeout(r, 150));
+      const layout = await dashboard.webContents.executeJavaScript(
+        "({width:innerWidth,scroll:document.documentElement.scrollWidth})",
+      );
+      assert.ok(
+        layout.scroll <= layout.width,
+        `Dashboard overflow at ${width}: ${JSON.stringify(layout)}`,
+      );
+    }
+    writeFileSync(
+      join(output, "dashboard-narrow-light.png"),
+      (await dashboard.webContents.capturePage()).toPNG(),
+    );
+    dashboard.setBounds(originalBounds);
+    await action("preferences", { theme: "dark" });
+    report.checks.push("Light dashboard fits 320, 420 and 700 pixel windows");
     const rejected = await dashboard.webContents.executeJavaScript(
       "window.ocelin.action('project',{key:'unknown'}).then(()=>false,()=>true)",
     );
@@ -205,5 +316,9 @@ module.exports = async function smoke({
     report.error = error.stack;
   }
   writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2));
-  app.exit(report.ok ? 0 : 1);
+  app.once("will-quit", (event) => {
+    event.preventDefault();
+    setTimeout(() => app.exit(report.ok ? 0 : 1), 2200);
+  });
+  app.quit();
 };

@@ -120,12 +120,10 @@ export class SessionMonitor {
         const ranked = [];
         for (let i = 0; i < candidates.length; i += 32) {
           const batch = await Promise.all(
-            candidates
-              .slice(i, i + 32)
-              .map(async (file) => ({
-                file,
-                mtime: (await stat(file).catch(() => ({ mtimeMs: 0 }))).mtimeMs,
-              })),
+            candidates.slice(i, i + 32).map(async (file) => ({
+              file,
+              mtime: (await stat(file).catch(() => ({ mtimeMs: 0 }))).mtimeMs,
+            })),
           );
           ranked.push(...batch);
         }
@@ -336,7 +334,9 @@ export class SessionMonitor {
       counts: {
         running: sessions.filter((s) => s.execution === "running" && !s.stale)
           .length,
-        attention: sessions.filter((s) => s.attention && !s.stale).length,
+        attention: sessions.filter(
+          (s) => (s.attention || s.execution === "error") && !s.stale,
+        ).length,
         unseen: sessions.filter((s) => s.unseen && !s.stale).length,
       },
     };

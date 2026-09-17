@@ -19,9 +19,11 @@ const { join, resolve, relative, extname, isAbsolute } = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { randomBytes } = require("node:crypto");
 const { readFileSync, mkdirSync } = require("node:fs");
-const { stat, realpath } = require("node:fs/promises");
+const { stat, realpath, writeFile } = require("node:fs/promises");
 const { createServer } = require("node:net");
 const { Preferences, recoverBounds } = require("./lib/preferences.cjs");
+const { Resources } = require("./lib/resources.cjs");
+const { TaskbarBridge } = require("./lib/taskbar-bridge.cjs");
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -39,6 +41,7 @@ const dataDir =
 app.setPath("userData", dataDir);
 app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
 const preferences = new Preferences(dataDir);
+const taskbarBridge = new TaskbarBridge(dataDir);
 const windows = new Map();
 let tray,
   monitor,
@@ -54,6 +57,7 @@ let snapshot = {
   metrics: {},
 };
 let error = null;
+const resources = new Resources(() => publish());
 const requests = new Map();
 const icon = () =>
   nativeImage.createFromPath(join(__dirname, "assets", "ocelin.png"));
@@ -63,13 +67,15 @@ const state = () => ({
   error,
   version: app.getVersion(),
   packaged: app.isPackaged,
+  resources: resources.value,
 });
 function publish() {
+  taskbarBridge.publish(state(), preferences.value.taskbarBridge);
   for (const window of windows.values())
     if (!window.isDestroyed()) window.webContents.send("ocelin:state", state());
   if (tray)
     tray.setToolTip(
-      `Ocelin · ${snapshot.counts.running} running · ${snapshot.counts.attention} need you`,
+      `Ocelin · ${snapshot.counts.running} running · ${snapshot.counts.attention} need you${resources.value.status === "ready" && resources.value.memoryBytes != null && Date.now() - resources.value.sampledAt < 35000 ? ` · ${(resources.value.memoryBytes / 1024 ** 3).toFixed(1)} GB apps + tools` : ""}`,
     );
   if (project) project.worker.postMessage({ type: "snapshot", snapshot });
 }
@@ -200,8 +206,8 @@ function createWindow(kind) {
     show: false,
     frame: kind === "dashboard",
     resizable: kind !== "tray",
-    minWidth: 320,
-    minHeight: kind === "bar" ? 82 : 360,
+    minWidth: kind === "bar" ? 280 : 320,
+    minHeight: kind === "bar" ? 62 : 360,
     skipTaskbar: kind !== "dashboard",
     alwaysOnTop: kind !== "dashboard" && preferences.value.alwaysOnTop,
     backgroundColor: "#171a19",
@@ -320,9 +326,37 @@ function applySurfaces() {
   }
   for (const kind of ["bar", "tray"])
     windows.get(kind)?.setAlwaysOnTop(preferences.value.alwaysOnTop);
+  placeBar();
   nativeTheme.themeSource = preferences.value.theme;
   monitor?.postMessage({ type: "preferences", value: preferences.value });
   publish();
+}
+function placeBar() {
+  const bar = windows.get("bar");
+  if (!bar) return;
+  const p = preferences.value;
+  if (bar.ocelinLayout !== p.barLayout) {
+    const area = screen.getDisplayMatching(bar.getBounds()).workArea;
+    bar.setSize(
+      Math.min(p.barLayout === "summary" ? 340 : 860, area.width),
+      p.barLayout === "summary" ? 64 : 76,
+    );
+    bar.setBounds(
+      recoverBounds(bar.getBounds(), screen.getAllDisplays(), bar.getBounds()),
+    );
+    bar.ocelinLayout = p.barLayout;
+  }
+  if (p.barPlacement === "taskbar") {
+    const area = screen.getDisplayMatching(bar.getBounds()).workArea;
+    const bounds = bar.getBounds();
+    bar.setBounds({
+      x: area.x + 10,
+      y: area.y + area.height - bounds.height - 8,
+      width: Math.min(bounds.width, area.width - 20),
+      height: bounds.height,
+    });
+    bar.setMovable(false);
+  } else bar.setMovable(true);
 }
 async function freePort() {
   return new Promise((resolvePort, reject) => {
@@ -440,6 +474,25 @@ function trusted(event) {
   );
 }
 async function action(name, args = {}) {
+  if (name === "taskbar-guide") {
+    await shell.openExternal(
+      "https://github.com/m-sanchez/clawdeck/blob/main/desktop/integrations/taskbar-widgets/README.md",
+    );
+    return true;
+  }
+  if (name === "export-widget") {
+    const selected = await dialog.showSaveDialog({
+      title: "Save Ocelin taskbar widget",
+      defaultPath: "Ocelin.twidget",
+      filters: [{ name: "Taskbar Widgets package", extensions: ["twidget"] }],
+    });
+    if (selected.canceled) return false;
+    await writeFile(
+      selected.filePath,
+      readFileSync(join(__dirname, "integrations", "Ocelin.twidget")),
+    );
+    return true;
+  }
   if (name === "preferences") {
     const previousStartup = preferences.value.startup;
     preferences.update(args);
@@ -538,6 +591,8 @@ else {
   app.on("activate", () => showWindow("dashboard"));
   app.on("before-quit", () => {
     quitting = true;
+    resources.stop();
+    taskbarBridge.publish(state(), false);
     monitor?.postMessage({ type: "stop" });
     if (project) project.worker.postMessage({ type: "stop" });
     setTimeout(() => {
@@ -555,6 +610,16 @@ else {
         if (url.hostname !== "app" || request.method !== "GET")
           return new Response("Forbidden", { status: 403 });
         const route = decodeURIComponent(url.pathname);
+        if (route.startsWith("/vendor/")) {
+          const name = route.slice("/vendor/".length);
+          if (
+            !["codex-dark.png", "codex-light.png", "claude.svg"].includes(name)
+          )
+            return new Response("Not found", { status: 404 });
+          return net.fetch(
+            pathToFileURL(join(__dirname, "renderer", "vendor", name)).href,
+          );
+        }
         const base = route.startsWith("/ui/")
           ? join(core, "ui")
           : route.startsWith("/desktop/renderer/")
@@ -596,6 +661,7 @@ else {
         return action(name, args);
       });
       startMonitor();
+      resources.start();
       applySurfaces();
       if (
         process.argv.includes("--background") &&
@@ -611,6 +677,7 @@ else {
               w.getBounds(),
             ),
           );
+        placeBar();
       };
       screen.on("display-removed", recover);
       screen.on("display-metrics-changed", recover);

@@ -11,7 +11,11 @@ const defaults = {
   bar: false,
   dashboard: true,
   alwaysOnTop: true,
-  density: "comfortable",
+  density: "compact",
+  barLayout: "sessions",
+  barPlacement: "floating",
+  historySince: 0,
+  taskbarBridge: false,
   motion: "system",
   theme: "system",
   quiet: false,
@@ -34,10 +38,13 @@ function validate(input, previous = defaults) {
     "completions",
     "sound",
     "startup",
+    "taskbarBridge",
   ])
     if (typeof input[key] === "boolean") next[key] = input[key];
   for (const [key, values] of Object.entries({
     density: ["compact", "comfortable"],
+    barLayout: ["sessions", "summary"],
+    barPlacement: ["floating", "taskbar"],
     motion: ["system", "full", "reduced", "none"],
     theme: ["system", "light", "dark"],
   }))
@@ -47,6 +54,12 @@ function validate(input, previous = defaults) {
       ["codex", "claude"].includes(p),
     );
   if (!next.tray && !next.bar && !next.dashboard) next.dashboard = true;
+  if (
+    Number.isFinite(input.historySince) &&
+    input.historySince >= 0 &&
+    input.historySince <= Date.now()
+  )
+    next.historySince = input.historySince;
   return next;
 }
 class Preferences {
