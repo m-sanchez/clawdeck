@@ -15,10 +15,11 @@ This implements the next session-management slice from the [native integration r
 ## Evidence
 
 - Package self-test passed.
-- Full core suite: 690 tests passed. Regression coverage includes mixed parent/child archive ordering, provider-home identity, Windows extended paths, native activity dates, and reconnecting a stopped taskbar helper.
+- Full core suite: 691 tests passed. Regression coverage includes mixed parent/child archive ordering, provider-home identity, Windows extended paths and aliases, native activity dates, and reconnecting a stopped taskbar helper. The Windows/Linux Node 20/22 CI matrix also passes.
 - Packaged 0.6.0 desktop smoke passed native URI construction/dispatch, history, keyboard-focus preview, hide/restore through IPC, official icons, project routing/reopening, sign-in startup restoration, settings, sandboxing and 320/420/700-pixel layouts. URI dispatch checks do not prove external provider rendering.
 - Installed Codex CLI 0.153.2 successfully archived and restored an isolated fixture through its real API, with no model turn and no real-user history changes.
 - Read-only live library probe indexed 884 distinct conversations, including 203 archived/hidden records, and read a paginated Codex preview through the native API. Indexing plus first native preview took about 7 seconds in the final cached probe on this machine; this is not an instant cold-start guarantee.
+- The installed dashboard was checked against live activity and measured app memory. A Codex lifecycle hook was received. Existing preferences, source folders and history cutoff survived the installer update; the standalone dashboard stayed running.
 - Taskbar Widgets 0.5.36's `twdev validate` accepted the 0.6.0 widget package, including its Ocelin-open button. Explorer placement requires the optional host and its permission review.
 - Native App Tasks package compilation and registration were checked on Windows 11 build 26200.9457. The first runtime check exposed a null/empty collection issue; a corrected 0.6.0.1 package is prepared for the next native rendering check.
 

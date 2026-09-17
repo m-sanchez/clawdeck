@@ -26,6 +26,11 @@ await writeFile(
       timestamp: stamp,
       payload: { type: "task_started", turn_id: "turn-1" },
     },
+    {
+      type: "event_msg",
+      timestamp: stamp,
+      payload: { type: "user_message", message: "Check the native conversation preview" },
+    },
   ]
     .map(JSON.stringify)
     .join("\n") + "\n",
@@ -40,7 +45,7 @@ for (const [id, cwd, stop] of [
       sessionId: id,
       cwd,
       timestamp: stamp,
-      message: { content: "Sample task" },
+      message: { content: [{ type: "text", text: "Review the Windows integration" }] },
     },
   ];
   if (stop)
@@ -49,7 +54,7 @@ for (const [id, cwd, stop] of [
       sessionId: id,
       cwd,
       timestamp: stamp,
-      message: { content: [], stop_reason: "end_turn" },
+      message: { content: [{ type: "text", text: "The fixture is complete." }], stop_reason: "end_turn" },
     });
   await writeFile(
     join(claude, `${id}.jsonl`),
