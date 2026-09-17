@@ -1,5 +1,60 @@
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+try {
+  Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
+
+public static class OcelinTaskbarAssets
+{
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern uint GetFinalPathNameByHandleW(SafeFileHandle file, StringBuilder path, uint capacity, uint flags);
+
+    public static string Resolve(string path)
+    {
+        using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        {
+            int capacity = 512;
+            while (true)
+            {
+                var buffer = new StringBuilder(capacity);
+                uint length = GetFinalPathNameByHandleW(file.SafeFileHandle, buffer, (uint)capacity, 0);
+                if (length == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (length < capacity)
+                {
+                    string resolved = buffer.ToString();
+                    if (resolved.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) return @"\\" + resolved.Substring(8);
+                    if (resolved.StartsWith(@"\\?\", StringComparison.Ordinal)) return resolved.Substring(4);
+                    return resolved;
+                }
+                if (length >= 32768) throw new PathTooLongException("The physical asset path exceeds the Windows path limit.");
+                capacity = (int)length + 1;
+            }
+        }
+    }
+}
+'@
+} catch { [Console]::Error.WriteLine('Ocelin pet resolver unavailable; using fallback assets.') }
+$petPaths = @{}
+$resolvedPetPaths = @{}
+foreach ($assetPose in @('coding', 'attention', 'idle', 'sleeping')) {
+  foreach ($assetExtension in @('gif', 'png')) {
+    $assetKey = "$assetPose.$assetExtension"
+    $assetPath = Join-Path $PSScriptRoot "assets\$assetKey"
+    $petPaths[$assetKey] = $assetPath
+    try {
+      $petPaths[$assetKey] = [OcelinTaskbarAssets]::Resolve($assetPath)
+      $resolvedPetPaths[$assetKey] = $true
+    } catch { [Console]::Error.WriteLine("Ocelin pet path lookup failed for $assetKey; using fallback.") }
+  }
+  if (-not $resolvedPetPaths["$assetPose.gif"] -and (Test-Path -LiteralPath $petPaths["$assetPose.png"] -PathType Leaf)) {
+    $petPaths["$assetPose.gif"] = $petPaths["$assetPose.png"]
+  }
+}
 $summaryFile = Join-Path $env:LOCALAPPDATA 'Ocelin\taskbar-summary.json'
 $instances = @()
 $reader = [IO.StreamReader]::new([Console]::OpenStandardInput(), [Text.UTF8Encoding]::new($false))
@@ -48,7 +103,8 @@ while ($true) {
   $secondary = if ($theme -eq 'light') { '#FF47534A' } else { '#FFB9C6BB' }
   $accent = if ($theme -eq 'light') { '#FF85530B' } else { '#FFEDBD77' }
   $extension = if ($motion) { 'gif' } else { 'png' }
-  $pet = Join-Path $PSScriptRoot "assets\$pose.$extension"
+  $pet = $petPaths["$pose.$extension"]
+  if (-not $pet) { $pet = Join-Path $PSScriptRoot "assets\$pose.$extension" }
   $data = [ordered]@{ headline = $headline; detail = $detail; foreground = $foreground; secondary = $secondary; accent = $accent; pet = $pet }
   $signature = $data | ConvertTo-Json -Compress
   foreach ($instance in $instances) {

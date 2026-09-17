@@ -2,7 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  rm,
+  copyFile,
+  realpath,
+  symlink,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -170,6 +178,16 @@ test(
   async (t) => {
     const dir = await mkdtemp(join(tmpdir(), "ocelin-widget-test-"));
     assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + "\\"));
+    const providerRoot = join(dir, "widget");
+    await mkdir(providerRoot);
+    await copyFile(
+      resolve("desktop/integrations/taskbar-widgets/provider.ps1"),
+      join(providerRoot, "provider.ps1"),
+    );
+    const petRoot = await realpath(
+      resolve("desktop/integrations/taskbar-widgets/assets"),
+    );
+    await symlink(petRoot, join(providerRoot, "assets"), "junction");
     await mkdir(join(dir, "Ocelin"));
     const file = join(dir, "Ocelin", "taskbar-summary.json");
     await writeFile(
@@ -196,7 +214,7 @@ test(
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        resolve("desktop/integrations/taskbar-widgets/provider.ps1"),
+        join(providerRoot, "provider.ps1"),
       ],
       {
         windowsHide: true,
@@ -249,6 +267,7 @@ test(
       "#FF202520",
     );
     assert.match(rows.at(-1).data.pet, /assets[\\/]attention\.gif$/);
+    assert.equal(rows.at(-1).data.pet, join(petRoot, "attention.gif"));
     await writeFile(
       file,
       JSON.stringify({
@@ -264,6 +283,7 @@ test(
     );
     await wait(() => rows.some((r) => r.data?.headline === "2 running"));
     assert.match(rows.at(-1).data.pet, /assets[\\/]coding\.png$/);
+    assert.equal(rows.at(-1).data.pet, join(petRoot, "coding.png"));
     await writeFile(
       file,
       JSON.stringify({
