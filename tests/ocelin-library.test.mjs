@@ -121,6 +121,32 @@ test("history reads old conversations and previews without an existing workspace
   assert.ok(!preview.events.some((e) => e.kind === "thinking"));
 });
 
+test("Doctor tidies old inactive history reversibly without changing provider files", async (t) => {
+  const { library, path, calls } = await fixture(t);
+  const before = await readFile(path, "utf8");
+  assert.equal((await library.doctor({ olderDays: 90 })).candidates, 1);
+  library.setLive([
+    { key: `codex:${CODEX_ID}`, execution: "running", stale: false },
+  ]);
+  assert.equal(
+    (await library.doctor({ operation: "tidy", olderDays: 90 })).changed,
+    0,
+  );
+  library.setLive([]);
+  const tidy = await library.doctor({ operation: "tidy", olderDays: 90 });
+  assert.equal(tidy.changed, 1);
+  assert.equal(tidy.canUndo, true);
+  assert.equal((await library.query()).total, 0);
+  assert.equal(await readFile(path, "utf8"), before);
+  assert.ok(!calls.some((c) => c.method === "thread/archive"));
+  assert.equal(
+    (await library.doctor({ operation: "undo", olderDays: 90 })).changed,
+    1,
+  );
+  assert.equal((await library.query()).total, 1);
+  await assert.rejects(library.doctor({ olderDays: -1 }), /Choose/);
+});
+
 test("live previews skip the full index and reject mismatched or outside hints", async (t) => {
   const { library, path, dir } = await fixture(t);
   library.refresh = async () => {

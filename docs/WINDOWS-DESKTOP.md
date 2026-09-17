@@ -4,6 +4,12 @@ Ocelin is the new product and mascot identity for Clawdeck. The GitHub repositor
 
 ## Install and run
 
+Version 0.6.5 adds a **Doctor** button to the session panel and dashboard. **Tidy safely** hides inactive sessions older than 30, 90 or 180 days in Ocelin and removes only allowlisted Ocelin workspace caches older than seven days. It preserves original conversations, native sidebars, projects and credentials. **Undo history tidy** restores the most recent batch of hidden sessions; cache deletion is separate and does not free app RAM.
+
+Doctor lists measured app RAM and CPU. **Stop Codex…** or **Stop Claude…** previews the verified app/tool processes and reported running-session count before a separate stop button interrupts them. This affects all accounts in the selected app, not one conversation. Fresh process identity is checked again at execution; inaccessible or changed processes are skipped. **Release Ocelin workspace & index** closes Ocelin's full project window and unloads its library worker while leaving session monitoring and coding apps running.
+
+Taskbar adapter 0.6.5 prioritizes running/attention counts with a second line selected in Settings: **Subscription % left**, **Running sessions by app**, or **App RAM**. Allowance can show the lowest general limit, weekly, or five-hour window. Multiple profiles use the lowest valid reading per provider; `*` indicates incomplete readings. Missing, stale or reset-expired quotas show unavailable. Percentages are never summed across subscriptions. Account identities and credentials are not shared with the taskbar host. Existing adapter users need to approve the new widget package once; the host executable needs no replacement.
+
 Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/ocelin/releases). The 0.6 integration preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
 
 For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, then `npm start`. `npm run pack` produces an unpacked app; `npm run dist` produces the NSIS installer. The browser core continues to need only Node 20 or newer and no runtime npm dependencies.

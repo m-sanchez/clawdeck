@@ -33,6 +33,7 @@ port.on("message", (raw) => {
       else if (type === "target") value = await library.target(args.key);
       else if (type === "plan") value = await library.plan(args);
       else if (type === "apply") value = await library.apply(args.id);
+      else if (type === "doctor") value = await library.doctor(args);
       else throw new Error("Unknown library action");
       port.postMessage({ type: "reply", id, value });
     } catch (error) {

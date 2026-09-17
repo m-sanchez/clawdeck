@@ -30,9 +30,11 @@ const { panelBounds, panelDuration } = require("./lib/panel.cjs");
 const { Resources } = require("./lib/resources.cjs");
 const {
   TaskbarBridge,
+  taskbarSummary,
   widgetSetupArguments,
 } = require("./lib/taskbar-bridge.cjs");
 const { NativeTasks } = require("./lib/native-tasks.cjs");
+const { runtimeCaches, ProcessStops } = require("./lib/doctor.cjs");
 const {
   sessionLink,
   activation,
@@ -102,28 +104,37 @@ let snapshot = {
 };
 let error = null;
 const resources = new Resources(() => publish());
+const processStops = new ProcessStops({
+  sample: () => resources.value,
+  sessions: () => snapshot.sessions,
+});
+let doctorBusy = false;
 const requests = new Map();
 const icon = () =>
   nativeImage.createFromPath(join(__dirname, "assets", "ocelin.png"));
-const state = () => ({
-  ...snapshot,
-  sessions: snapshot.sessions.filter(
-    (s) => Date.now() - s.lastTs < 86400000 || !s.stale,
-  ),
-  preferences: preferences.value,
-  accountProfiles: accountProfiles(preferences.value.accountProfiles),
-  error,
-  version: app.getVersion(),
-  packaged: app.isPackaged,
-  resources: resources.value,
-  taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
-    ? "dark"
-    : "light",
-  reducedMotion: systemPreferences.getAnimationSettings().prefersReducedMotion,
-  nativeTasks: nativeTasks.value,
-  connections,
-  hiddenKeys: [...hiddenKeys],
-});
+const state = () => {
+  const value = {
+    ...snapshot,
+    sessions: snapshot.sessions.filter(
+      (s) => Date.now() - s.lastTs < 86400000 || !s.stale,
+    ),
+    preferences: preferences.value,
+    accountProfiles: accountProfiles(preferences.value.accountProfiles),
+    error,
+    version: app.getVersion(),
+    packaged: app.isPackaged,
+    resources: resources.value,
+    taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI
+      ? "dark"
+      : "light",
+    reducedMotion:
+      systemPreferences.getAnimationSettings().prefersReducedMotion,
+    nativeTasks: nativeTasks.value,
+    connections,
+    hiddenKeys: [...hiddenKeys],
+  };
+  return { ...value, statusSummary: taskbarSummary(value, true) };
+};
 function publish() {
   taskbarBridge.publish(state(), preferences.value.taskbarBridge);
   nativeTasks.publish(state(), preferences.value.nativeTasks);
@@ -132,7 +143,7 @@ function publish() {
     if (!window.isDestroyed()) window.webContents.send("ocelin:state", state());
   if (tray)
     tray.setToolTip(
-      `Ocelin · ${snapshot.counts.running} running · ${snapshot.counts.attention} need you${resources.value.status === "ready" && resources.value.memoryBytes != null && Date.now() - resources.value.sampledAt < 35000 ? ` · ${(resources.value.memoryBytes / 1024 ** 3).toFixed(1)} GB apps + tools` : ""}`,
+      `Ocelin · ${state().statusSummary.headline} · ${state().statusSummary.detail}`,
     );
   if (project) project.worker.postMessage({ type: "snapshot", snapshot });
   const dashboard = windows.get("dashboard");
@@ -179,7 +190,7 @@ function libraryRequest(type, args = {}) {
   return new Promise((resolve, reject) => {
     const id = ++librarySequence;
     const timeout =
-      type === "apply" || type === "plan"
+      type === "apply" || type === "plan" || type === "doctor"
         ? null
         : setTimeout(() => {
             libraryRequests.delete(id);
@@ -739,6 +750,61 @@ function trusted(event) {
   );
 }
 async function action(name, args = {}) {
+  if (
+    name === "doctor-report" ||
+    name === "doctor-tidy" ||
+    name === "doctor-undo"
+  ) {
+    if (doctorBusy) throw new Error("Doctor is already working.");
+    doctorBusy = true;
+    try {
+      const operation = name.slice(7);
+      const report = await libraryRequest("doctor", {
+        operation,
+        olderDays: args.olderDays ?? 30,
+      });
+      hiddenKeys = new Set(report.hiddenKeys);
+      const activeDir = project
+        ? join(dataDir, "dashboard", project.nonce)
+        : null;
+      const caches = await runtimeCaches(
+        dataDir,
+        activeDir,
+        Date.now(),
+        operation === "tidy",
+      );
+      publish();
+      return {
+        ...report,
+        caches,
+        workspaceOpen: Boolean(project),
+        resources: resources.value,
+      };
+    } finally {
+      doctorBusy = false;
+    }
+  }
+  if (name === "doctor-stop-plan") return processStops.plan(args.provider);
+  if (name === "doctor-stop-apply") {
+    if (smokeTest)
+      throw new Error("Live process stopping is disabled in UI fixtures.");
+    return processStops.apply(args.id);
+  }
+  if (name === "doctor-release") {
+    if (projectOpening || libraryRequests.size)
+      throw new Error(
+        "Ocelin is busy. Try again when the current operation finishes.",
+      );
+    await closeProject();
+    if (library) library.postMessage({ type: "stop" });
+    for (const [kind, window] of windows)
+      if (!window.isDestroyed() && !window.isVisible()) {
+        window.destroy();
+        windows.delete(kind);
+      }
+    publish();
+    return true;
+  }
   if (name === "install-widget") {
     const destination = join(dataDir, "integrations", "Ocelin.twidget");
     mkdirSync(join(dataDir, "integrations"), { recursive: true });

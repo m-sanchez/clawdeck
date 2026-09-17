@@ -17,14 +17,14 @@
     {
       "type": "column",
       "gap": 0,
-      "width": 112,
+      "width": 170,
       "verticalAlignment": "center",
       "children": [
         {
           "type": "text",
           "fontSize": 12,
           "fontWeight": "semibold",
-          "width": 112,
+          "width": 170,
           "trimming": "characterEllipsis",
           "color": {
             "bind": "data.foreground",
@@ -40,7 +40,7 @@
         {
           "type": "text",
           "fontSize": 11,
-          "width": 112,
+          "width": 170,
           "trimming": "characterEllipsis",
           "color": {
             "bind": "data.secondary",
@@ -57,5 +57,5 @@
     }
   ],
   "action": "openOcelin",
-  "width": 170
+  "width": 228
 }

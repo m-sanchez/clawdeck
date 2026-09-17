@@ -9,6 +9,7 @@ import {
 } from "./session-model.mjs";
 import { icon, providerIcon } from "./icons.mjs";
 import { subscriptionView } from "../../ui/shared/subscriptions.mjs";
+import { initDoctor } from "./doctor.mjs";
 import {
   initLibrary,
   attachPreview,
@@ -176,6 +177,9 @@ if (surface === "tray") {
 }
 function render(value) {
   state = value;
+  renderDoctor(value);
+  $("taskbar-preview").textContent =
+    `${value.statusSummary?.headline || ""} · ${value.statusSummary?.detail || ""}`;
   renderWorkspaceLauncher(value);
   const nextAllowanceKey =
     JSON.stringify(value.subscriptions) + Math.floor(Date.now() / 60000);
@@ -413,7 +417,11 @@ function renderResources() {
       "",
       `${state.counts.running} running${state.counts.attention ? ` · ${state.counts.attention} need you` : ""}`,
     ),
-    node("span", "", `Codex + Claude · ${total} RAM`),
+    node(
+      "span",
+      "",
+      state.statusSummary?.detail || `Codex + Claude · ${total} RAM`,
+    ),
   );
   const signature = JSON.stringify([r?.sampledAt, fresh]);
   if (
@@ -885,6 +893,15 @@ $("hook-apply").addEventListener("click", async () => {
 motionQuery.addEventListener("change", motion);
 document.addEventListener("visibilitychange", motion);
 initLibrary(action, renderSessions);
+const renderDoctor = initDoctor(
+  api.action,
+  () => state,
+  () => {
+    rendering = "";
+    if (libraryView() === "now") renderSessions();
+    else void showLibrary(libraryView());
+  },
+);
 api.subscribe(render);
 render(await api.state());
 if (surface === "tray") api.panelReady();

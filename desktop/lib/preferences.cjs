@@ -16,6 +16,8 @@ const defaults = {
   barPlacement: "floating",
   historySince: 0,
   taskbarBridge: false,
+  taskbarDetail: "allowance",
+  taskbarAllowance: "lowest",
   nativeTasks: false,
   motion: "system",
   theme: "system",
@@ -50,6 +52,8 @@ function validate(input, previous = defaults) {
     density: ["compact", "comfortable"],
     barLayout: ["sessions", "summary"],
     barPlacement: ["floating", "taskbar"],
+    taskbarDetail: ["allowance", "sessions", "memory"],
+    taskbarAllowance: ["lowest", "weekly", "five-hour"],
     motion: ["system", "full", "reduced", "none"],
     theme: ["system", "light", "dark"],
   }))

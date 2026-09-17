@@ -696,6 +696,82 @@ export class SessionLibrary {
     for (const entry of entries) visit(entry.key);
     return ordered;
   }
+  doctorCandidates(olderDays) {
+    if (![30, 90, 180].includes(olderDays))
+      throw new Error("Choose 30, 90 or 180 days.");
+    return [...this.entries.values()].filter(
+      (e) =>
+        !this.hidden[e.key] &&
+        !e.nativeArchived &&
+        !this.busy(e) &&
+        this.now() - e.lastTs >= olderDays * 86400000,
+    );
+  }
+  async doctor({ operation = "report", olderDays = 30 } = {}) {
+    if (!["report", "tidy", "undo"].includes(operation))
+      throw new Error("Unknown Doctor action.");
+    await this.refresh(true);
+    let undo = null;
+    const undoFile = join(this.dataDir, "doctor-undo.json");
+    try {
+      undo = JSON.parse(await readFile(undoFile, "utf8"));
+    } catch {}
+    let changed = 0,
+      skipped = 0;
+    if (operation === "tidy") {
+      const entries = this.doctorCandidates(olderDays),
+        at = this.now(),
+        keys = [];
+      for (const entry of entries) {
+        const info = await stat(entry.file).catch(() => null);
+        if (
+          !info ||
+          info.mtimeMs !== entry.mtime ||
+          info.size !== entry.bytes ||
+          this.busy(entry)
+        ) {
+          skipped++;
+          continue;
+        }
+        keys.push(entry.key);
+      }
+      if (keys.length) {
+        undo = { at, keys };
+        await atomicJson(undoFile, undo);
+        for (const key of keys) this.hidden[key] = at;
+        await atomicJson(
+          join(this.dataDir, "library-hidden.json"),
+          this.hidden,
+        );
+        changed = keys.length;
+      }
+    } else if (
+      operation === "undo" &&
+      Array.isArray(undo?.keys) &&
+      Number.isFinite(undo.at)
+    ) {
+      for (const key of undo.keys)
+        if (this.hidden[key] === undo.at) {
+          delete this.hidden[key];
+          changed++;
+        }
+      await atomicJson(join(this.dataDir, "library-hidden.json"), this.hidden);
+      await atomicJson(undoFile, null);
+      undo = null;
+    }
+    const candidates = this.doctorCandidates(olderDays);
+    return {
+      indexed: this.entries.size,
+      candidates: candidates.length,
+      missingWorkspaces: candidates.filter((e) => !e.workspaceExists).length,
+      olderDays,
+      changed,
+      skipped,
+      canUndo: Boolean(undo?.keys?.some((key) => this.hidden[key] === undo.at)),
+      hiddenKeys: Object.keys(this.hidden),
+      diagnostics: this.diagnostics,
+    };
+  }
   async plan({ keys, operation }) {
     if (
       !Array.isArray(keys) ||
