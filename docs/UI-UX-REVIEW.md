@@ -1,5 +1,7 @@
 # Ocelin UI review: September 17, 2026
 
+This records the 0.5 visual changes. The subsequent [native integration and session-management review](OCELIN-NEXT-RESEARCH.md) identifies unresolved product gaps and supersedes this document's next-step recommendations. The history cutoff below is a visibility filter, not native archive or storage cleanup.
+
 The operator's first question is “what needs me, what is running, and what is using RAM?” The 0.4 landing screen spent too much space on branding and exposed a historical transcript count as its main inventory. The website can introduce the product; the installed app should get to the work immediately.
 
 | Finding | Change in 0.5 |

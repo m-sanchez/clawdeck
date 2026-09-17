@@ -1,10 +1,12 @@
 # Ocelin delivery tracker
 
+The [17 September native integration research](OCELIN-NEXT-RESEARCH.md) defines the next product direction and acceptance gates. The 0.5 work below records implementation delivered, not acceptance of the complete Windows/session-management experience. Native taskbar proof, exact-session opening, instant history previews and provider lifecycle operations remain outstanding.
+
 Approved scope: native Windows monitoring for Codex and Claude, with independently selectable tray, floating bar, and dashboard; the approved golden pixel ocelot; compatible browser operation; GitHub and personal website updates.
 
 | Stage | Deliverable | Status |
 | --- | --- | --- |
-| Compatibility | Installed provider matrix, isolated Electron package, bundled Node backend | Packaged Windows x64 smoke passed; exact native task links remain unavailable |
+| Compatibility | Installed provider matrix, isolated Electron package, bundled Node backend | Packaged Windows x64 smoke passed; exact native task opening remains unverified |
 | Monitor | Global discovery, independent sessions, incremental reads, lifecycle evidence, durable acknowledgement, optional hooks | Implemented; fixtures and live local discovery verified |
 | Tray | Single owner, attention summary, notification preferences, diagnostics | Implemented; native panel and packaged smoke verified |
 | Floating bar | Session chips, overflow, density, position recovery, reduced motion | Implemented; native controls, rendered output and packaged smoke verified |
@@ -17,8 +19,8 @@ Later scope from the accepted research: WSL and remote sources, reserved-edge Ap
 
 ## 0.5 compact UI and resource visibility
 
-- Core self-test and 676 unit tests passed, including history cleanup, project grouping, stale signals, RAM attribution and the taskbar protocol.
-- Development and packaged Windows checks passed for active-first filtering, collapse persistence, reversible cleanup, measured RAM and the status tile. Light mode fits 320, 420 and 700 pixel windows.
+- Core self-test and 676 unit tests passed, including history visibility filtering, project grouping, stale signals, RAM attribution and the taskbar protocol.
+- Development and packaged Windows checks passed for active-first filtering, collapse persistence, reversible history filtering, measured RAM and the status tile. Light mode fits 320, 420 and 700 pixel windows.
 - The packaged app passed both background-startup modes with system Node removed from PATH. Its unpacked Windows memory helper returned live measurements; bundled hooks and project navigation still worked.
 - The optional Taskbar Widgets package passes the upstream v4 manifest and native layout schemas, ZIP integrity and live JSON-lines protocol tests. It includes the MIT license. Explorer rendering remains unverified without installing and approving the external host.
 - [UI review and rationale](UI-UX-REVIEW.md), including app-level memory attribution and the two selectable taskbar approaches.
