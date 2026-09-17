@@ -37,6 +37,26 @@ module.exports = async function smoke({
     checks: [],
   };
   try {
+    const menu = require("electron").Menu.getApplicationMenu();
+    assert.equal(app.getName(), "Ocelin");
+    assert.ok(menu.getMenuItemById("ocelin-dashboard"));
+    assert.ok(menu.getMenuItemById("ocelin-panel"));
+    assert.equal(menu.getMenuItemById("ocelin-about").label, "About Ocelin");
+    assert.equal(menu.getMenuItemById("ocelin-help").label, "Ocelin help");
+    const labels = (items) =>
+      items.flatMap((item) => [
+        item.label,
+        ...labels(item.submenu?.items || []),
+      ]);
+    assert.equal(
+      labels(menu.items).some((label) =>
+        /electron|learn more|developer tools/i.test(label),
+      ),
+      false,
+    );
+    report.checks.push(
+      "Ocelin application identity and native menus replace default framework branding",
+    );
     await until(() => getState().sessions.length >= 3, "fixture sessions");
     assert.equal(realpathSync(process.cwd()), realpathSync(dataDir));
     const launchDir = join(dataDir, "..", "widget-launch");

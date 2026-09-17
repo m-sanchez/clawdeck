@@ -1,8 +1,8 @@
 {
   "name": "ocelin-desktop",
   "productName": "Ocelin",
-  "version": "0.6.5",
-  "description": "A Windows companion for local Codex and Claude sessions",
+  "version": "0.6.6",
+  "description": "Ocelin: a local Windows companion for Codex and Claude",
   "private": true,
   "main": "main.cjs",
   "author": "Miguel Sanchez",
@@ -85,7 +85,11 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
-      "shortcutName": "Ocelin"
+      "shortcutName": "Ocelin",
+      "installerIcon": "assets/ocelin.ico",
+      "uninstallerIcon": "assets/ocelin.ico",
+      "installerHeaderIcon": "assets/ocelin.ico",
+      "uninstallDisplayName": "Ocelin"
     }
   }
 }

@@ -36,6 +36,12 @@ const {
 const { NativeTasks } = require("./lib/native-tasks.cjs");
 const { runtimeCaches, ProcessStops } = require("./lib/doctor.cjs");
 const {
+  appId,
+  iconPath,
+  brandWindow,
+  installMenu,
+} = require("./lib/branding.cjs");
+const {
   sessionLink,
   activation,
   activationUri,
@@ -60,7 +66,8 @@ process.chdir(dataDir);
 const smokeTest =
   process.argv.includes("--smoke-test") && Boolean(process.env.OCELIN_DATA_DIR);
 app.setPath("userData", dataDir);
-app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
+app.setName("Ocelin");
+app.setAppUserModelId(appId);
 const preferences = new Preferences(dataDir);
 const { accountProfiles, profileSources, profileLabel } = require(
   join(core, "server", "monitor", "profiles.cjs"),
@@ -412,7 +419,7 @@ function createWindow(kind) {
           fallback,
         )),
     title: "Ocelin",
-    icon: icon(),
+    icon: iconPath,
     show: false,
     frame: kind === "dashboard",
     resizable: kind !== "tray",
@@ -434,6 +441,7 @@ function createWindow(kind) {
       webSecurity: true,
     },
   });
+  brandWindow(window);
   windows.set(kind, window);
   window.ocelinSurface = kind;
   window.once("closed", () => {
@@ -680,7 +688,7 @@ async function openProject(key, overview = false, directory = null) {
     width: 1200,
     height: 850,
     title: "Ocelin",
-    icon: icon(),
+    icon: iconPath,
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -689,6 +697,7 @@ async function openProject(key, overview = false, directory = null) {
       nodeIntegration: false,
     },
   });
+  brandWindow(window);
   project = { worker, window, cwd, port, nonce };
   window.once("closed", () => {
     if (project?.window === window) void closeProject();
@@ -1115,6 +1124,7 @@ else {
   app
     .whenReady()
     .then(async () => {
+      installMenu(showWindow);
       protocol.handle("ocelin", async (request) => {
         const url = new URL(request.url);
         if (url.hostname !== "app" || request.method !== "GET")
