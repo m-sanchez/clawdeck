@@ -9,7 +9,12 @@ async function runtimeCaches(
   now = Date.now(),
   remove = false,
 ) {
-  const root = resolve(dataDir, "dashboard");
+  const dataRoot = await realpath(dataDir).catch(() => null);
+  if (!dataRoot) return { bytes: 0, count: 0 };
+  const root = join(dataRoot, "dashboard");
+  const activeRoot = activeDir
+    ? await realpath(activeDir).catch(() => resolve(activeDir))
+    : null;
   const same = (a, b) =>
     process.platform === "win32"
       ? a.toLowerCase() === b.toLowerCase()
@@ -31,7 +36,7 @@ async function runtimeCaches(
   for (const name of await readdir(root)) {
     if (!/^[a-f0-9]{48}$/.test(name)) continue;
     const dir = join(root, name);
-    if (activeDir && same(resolve(activeDir), dir)) continue;
+    if (activeRoot && same(activeRoot, dir)) continue;
     try {
       const entry = await lstat(dir);
       if (
