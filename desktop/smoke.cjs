@@ -146,7 +146,7 @@ module.exports = async function smoke({
       await until(
         async () =>
           window.webContents.executeJavaScript(
-            "document.body.getAnimations().length === 0",
+            "(document.body.dataset.surface !== 'tray' || document.body.dataset.panelOpen === 'true') && document.body.getAnimations().length === 0",
           ),
         `${kind} entrance finished`,
       );
@@ -295,6 +295,42 @@ module.exports = async function smoke({
     writeFileSync(join(output, "panel-state.json"), JSON.stringify(panelState));
     assert.equal(panelState.open, "true");
     assert.equal(panelState.animations, 0);
+    assert.equal(panelState.focus, "");
+    await drawer.webContents.executeJavaScript(`
+      document.querySelector('.session-actions summary').dispatchEvent(new PointerEvent('pointerenter'));
+      new Promise(resolve => setTimeout(resolve, 500));
+    `);
+    assert.equal(
+      await drawer.webContents.executeJavaScript(
+        "document.getElementById('session-peek').hidden",
+      ),
+      true,
+    );
+    await drawer.webContents.executeJavaScript(`
+      document.querySelector('.session-title').dispatchEvent(new PointerEvent('pointerenter'));
+      document.querySelector('.session-title').dispatchEvent(new PointerEvent('pointerleave'));
+      new Promise(resolve => setTimeout(resolve, 500));
+    `);
+    assert.equal(
+      await drawer.webContents.executeJavaScript(
+        "document.getElementById('session-peek').hidden",
+      ),
+      true,
+    );
+    await drawer.webContents.executeJavaScript(
+      "document.querySelector('.session-title').dispatchEvent(new PointerEvent('pointerenter'))",
+    );
+    await until(
+      async () =>
+        drawer.webContents.executeJavaScript(
+          "!document.getElementById('session-peek').hidden && document.getElementById('session-peek').textContent.includes('Latest request')",
+        ),
+      "deliberate title hover preview",
+    );
+    await drawer.webContents.executeJavaScript(
+      "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))",
+    );
+    assert.equal(drawer.isVisible(), true);
     await drawer.webContents.executeJavaScript(
       "document.getElementById('settings').click()",
     );
@@ -319,10 +355,50 @@ module.exports = async function smoke({
     await action("show", { surface: "dashboard" });
     await until(() => !drawer.isVisible(), "outside focus dismisses drawer");
     await activate(["ocelin://panel"]);
+    await drawer.webContents.executeJavaScript(`
+      window.__panelFrames = [];
+      window.ocelin.onPanelOpen(({visible, duration}) => {
+        if (!visible) return;
+        const started = performance.now();
+        const sample = () => {
+          const transform = getComputedStyle(document.body).transform;
+          window.__panelFrames.push({ duration, at: performance.now() - started, x: transform === 'none' ? 0 : new DOMMatrix(transform).m41 });
+          if (performance.now() - started < duration + 80) requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+      });
+      void 0;
+    `);
     await drawer.webContents.executeJavaScript(
       "document.getElementById('hide').click()",
     );
     await until(() => !drawer.isVisible(), "close button dismisses drawer");
+    await action("preferences", { motion: "full" });
+    await activate(["ocelin://panel"]);
+    await until(
+      async () =>
+        drawer.webContents.executeJavaScript(
+          "window.__panelFrames.at(-1)?.at > window.__panelFrames.at(-1)?.duration + 40",
+        ),
+      "visible drawer animation frames",
+    );
+    const frames = await drawer.webContents.executeJavaScript(
+      "window.__panelFrames",
+    );
+    if (!getState().reducedMotion) {
+      assert.ok(frames[0].x > 0);
+      assert.ok(
+        frames.some(
+          (frame) => frame.x > 0 && frame.x < drawer.getBounds().width - 5,
+        ),
+      );
+    }
+    assert.equal(frames.at(-1).x, 0);
+    writeFileSync(join(output, "panel-animation.json"), JSON.stringify(frames));
+    report.checks.push(
+      "Drawer animation has intermediate visible positions; brief row/action hover stays quiet and deliberate title hover previews",
+    );
+    await action("hide", { surface: "tray" });
     await action("preferences", { motion: "system", tray: true, bar: true });
     report.checks.push(
       "Right-edge session panel opens from URI, reuses its window, respects reduced motion and closes with Escape, outside focus or its close button",

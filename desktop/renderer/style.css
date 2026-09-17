@@ -110,7 +110,7 @@ body {
   padding: 8px;
 }
 .library-row:hover,
-.library-row:focus-within {
+.library-row:has(:focus-visible) {
   background: var(--panel);
 }
 .library-name {
@@ -828,11 +828,14 @@ body[data-surface="tray"] {
   overflow: hidden;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 8px;
   transform: translateX(100%);
 }
 body[data-surface="tray"][data-panel-open="true"] {
   transform: none;
+}
+body[data-surface="tray"]:focus {
+  outline: none;
 }
 body[data-surface="tray"] header {
   flex-shrink: 0;
@@ -854,6 +857,10 @@ body[data-surface="tray"] .toolbar {
 }
 body[data-surface="tray"] .header-actions {
   gap: 8px;
+}
+body[data-surface="tray"] .header-actions button {
+  border-color: transparent;
+  border-radius: 4px;
 }
 body[data-surface="tray"] .brand-caption,
 body[data-surface="tray"] #memory-details,

@@ -9,6 +9,6 @@ function panelBounds(area) {
   };
 }
 function panelDuration(motion, reducedMotion) {
-  return motion === "none" || motion === "reduced" || reducedMotion ? 0 : 220;
+  return motion === "none" || motion === "reduced" || reducedMotion ? 0 : 360;
 }
 module.exports = { panelBounds, panelDuration };

@@ -43,3 +43,5 @@ History previews are bounded, and search covers metadata and first requests rath
 ## Right-edge panel update
 
 The desktop smoke passes cold `ocelin://panel` startup without a dashboard, right-edge placement, Escape/close/outside-focus dismissal, reopening, reduced motion, and operation without a tray icon. The panel waits for its renderer before presentation and keeps its surface offscreen until opening. Cards and controls have additional spacing. Adapter 0.6.4 approval and a live click anywhere on the taskbar widget remain pending.
+
+The user approved adapter 0.6.4 and confirmed that clicking the pet or counts opens the panel. Native hook logs record the matching `openOcelin` action. Subsequent desktop smoke captures intermediate positions from the right edge to zero over a 360 ms slide, checks reduced motion, and verifies that brief row/action hover stays quiet while deliberate title hover previews. The revised timing and hand cursor still need a live visual check.

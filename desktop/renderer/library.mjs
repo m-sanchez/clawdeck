@@ -35,14 +35,18 @@ export function closePreview() {
   $("session-peek").hidden = true;
 }
 export function attachPreview(row, session) {
-  const show = () => {
+  const title = row.querySelector(".session-title");
+  const show = (delay) => {
     clearTimeout(closeTimer);
     clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => void peek(session), 180);
+    hoverTimer = setTimeout(() => void peek(session), delay);
   };
-  row.addEventListener("pointerenter", show);
-  row.addEventListener("focusin", show);
-  row.addEventListener("pointerleave", () => {
+  title.addEventListener("pointerenter", () => show(450));
+  title.addEventListener("focusin", () => {
+    if (title.matches(":focus-visible")) show(180);
+  });
+  title.addEventListener("pointerdown", closePreview);
+  title.addEventListener("pointerleave", () => {
     clearTimeout(hoverTimer);
     closeTimer = setTimeout(closePreview, 250);
   });
@@ -55,7 +59,7 @@ export function attachPreview(row, session) {
   });
 }
 async function peek(session) {
-  if ($("preferences").open || $("cleanup-dialog").open) return;
+  if (document.hidden || document.querySelector("dialog[open]")) return;
   const serial = ++previewSequence;
   const panel = $("session-peek");
   panel.hidden = false;
