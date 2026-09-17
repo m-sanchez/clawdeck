@@ -1,18 +1,18 @@
 {
   "schemaVersion": 4,
   "id": "uk.co.miguelsanchez.ocelin",
-  "version": "0.6.0",
-  "minHostVersion": "0.5.4",
+  "version": "0.6.4",
+  "minHostVersion": "0.5.36",
   "displayName": "Ocelin sessions",
   "description": "Local Codex and Claude running counts, attention and app RAM from Ocelin.",
   "author": { "name": "Miguel Sanchez", "website": "https://miguelsanchez.co.uk/ocelin/" },
   "category": "Productivity",
-  "size": { "width": 200, "height": 44 },
+  "size": { "width": 170, "height": 44 },
   "renderer": { "type": "native", "entry": "compact.json" },
-  "runtime": { "type": "process", "entry": "provider.ps1", "arguments": [], "protocol": "json-lines-v1", "lifetime": "persistent", "runAs": "user", "workingDirectory": "package" },
+  "runtime": { "type": "process", "entry": "provider.ps1", "arguments": [], "protocol": "json-lines-v1", "lifetime": "persistent", "runAs": "user", "workingDirectory": "data" },
   "permissions": {
     "required": [
-      { "id": "system.fullAccess", "reason": "Reads Ocelin's fixed local summary file and opens the fixed ocelin://dashboard link when clicked, using normal user rights. The host does not sandbox process providers." },
+      { "id": "system.fullAccess", "reason": "Reads Ocelin's fixed local summary file and opens the fixed ocelin://panel link when clicked, using normal user rights. The host does not sandbox process providers." },
       { "id": "filesystem.read", "scope": "%LOCALAPPDATA%\\Ocelin\\taskbar-summary.json", "reason": "Reads only Ocelin's opt-in aggregate counts and memory totals, without session names, project paths, prompts or account data." },
       { "id": "system.background", "reason": "Refreshes the summary every two seconds while this widget is enabled." }
     ],

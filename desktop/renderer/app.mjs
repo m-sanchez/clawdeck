@@ -13,17 +13,19 @@ import {
   attachPreview,
   libraryView,
   showLibrary,
+  closePreview,
 } from "./library.mjs";
 const api = window.ocelin;
 const $ = (id) => document.getElementById(id);
 const surface =
   new URLSearchParams(location.search).get("surface") || "dashboard";
 document.body.dataset.surface = surface;
+document.documentElement.dataset.surface = surface;
 document.title =
   surface === "bar"
     ? "Ocelin · Session bar"
     : surface === "tray"
-      ? "Ocelin · Tray panel"
+      ? "Ocelin · Session panel"
       : "Ocelin";
 let state,
   preview,
@@ -120,6 +122,55 @@ if (surface === "bar") {
   $("settings").replaceChildren(icon("open"));
   $("settings").title = "Open dashboard";
   $("settings").setAttribute("aria-label", "Open dashboard");
+  $("hide").title = "Hide floating bar";
+  $("hide").setAttribute("aria-label", "Hide floating bar");
+  document.querySelector(".brand").title = "Drag to move";
+}
+if (surface === "tray") {
+  $("hide").replaceChildren(icon("close"));
+  $("hide").title = "Close panel (Esc)";
+  $("hide").setAttribute("aria-label", "Close panel");
+  document.body.tabIndex = -1;
+  let entrance, frame;
+  api.onPanelOpen(({ visible, duration }) => {
+    entrance?.cancel();
+    cancelAnimationFrame(frame);
+    document.body.dataset.panelOpen = "false";
+    closePreview();
+    if (!visible) {
+      for (const dialog of document.querySelectorAll("dialog[open]"))
+        dialog.close();
+      return;
+    }
+    const reveal = () => {
+      document.body.dataset.panelOpen = "true";
+      if (duration)
+        entrance = document.body.animate(
+          [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
+          { duration, easing: "cubic-bezier(.2,0,.2,1)" },
+        );
+      document.body.focus({ preventScroll: true });
+    };
+    if (duration)
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(reveal);
+      });
+    else reveal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || document.querySelector("dialog[open]"))
+      return;
+    const peek = $("session-peek");
+    if (!peek.hidden) return;
+    const expanded = document.querySelector(".session-actions[open]");
+    if (expanded) {
+      expanded.open = false;
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    void action("hide", { surface });
+  });
 }
 function render(value) {
   state = value;
@@ -316,7 +367,6 @@ function sessionRow(s) {
     "aria-label",
     `Open ${s.provider} session: ${s.displayTitle || s.title}`,
   );
-  title.title = `${s.displayTitle || s.title}\n${s.sessionId}`;
   const label = node("div", "session-name");
   label.append(title);
   if (s.parentId) label.append(node("span", "subagent", "↳ subagent"));
@@ -665,3 +715,4 @@ document.addEventListener("visibilitychange", motion);
 initLibrary(action, renderSessions);
 api.subscribe(render);
 render(await api.state());
+if (surface === "tray") api.panelReady();

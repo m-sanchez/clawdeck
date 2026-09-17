@@ -22,6 +22,8 @@ function activation(value) {
       return null;
     if (url.hostname === "dashboard" && ["", "/"].includes(url.pathname))
       return { type: "dashboard" };
+    if (url.hostname === "panel" && ["", "/"].includes(url.pathname))
+      return { type: "panel" };
     const match = url.pathname.match(
       /^\/(codex|claude)\/([a-zA-Z0-9_-]{1,128})$/,
     );

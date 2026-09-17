@@ -11,6 +11,7 @@ permissions:
 jobs:
   package:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,12 +25,14 @@ jobs:
         working-directory: desktop
       - name: Packaged smoke check with isolated source fixtures
         shell: pwsh
+        timeout-minutes: 5
         run: |
           Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-          foreach ($mode in @('all', 'dashboard-only')) {
+          foreach ($mode in @('all', 'dashboard-only', 'panel')) {
             node desktop/smoke-fixture.mjs ".ocelin-smoke/$mode" "--$mode"
             $env:OCELIN_DATA_DIR = Join-Path $PWD ".ocelin-smoke/$mode/data"
-            $ocelin = Start-Process -FilePath "$PWD/desktop/dist/win-unpacked/Ocelin.exe" -ArgumentList '--smoke-test --background' -WindowStyle Hidden -PassThru -Wait
+            $launchArgs = if ($mode -eq 'panel') { '--smoke-test ocelin://panel' } else { '--smoke-test --background' }
+            $ocelin = Start-Process -FilePath "$PWD/desktop/dist/win-unpacked/Ocelin.exe" -ArgumentList $launchArgs -WorkingDirectory "$PWD/.ocelin-smoke/$mode/widget-launch" -WindowStyle Hidden -PassThru -Wait
             if ($ocelin.ExitCode -ne 0) { Get-Content "$env:OCELIN_DATA_DIR/proof/report.json"; exit 1 }
             Get-Content "$env:OCELIN_DATA_DIR/proof/report.json"
           }

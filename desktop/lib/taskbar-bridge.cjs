@@ -1,6 +1,21 @@
 const { writeFileSync, renameSync, mkdirSync } = require("node:fs");
 const { join } = require("node:path");
 
+function widgetSetupArguments(installed, bundled, destination) {
+  const version = (value) =>
+    typeof value === "string" && /^\d+\.\d+\.\d+$/.test(value)
+      ? value.split(".").map(Number)
+      : null;
+  const current = version(installed?.version);
+  const target = version(bundled.version);
+  if (installed?.id === bundled.id && current && target) {
+    const difference = current.findIndex((part, i) => part !== target[i]);
+    if (difference === -1 || current[difference] > target[difference])
+      return ["--settings"];
+  }
+  return ["--install-widget", destination];
+}
+
 function taskbarSummary(state, enabled, now = Date.now()) {
   const ready = enabled && !state.error;
   const fresh =
@@ -14,6 +29,10 @@ function taskbarSummary(state, enabled, now = Date.now()) {
     groups.every((g) => Number.isFinite(g.memoryBytes) && !g.unavailable);
   return {
     schemaVersion: 1,
+    theme: state.taskbarTheme === "light" ? "light" : "dark",
+    motion:
+      !["none", "reduced"].includes(state.preferences?.motion) &&
+      !state.reducedMotion,
     sampledAt: now,
     status: !enabled ? "disabled" : ready ? "ready" : "unavailable",
     running: ready ? state.counts.running : null,
@@ -43,4 +62,4 @@ class TaskbarBridge {
     } catch {}
   }
 }
-module.exports = { TaskbarBridge, taskbarSummary };
+module.exports = { TaskbarBridge, taskbarSummary, widgetSetupArguments };

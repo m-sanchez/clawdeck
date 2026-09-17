@@ -9,6 +9,7 @@ const {
   screen,
   nativeImage,
   nativeTheme,
+  systemPreferences,
   Notification,
   utilityProcess,
   shell,
@@ -25,8 +26,9 @@ const { stat, realpath, writeFile } = require("node:fs/promises");
 const { createServer } = require("node:net");
 const { Worker } = require("node:worker_threads");
 const { Preferences, recoverBounds } = require("./lib/preferences.cjs");
+const { panelBounds, panelDuration } = require("./lib/panel.cjs");
 const { Resources } = require("./lib/resources.cjs");
-const { TaskbarBridge } = require("./lib/taskbar-bridge.cjs");
+const { TaskbarBridge, widgetSetupArguments } = require("./lib/taskbar-bridge.cjs");
 const { NativeTasks } = require("./lib/native-tasks.cjs");
 const {
   sessionLink,
@@ -44,9 +46,14 @@ app.commandLine.appendSwitch("force-renderer-accessibility");
 const core = app.isPackaged
   ? join(process.resourcesPath, "core")
   : resolve(__dirname, "..");
-const dataDir =
+const dataDir = resolve(
   process.env.OCELIN_DATA_DIR ||
-  join(process.env.LOCALAPPDATA || app.getPath("userData"), "Ocelin");
+    join(process.env.LOCALAPPDATA || app.getPath("userData"), "Ocelin"),
+);
+mkdirSync(dataDir, { recursive: true });
+process.chdir(dataDir);
+const smokeTest =
+  process.argv.includes("--smoke-test") && Boolean(process.env.OCELIN_DATA_DIR);
 app.setPath("userData", dataDir);
 app.setAppUserModelId("uk.co.miguelsanchez.ocelin");
 const preferences = new Preferences(dataDir);
@@ -92,6 +99,8 @@ const state = () => ({
   version: app.getVersion(),
   packaged: app.isPackaged,
   resources: resources.value,
+  taskbarTheme: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI ? "dark" : "light",
+  reducedMotion: systemPreferences.getAnimationSettings().prefersReducedMotion,
   nativeTasks: nativeTasks.value,
   connections,
   hiddenKeys: [...hiddenKeys],
@@ -185,6 +194,10 @@ async function openSession(key) {
 }
 async function activate(args) {
   const route = args.map(activation).find(Boolean);
+  if (route?.type === "panel") {
+    showWindow("tray");
+    return;
+  }
   if (route?.type === "session") {
     try {
       await openSession(route.key);
@@ -350,35 +363,29 @@ function createWindow(kind) {
           width: Math.min(850, work.width),
           height: 96,
         }
-      : kind === "tray"
-        ? {
-            x: work.x + work.width - 430,
-            y: work.y + work.height - 610,
-            width: 420,
-            height: 590,
-          }
-        : {
+      : {
             x: work.x + 60,
             y: work.y + 60,
             width: Math.min(1120, work.width),
             height: Math.min(800, work.height),
           };
   const window = new BrowserWindow({
-    ...recoverBounds(
-      preferences.value.bounds[kind],
-      screen.getAllDisplays(),
-      fallback,
-    ),
+    ...(kind === "tray"
+      ? panelBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea)
+      : recoverBounds(preferences.value.bounds[kind], screen.getAllDisplays(), fallback)),
     title: "Ocelin",
     icon: icon(),
     show: false,
     frame: kind === "dashboard",
     resizable: kind !== "tray",
-    minWidth: kind === "bar" ? 280 : 320,
-    minHeight: kind === "bar" ? 62 : 360,
+    movable: kind !== "tray",
+    minWidth: kind === "tray" ? 0 : kind === "bar" ? 280 : 320,
+    minHeight: kind === "tray" ? 0 : kind === "bar" ? 62 : 360,
     skipTaskbar: kind !== "dashboard",
-    alwaysOnTop: kind !== "dashboard" && preferences.value.alwaysOnTop,
-    backgroundColor: "#171a19",
+    alwaysOnTop:
+      kind === "tray" || (kind !== "dashboard" && preferences.value.alwaysOnTop),
+    transparent: kind === "tray",
+    backgroundColor: kind === "tray" ? "#00000000" : "#171a19",
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
@@ -389,6 +396,7 @@ function createWindow(kind) {
     },
   });
   windows.set(kind, window);
+  window.ocelinSurface = kind;
   window.once("closed", () => { if (windows.get(kind) === window) windows.delete(kind); });
   secure(window);
   window.webContents.on("console-message", (details) => {
@@ -405,10 +413,7 @@ function createWindow(kind) {
       publish();
     });
   window.once("ready-to-show", () => {
-    if (window.ocelinVisible) {
-      window.showInactive();
-      if (window.ocelinFocus) window.focus();
-    }
+    if (window.ocelinVisible && kind !== "tray") presentWindow(window);
   });
   let saveTimer;
   const saveBounds = () => {
@@ -420,11 +425,28 @@ function createWindow(kind) {
         });
     }, 300);
   };
-  window.on("move", saveBounds);
-  window.on("resize", saveBounds);
+  if (kind !== "tray") {
+    window.on("move", saveBounds);
+    window.on("resize", saveBounds);
+  }
+  if (kind === "bar")
+    window.on("will-move", () => {
+      if (preferences.value.barPlacement === "taskbar") {
+        preferences.update({ barPlacement: "floating" });
+        publish();
+      }
+    });
   window.on("close", (event) => {
     if (quitting) return;
     event.preventDefault();
+    if (kind === "bar") {
+      dismissBar();
+      return;
+    }
+    if (kind === "tray") {
+      hideWindow(window);
+      return;
+    }
     if (
       tray ||
       [...windows.values()].some((w) => w !== window && w.isVisible())
@@ -432,12 +454,31 @@ function createWindow(kind) {
       hideWindow(window);
     else showWindow("dashboard");
   });
-  if (kind === "tray") window.on("blur", () => hideWindow(window));
+  if (kind === "tray") {
+    window.on("blur", () => {
+      clearTimeout(window.ocelinBlur);
+      window.ocelinBlur = setTimeout(() => {
+        if (!window.isDestroyed() && !window.isFocused()) hideWindow(window);
+      }, 120);
+    });
+    window.on("focus", () => clearTimeout(window.ocelinBlur));
+    window.on("closed", () => clearTimeout(window.ocelinBlur));
+  }
   return window;
+}
+function dismissBar() {
+  preferences.update({ bar: false });
+  hideWindow(windows.get("bar"));
+  if (!tray && ![...windows.values()].some((window) => window.isVisible()))
+    showWindow("dashboard");
+  publish();
 }
 function hideWindow(window) {
   if (!window || window.isDestroyed()) return;
+  clearTimeout(window.ocelinBlur);
   window.ocelinVisible = false;
+  if (window.ocelinSurface === "tray")
+    window.webContents.send("ocelin:panel-open", { visible: false, duration: 0 });
   window.hide();
   clearTimeout(window.ocelinSleep);
   window.ocelinSleep = setTimeout(() => {
@@ -445,28 +486,31 @@ function hideWindow(window) {
   }, 30000);
   window.ocelinSleep.unref();
 }
+function presentWindow(window) {
+  const opening = !window.isVisible();
+  window.ocelinFocus ? window.show() : window.showInactive();
+  if (opening && window.ocelinSurface === "tray")
+    window.webContents.send("ocelin:panel-open", {
+      visible: true,
+      duration: panelDuration(
+        preferences.value.motion,
+        systemPreferences.getAnimationSettings().prefersReducedMotion,
+      ),
+    });
+  if (window.ocelinFocus) window.focus();
+}
 function showWindow(kind, focus = true) {
   const window = windows.get(kind) || createWindow(kind);
   clearTimeout(window.ocelinSleep);
+  clearTimeout(window.ocelinBlur);
   window.ocelinVisible = true;
   window.ocelinFocus = focus;
-  if (kind === "tray" && tray) {
-    const bounds = tray.getBounds();
-    const area = screen.getDisplayNearestPoint({
-      x: bounds.x,
-      y: bounds.y,
-    }).workArea;
-    window.setPosition(
-      Math.max(area.x, Math.min(bounds.x - 380, area.x + area.width - 420)),
-      Math.max(area.y, area.y + area.height - window.getBounds().height - 8),
-    );
-  }
-  if (!window.webContents.isLoading()) {
-    focus ? window.show() : window.showInactive();
-    if (focus) window.focus();
-  }
+  if (kind === "tray")
+    window.setBounds(panelBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea));
+  if (kind === "tray" ? window.ocelinReady : !window.webContents.isLoading())
+    presentWindow(window);
 }
-function applySurfaces() {
+function applySurfaces({ panelLaunch = false } = {}) {
   if (preferences.value.tray && !tray) {
     tray = new Tray(icon());
     tray.setContextMenu(
@@ -496,11 +540,11 @@ function applySurfaces() {
     hideWindow(windows.get("tray"));
   }
   for (const kind of ["bar", "dashboard"]) {
+    if (kind === "dashboard" && panelLaunch) continue;
     if (preferences.value[kind]) showWindow(kind, false);
     else hideWindow(windows.get(kind));
   }
-  for (const kind of ["bar", "tray"])
-    windows.get(kind)?.setAlwaysOnTop(preferences.value.alwaysOnTop);
+  windows.get("bar")?.setAlwaysOnTop(preferences.value.alwaysOnTop);
   placeBar();
   nativeTheme.themeSource = preferences.value.theme;
   monitor?.postMessage({ type: "preferences", value: preferences.value });
@@ -530,8 +574,8 @@ function placeBar() {
       width: Math.min(bounds.width, area.width - 20),
       height: bounds.height,
     });
-    bar.setMovable(false);
-  } else bar.setMovable(true);
+  }
+  bar.setMovable(true);
 }
 async function freePort() {
   return new Promise((resolvePort, reject) => {
@@ -655,13 +699,47 @@ async function action(name, args = {}) {
   if (name === "install-widget") {
     const destination = join(dataDir, "integrations", "Ocelin.twidget");
     mkdirSync(join(dataDir, "integrations"), { recursive: true });
-    await writeFile(destination, readFileSync(join(__dirname, "integrations", "Ocelin.twidget")));
-    const roots = [join(process.env.LOCALAPPDATA || "", "Programs", "TaskbarWidgets"), join(process.env.LOCALAPPDATA || "", "TaskbarWidgets"), join(process.env.ProgramFiles || "", "TaskbarWidgets")];
-    const host = roots.map(root => join(root, "TaskbarWidgets.exe")).find(existsSync);
+    await writeFile(
+      destination,
+      readFileSync(join(__dirname, "integrations", "Ocelin.twidget")),
+    );
+    const roots = [
+      join(process.env.LOCALAPPDATA || "", "Programs", "TaskbarWidgets"),
+      join(process.env.LOCALAPPDATA || "", "TaskbarWidgets"),
+      join(process.env.ProgramFiles || "", "TaskbarWidgets"),
+    ];
+    const host = roots
+      .map((root) => join(root, "TaskbarWidgets.exe"))
+      .find(existsSync);
     if (host) {
-      const child = spawn(host, ["--install-widget", destination], { windowsHide: true, detached: true, stdio: "ignore" });
-      await new Promise((resolve, reject) => { child.once("spawn", resolve); child.once("error", reject); });
-      child.unref();
+      const bundled = JSON.parse(readFileSync(
+        join(__dirname, "integrations", "taskbar-widgets", "widget.json"),
+        "utf8",
+      ));
+      let installed;
+      if (process.env.LOCALAPPDATA) {
+        try {
+          installed = JSON.parse(readFileSync(
+            join(process.env.LOCALAPPDATA, "TaskbarWidgets", "CommunityWidgets", bundled.id, "widget.json"),
+            "utf8",
+          ));
+        } catch {}
+      }
+      for (const hostArgs of [
+        ["--no-update-check"],
+        widgetSetupArguments(installed, bundled, destination),
+      ]) {
+        const child = spawn(host, hostArgs, {
+          windowsHide: true,
+          detached: true,
+          stdio: "ignore",
+        });
+        await new Promise((resolve, reject) => {
+          child.once("spawn", resolve);
+          child.once("error", reject);
+        });
+        child.unref();
+      }
       return true;
     }
     const failure = await shell.openPath(destination);
@@ -756,6 +834,14 @@ async function action(name, args = {}) {
     return true;
   }
   if (name === "hide") {
+    if (args.surface === "tray") {
+      hideWindow(windows.get("tray"));
+      return true;
+    }
+    if (args.surface === "bar") {
+      dismissBar();
+      return true;
+    }
     const window = windows.get(args.surface);
     if (
       window &&
@@ -877,7 +963,7 @@ else {
           ),
         );
       } catch {}
-      if (app.isPackaged) {
+      if (app.isPackaged && !smokeTest) {
         app.setAsDefaultProtocolClient("ocelin");
         app.setJumpList([
           {
@@ -900,6 +986,12 @@ else {
         if (!trusted(event)) throw new Error("Untrusted sender");
         return state();
       });
+      ipcMain.on("ocelin:panel-ready", (event) => {
+        const panel = windows.get("tray");
+        if (!trusted(event) || panel?.webContents !== event.sender) return;
+        panel.ocelinReady = true;
+        if (panel.ocelinVisible) presentWindow(panel);
+      });
       ipcMain.handle("ocelin:action", (event, name, args) => {
         if (
           !trusted(event) ||
@@ -912,7 +1004,9 @@ else {
       });
       startMonitor();
       resources.start();
-      applySurfaces();
+      applySurfaces({
+        panelLaunch: process.argv.some((value) => activation(value)?.type === "panel"),
+      });
       await refreshConnections();
       globalShortcut.register("CommandOrControl+Alt+O", () =>
         showWindow("tray"),
@@ -925,7 +1019,11 @@ else {
       )
         hideWindow(windows.get("dashboard"));
       const recover = () => {
-        for (const w of windows.values())
+        for (const w of windows.values()) {
+          if (w.ocelinSurface === "tray") {
+            w.setBounds(panelBounds(screen.getDisplayMatching(w.getBounds()).workArea));
+            continue;
+          }
           w.setBounds(
             recoverBounds(
               w.getBounds(),
@@ -933,6 +1031,7 @@ else {
               w.getBounds(),
             ),
           );
+        }
         placeBar();
       };
       screen.on("display-removed", recover);
@@ -949,6 +1048,7 @@ else {
           app,
           windows,
           action,
+          activate,
           getState: state,
           getProject: () => project,
           dataDir,

@@ -90,6 +90,8 @@ function png(size) {
   ]);
 }
 writeFileSync(`${assets}/ocelin.png`, png(32));
+for (const size of [44, 150])
+  writeFileSync(`${assets}/ocelin-${size}.png`, png(size));
 const image = png(256),
   ico = Buffer.alloc(22);
 ico.writeUInt16LE(1, 2);
@@ -113,6 +115,9 @@ for (const name of [
   "provider.ps1",
   "README.md",
   "LICENSE",
+  ...["idle", "coding", "attention", "sleeping"].flatMap((state) =>
+    ["gif", "png"].map((extension) => `assets/${state}.${extension}`),
+  ),
 ]) {
   const filename = Buffer.from(name);
   const data = readFileSync(

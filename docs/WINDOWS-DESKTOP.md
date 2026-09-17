@@ -10,7 +10,7 @@ For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, th
 
 ## Choose your surfaces
 
-- **Windows tray:** running and attention counts, a quick panel, and a menu to reopen windows or quit.
+- **Windows tray:** running and attention counts, a sliding session panel at the right edge, and a menu to reopen windows or quit.
 - **Floating bar:** compact session chips or a status tile with running counts and app RAM; move freely or anchor above the Windows taskbar.
 - **Dashboard:** active sessions first, collapsible project groups, provider symbols, live app RAM and searchable history; hover to preview a conversation, click to continue in its provider, or use the secondary project dashboard action for feed, trace, worktrees, reviews, cost and delivery views.
 
@@ -34,11 +34,13 @@ RAM cards show private working set for each app and its recognized child tools. 
 
 ### Taskbar choices
 
-Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. **Move freely** keeps it draggable. Both layouts remain selectable.
+Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. Drag the mascot to move it; dragging releases the taskbar anchor and remembers its position. Its hide button keeps it hidden across settings changes and restarts. Restore it from the tray's **Toggle floating bar** or Settings. Both layouts remain selectable.
 
-For native Windows task cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows taskbar tasks**. This uses Microsoft's public, experimental API and reports whether it is connected. It needs a supported Windows rollout and package identity.
+For native Windows hover cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows hover cards (experimental)**. This uses Microsoft's public, experimental API and reports whether Windows stores the tasks. Storage is distinct from visible rendering. It needs a supported Windows rollout and package identity.
 
-For a persistent text strip inside the taskbar, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to install the optional host and review its permissions. This host uses private Windows APIs; Ocelin does not grant its permissions. Only aggregate counts and RAM are shared locally. Both native cards and the strip are selectable.
+For a persistent text strip inside the taskbar, enable **Share counts and RAM with the taskbar text strip** and choose **Connect taskbar strip**. Follow the [integration guide](../desktop/integrations/taskbar-widgets/README.md) to install the optional host and review its permissions. This host uses private Windows APIs; Ocelin does not grant its permissions. The animated pet and text form one clickable widget with adapter 0.6.4 and the patched host. Clicking opens the session panel at the right edge of that monitor. Escape, its close button or clicking outside dismisses it; the arrow in the panel opens the full dashboard. Windows or Ocelin reduced-motion settings disable the slide. Only aggregate counts, RAM and the system light/dark theme are shared locally. Both native cards and the strip are selectable.
+
+If a widget update reports **os error 32** or **Installed widget could not be staged for update**, choose **Quit** in Ocelin's tray menu, reopen the installed Ocelin from the Start menu, then review the update again in Taskbar Widgets Settings. An older URI launch could leave Ocelin and its helpers using the widget folder as their working directory, blocking Windows from renaming it. Version 0.6.2 uses stable data directories for the app, provider and URI launch. The host's permission review still applies.
 
 Default discovery reads `%CODEX_HOME%\sessions` (or `~/.codex/sessions`) and `%CLAUDE_CONFIG_DIR%\projects` (or `~/.claude/projects`). Add additional local source folders from Settings. Claude Desktop metadata is joined by `cliSessionId`, not by matching project names. Subagents carry parent identity when present. Codex's optional `session_index.jsonl` supplies native task names.
 
@@ -81,7 +83,7 @@ The monitor and history library use worker threads in the desktop process. A sel
 
 Automated coverage includes independent providers and sessions, late turn events, partial UTF-8 records, growth with unchanged mtime, truncation/rotation, checkpoint recovery, notification deduplication, privacy filtering, selective hook install/removal and stale previews, all surface combinations, and offscreen placement recovery. Existing HTTP authorization, checkout scoping and Codex feed/trace tests remain required.
 
-Native Windows and packaged-build results are recorded in the [0.6 validation notes](OCELIN-0.6-VALIDATION.md). Signing requires a release certificate. The optional Taskbar Widgets adapter is schema- and protocol-tested; rendering inside Explorer still needs the external host and user permission review. WSL, remote sources, reserved-edge AppBar mode, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
+Native Windows and packaged-build results are recorded in the [0.6 validation notes](OCELIN-0.6-VALIDATION.md). Signing requires a release certificate. The user confirmed the pet, counts and RAM are visible inside the taskbar, and adapter 0.6.4 opens the right-edge panel with a visible slide. Native Windows App Tasks hover cards remain visually unverified. WSL, remote sources, reserved-edge AppBar mode, direct approvals and automatic updates remain outside this preview. A complete physical multi-monitor, sleep/lock, and 100/125/150/200% DPI matrix still needs hardware coverage; unit-tested placement recovery is not a substitute for that matrix.
 
 ## Sources and attribution
 

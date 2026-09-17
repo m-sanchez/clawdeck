@@ -58,6 +58,27 @@ function nativeSnapshot(state, enabled, now = Date.now()) {
       : [],
   };
 }
+function nativeConnection(status) {
+  if (!status.supported || status.error)
+    return {
+      status: "unavailable",
+      message: status.error || "Windows App Tasks is unavailable",
+    };
+  if (status.readbackError || !Number.isInteger(status.matchingTasks))
+    return {
+      status: "unverified",
+      message: "Windows API reachable; task storage is unverified",
+    };
+  if (status.matchingTasks < status.tasks)
+    return {
+      status: "unverified",
+      message: `Windows retained ${status.matchingTasks} of ${status.tasks} tasks; taskbar display is unverified`,
+    };
+  return {
+    status: "connected",
+    message: `${status.matchingTasks} tasks stored by Windows${status.hiddenTasks ? ` · ${status.hiddenTasks} hidden` : ""}; taskbar display is unverified`,
+  };
+}
 class NativeTasks {
   constructor(dir, script, onChange = () => {}) {
     Object.assign(this, { dir, script, onChange });
@@ -108,9 +129,8 @@ class NativeTasks {
       } catch {}
       if (status && Date.now() - status.sampledAt < 25000) {
         this.value = {
-          status: status.supported ? "connected" : "unavailable",
-          message: status.error || `${status.tasks} native Windows tasks`,
           ...status,
+          ...nativeConnection(status),
         };
         if (status.supported) return;
       }
@@ -154,4 +174,4 @@ class NativeTasks {
     );
   }
 }
-module.exports = { NativeTasks, nativeSnapshot };
+module.exports = { NativeTasks, nativeSnapshot, nativeConnection };

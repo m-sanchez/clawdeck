@@ -1,0 +1,76 @@
+name: Optional taskbar host
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.gitattributes'
+      - 'desktop/integrations/taskbar-widgets/patches/**'
+      - '.github/workflows/taskbar-host.yml'
+permissions:
+  contents: read
+jobs:
+  english-host:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: pfcdev/TaskbarWidgets
+          ref: c49721cc1cfcdd53d6ad42226410148153c38055
+          path: upstream-taskbar-widgets
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply Ocelin host fixes
+        shell: pwsh
+        run: |
+          git -C upstream-taskbar-widgets apply --check ../desktop/integrations/taskbar-widgets/patches/settings-english.patch
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C upstream-taskbar-widgets apply ../desktop/integrations/taskbar-widgets/patches/settings-english.patch
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($patchName in @('install-catalog.patch', 'explicit-ide-actions.patch', 'native-primary-action.patch')) {
+            git -C upstream-taskbar-widgets apply --check "../desktop/integrations/taskbar-widgets/patches/$patchName"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git -C upstream-taskbar-widgets apply "../desktop/integrations/taskbar-widgets/patches/$patchName"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $lockFile = Join-Path $PWD 'upstream-taskbar-widgets/src/settings/src-tauri/Cargo.lock'
+          $lockText = [IO.File]::ReadAllText($lockFile)
+          $rootVersion = '(\[\[package\]\]\r?\nname = "taskbar-widgets-settings-tauri"\r?\nversion = ")0\.5\.21(")'
+          if ([regex]::Matches($lockText, $rootVersion).Count -ne 1) { throw 'Unexpected upstream package version' }
+          [IO.File]::WriteAllText($lockFile, [regex]::Replace($lockText, $rootVersion, '${1}0.5.36${2}'))
+      - name: Verify widget setup behavior
+        run: node scripts/taskbar-host-smoke.cjs upstream-taskbar-widgets
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ runner.temp }}/taskbarwidgets-tauri-target
+          key: taskbar-windows-c49721c-${{ hashFiles('upstream-taskbar-widgets/src/settings/src-tauri/Cargo.lock') }}
+      - name: Build optional host from pinned source
+        shell: pwsh
+        env:
+          TASKBARWIDGETS_TAURI_TARGET_DIR: ${{ runner.temp }}/taskbarwidgets-tauri-target
+        run: |
+          $sourceRoot = (Resolve-Path -LiteralPath upstream-taskbar-widgets).Path
+          $workspaceRoot = (Resolve-Path -LiteralPath $env:GITHUB_WORKSPACE).Path + '\'
+          if (!$sourceRoot.StartsWith($workspaceRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Build source is outside the workspace' }
+          rustup default stable
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $lockFile = Join-Path $sourceRoot 'src/settings/src-tauri/Cargo.lock'
+          $lockHash = (Get-FileHash -LiteralPath $lockFile -Algorithm SHA256).Hash
+          & "$sourceRoot/build/build-product.ps1"
+          if ((Get-FileHash -LiteralPath $lockFile -Algorithm SHA256).Hash -ne $lockHash) { throw 'The pinned dependency lockfile changed' }
+          Copy-Item -LiteralPath "$sourceRoot/LICENSE", "$sourceRoot/THIRD_PARTY_NOTICES.md" -Destination "$sourceRoot/artifacts/TaskbarWidgets"
+          Copy-Item -LiteralPath desktop/integrations/taskbar-widgets/patches/README.md -Destination "$sourceRoot/artifacts/TaskbarWidgets/OCELIN-PATCH.md"
+          Get-ChildItem -LiteralPath "$sourceRoot/artifacts/TaskbarWidgets" -Filter '*.exe' | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } | Set-Content -LiteralPath "$sourceRoot/artifacts/TaskbarWidgets/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TaskbarWidgets-0.5.36-English-review
+          path: upstream-taskbar-widgets/artifacts/TaskbarWidgets
+          if-no-files-found: error

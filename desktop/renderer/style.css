@@ -110,7 +110,7 @@ body {
   padding: 8px;
 }
 .library-row:hover,
-.library-row:focus-within {
+.library-row:has(:focus-visible) {
   background: var(--panel);
 }
 .library-name {
@@ -817,12 +817,50 @@ pre {
 body[data-density="comfortable"] .session {
   min-height: 53px;
 }
+:root[data-surface="tray"] {
+  background: transparent;
+  overflow: hidden;
+}
+body[data-surface="tray"] {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transform: translateX(100%);
+}
+body[data-surface="tray"][data-panel-open="true"] {
+  transform: none;
+}
+body[data-surface="tray"]:focus {
+  outline: none;
+}
 body[data-surface="tray"] header {
-  padding: 4px 12px;
-  height: 52px;
+  flex-shrink: 0;
+  app-region: no-drag;
+  padding: 8px 16px;
+  height: 64px;
 }
 body[data-surface="tray"] main {
-  padding: 10px 12px;
+  width: 100%;
+  margin: 0;
+  overflow: auto;
+  padding: 16px;
+}
+body[data-surface="tray"] #view-tabs {
+  margin-bottom: 12px;
+}
+body[data-surface="tray"] .toolbar {
+  gap: 8px;
+}
+body[data-surface="tray"] .header-actions {
+  gap: 8px;
+}
+body[data-surface="tray"] .header-actions button {
+  border-color: transparent;
+  border-radius: 4px;
 }
 body[data-surface="tray"] .brand-caption,
 body[data-surface="tray"] #memory-details,
@@ -832,13 +870,13 @@ body[data-surface="tray"] footer span + span {
   display: none;
 }
 body[data-surface="tray"] #resources {
-  gap: 5px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 body[data-surface="tray"] .resource {
-  padding: 7px;
-  grid-template-columns: 18px 1fr;
-  gap: 4px;
+  padding: 10px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 7px 8px;
 }
 body[data-surface="tray"] .resource-value {
   grid-column: 1/3;
@@ -901,7 +939,7 @@ body[data-surface="tray"] .session-actions {
   grid-row: 1/3;
 }
 body[data-surface="tray"] .session-title {
-  font-size: 11px;
+  font-size: 12px;
   padding: 2px 0;
 }
 body[data-surface="bar"] {
@@ -920,9 +958,11 @@ body[data-surface="bar"] header {
 }
 body[data-surface="bar"] .brand strong,
 body[data-surface="bar"] .brand-caption,
-body[data-surface="bar"] #dashboard,
-body[data-surface="bar"] #hide {
+body[data-surface="bar"] #dashboard {
   display: none;
+}
+body[data-surface="bar"] .brand {
+  cursor: grab;
 }
 body[data-surface="bar"] .brand ocelin-assistant {
   width: 52px;

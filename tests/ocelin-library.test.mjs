@@ -29,6 +29,7 @@ const {
 } = require("../desktop/lib/session-links.cjs");
 const {
   nativeSnapshot,
+  nativeConnection,
   NativeTasks,
 } = require("../desktop/lib/native-tasks.cjs");
 const now = Date.now();
@@ -423,12 +424,19 @@ test("session links reject arbitrary routes and retain exact provider identities
     activation(activationUri({ provider: "claude", sessionId: CODEX_ID })),
     { type: "session", key: `claude:${CODEX_ID}` },
   );
+  assert.deepEqual(activation("ocelin://panel"), { type: "panel" });
+  assert.deepEqual(activation("ocelin://panel/"), { type: "panel" });
   for (const uri of [
     "ocelin://app/../../file",
     "ocelin://session/claude/../evil",
     "ocelin://session/codex/a?cmd=run",
     "ocelin://user@dashboard",
     "https://dashboard",
+    "ocelin://panel/commands",
+    "ocelin://panel?command=run",
+    "ocelin://panel#session",
+    "ocelin://user@panel",
+    "ocelin://panel:5394",
   ])
     assert.equal(activation(uri), null);
   assert.throws(() =>
@@ -464,6 +472,40 @@ test("native tasks publish fresh status only and isolated profiles cannot activa
   bridge.publish(state, true);
   assert.equal(bridge.value.status, "unavailable");
   assert.equal(bridge.lastLaunch, 0);
+});
+
+test("native connection never treats creation objects as proof of Windows task storage or rendering", () => {
+  const created = { supported: true, tasks: 3 };
+  assert.equal(nativeConnection(created).status, "unverified");
+  assert.equal(
+    nativeConnection({ ...created, matchingTasks: null, readbackNull: true })
+      .status,
+    "unverified",
+  );
+  assert.equal(
+    nativeConnection({ ...created, matchingTasks: 0 }).status,
+    "unverified",
+  );
+  assert.equal(
+    nativeConnection({
+      ...created,
+      matchingTasks: 3,
+      readbackError: "Readback failed",
+    }).status,
+    "unverified",
+  );
+  const retained = nativeConnection({
+    ...created,
+    matchingTasks: 3,
+    hiddenTasks: 1,
+  });
+  assert.equal(retained.status, "connected");
+  assert.match(retained.message, /3 tasks stored by Windows · 1 hidden/);
+  assert.match(retained.message, /display is unverified/);
+  assert.equal(
+    nativeConnection({ ...created, error: "Update failed" }).status,
+    "unavailable",
+  );
 });
 
 test("re-enabling native tasks reconnects instead of trusting a stopped helper heartbeat", async (t) => {
