@@ -6,4 +6,6 @@ The patch translates the installer's hardcoded Turkish permission and installati
 
 The GitHub `Optional taskbar host` workflow builds from the pinned source and includes the upstream license and third-party notices. Both Settings and the loader are rebuilt because the loader embeds Settings and otherwise restores its original executable.
 
+The pinned upstream Cargo lockfile still labels its own Settings package as 0.5.21 while its manifest is 0.5.36. The build aligns that one version before compiling, then requires the lockfile hash to remain unchanged. Dependency versions and checksums are preserved.
+
 The host remains optional and uses private Windows taskbar APIs. Its installer requires user review before enabling Ocelin's process provider. The normal Ocelin companion works without this host.
