@@ -4,7 +4,7 @@ This optional adapter targets Taskbar Widgets 0.5.4 or newer using its schema v4
 
 1. Install [Taskbar Widgets](https://github.com/pfcdev/TaskbarWidgets) if you want its experimental Explorer integration.
 2. In Ocelin Settings, enable **Share summary with Taskbar Widgets** and choose **Connect taskbar strip**. Saving the package for manual import remains available.
-3. In Taskbar Widgets Settings, inspect the `Ocelin.twidget` permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position. Clicking its status opens Ocelin.
+3. In Taskbar Widgets Settings, inspect the `Ocelin.twidget` permissions and approve it yourself. Enable the Ocelin sessions widget and choose its position. Its icon button opens Ocelin.
 4. Disable sharing in Ocelin or remove the widget in Taskbar Widgets to disconnect it.
 
 Only aggregate running/attention counts and app RAM leave Ocelin's process, through `%LOCALAPPDATA%\Ocelin\taskbar-summary.json`. No network server, transcripts, project paths, account data or commands are exposed. The provider displays offline after 35 seconds without a fresh snapshot.

@@ -120,10 +120,10 @@ Principles:
 
 ## Quickstart
 
-The 0.5 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
+The 0.6 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.5.0/clawdeck-panel-0.5.0.tgz
+npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.6.0/clawdeck-panel-0.6.0.tgz
 ocelin run --checkout /path/to/your/project
 ```
 
