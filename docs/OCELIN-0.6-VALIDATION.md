@@ -21,7 +21,7 @@ This implements the next session-management slice from the [native integration r
 - Read-only live library probe indexed 884 distinct conversations, including 203 archived/hidden records, and read a paginated Codex preview through the native API. Indexing plus first native preview took about 7 seconds in the final cached probe on this machine; this is not an instant cold-start guarantee.
 - The installed dashboard was checked against live activity and measured app memory. A Codex lifecycle hook was received. Existing preferences, source folders and history cutoff survived the installer update; the standalone dashboard stayed running.
 - Taskbar Widgets 0.5.36's `twdev validate` accepted the 0.6.0 widget package, including its Ocelin-open button. Explorer placement requires the optional host and its permission review.
-- Native App Tasks package compilation and registration were checked on Windows 11 build 26200.9457. The first runtime check exposed a null/empty collection issue; a corrected 0.6.0.1 package is prepared for the next native rendering check.
+- Native App Tasks 0.6.0.1 installed successfully through an elevated update on Windows 11 build 26200.9457. With the integration enabled, the packaged helper created three tasks and continued reporting a fresh heartbeat, `supported: true` and no error. This proves the native API connection and task creation; shell rendering is tracked separately.
 
 ## Remaining limits
 
