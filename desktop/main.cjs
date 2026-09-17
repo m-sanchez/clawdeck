@@ -822,7 +822,7 @@ async function action(name, args = {}) {
   }
   if (name === "taskbar-guide") {
     await shell.openExternal(
-      "https://github.com/m-sanchez/clawdeck/blob/main/desktop/integrations/taskbar-widgets/README.md",
+      "https://github.com/m-sanchez/ocelin/blob/main/desktop/integrations/taskbar-widgets/README.md",
     );
     return true;
   }

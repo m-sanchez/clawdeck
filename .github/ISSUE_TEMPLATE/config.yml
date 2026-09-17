@@ -4,5 +4,5 @@ contact_links:
     url: mailto:contact@miguelsanchez.co.uk
     about: Report a vulnerability privately by email, never as a public issue.
   - name: Security model & decisions
-    url: https://github.com/m-sanchez/clawdeck/blob/main/docs/SECURITY.md
+    url: https://github.com/m-sanchez/ocelin/blob/main/docs/SECURITY.md
     about: How the loopback boundary, tokens, and named-action allowlist work.
