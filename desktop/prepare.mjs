@@ -90,6 +90,8 @@ function png(size) {
   ]);
 }
 writeFileSync(`${assets}/ocelin.png`, png(32));
+for (const size of [44, 150])
+  writeFileSync(`${assets}/ocelin-${size}.png`, png(size));
 const image = png(256),
   ico = Buffer.alloc(22);
 ico.writeUInt16LE(1, 2);

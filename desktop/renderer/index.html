@@ -171,18 +171,19 @@
             </select></label
           >
           <p>
-            Native Windows tasks show running sessions and attention cards in
-            the taskbar. The optional text strip uses Taskbar Widgets. You can
-            enable either or both.
+            The taskbar text strip keeps running counts and RAM visible inside
+            the Windows taskbar using the optional Taskbar Widgets host.
+            Experimental native cards show details when hovering over the app
+            icon. You can enable either or both.
           </p>
           <label
             ><input type="checkbox" data-pref="nativeTasks" /> Native Windows
-            taskbar tasks</label
+            hover cards (experimental)</label
           >
           <p id="native-status" role="status"></p>
           <label
-            ><input type="checkbox" data-pref="taskbarBridge" /> Share summary
-            with Taskbar Widgets</label
+            ><input type="checkbox" data-pref="taskbarBridge" /> Share counts
+            and RAM with the taskbar text strip</label
           >
           <div class="buttons">
             <button id="install-widget">Connect taskbar strip</button>

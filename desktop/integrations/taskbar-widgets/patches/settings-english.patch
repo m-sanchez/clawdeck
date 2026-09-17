@@ -1,0 +1,193 @@
+diff --git a/src/settings/dist/app.js b/src/settings/dist/app.js
+--- a/src/settings/dist/app.js
++++ b/src/settings/dist/app.js
+@@ -521,62 +521,62 @@
+ }
+ 
+ const permissionCatalog = {
+-  "accounts.list.read": ["high", "Kayıtlı hesapları görebilir", "Taskbar Widgets içinde kayıtlı hesapların listesini okuyabilir."],
+-  "accounts.profile.read": ["high", "Hesap profillerini okuyabilir", "Kayıtlı hesapların profil ve kimlik bilgilerini okuyabilir."],
+-  "accounts.history.read": ["critical", "Tüm hesap geçmişini okuyabilir", "Taskbar Widgets içindeki hesapların geçmiş kullanım bilgilerine erişebilir."],
+-  "accounts.tokens.read": ["critical", "Hesap oturum bilgilerini okuyabilir", "Kayıtlı token ve oturum verilerine erişebilir."],
+-  "accounts.active.write": ["high", "Aktif hesabı değiştirebilir", "Taskbar Widgets tarafından kullanılan aktif hesabı değiştirebilir."],
+-  "accounts.delete": ["critical", "Hesapları silebilir", "Taskbar Widgets içinde kayıtlı hesapları silebilir."],
+-  "filesystem.read": ["high", "Dosyaları okuyabilir", "Belirtilen dosya ve klasörlerin içeriğini okuyabilir."],
+-  "filesystem.write": ["high", "Dosyaları değiştirebilir", "Belirtilen dosya ve klasörlerde veri oluşturabilir veya değiştirebilir."],
+-  "filesystem.delete": ["critical", "Dosyaları silebilir", "Belirtilen dosya ve klasörlerdeki verileri silebilir."],
+-  "filesystem.watch": ["medium", "Dosya değişikliklerini izleyebilir", "Belirtilen klasörlerdeki değişiklikleri arka planda takip edebilir."],
+-  "filesystem.all": ["critical", "Tüm kullanıcı dosyalarına erişebilir", "Windows hesabınızın erişebildiği bütün dosyaları okuyabilir, değiştirebilir veya silebilir."],
+-  "registry.read": ["high", "Registry verilerini okuyabilir", "Belirtilen Windows Registry anahtarlarını okuyabilir."],
+-  "registry.write": ["high", "Registry verilerini değiştirebilir", "Belirtilen Windows Registry anahtarlarını oluşturabilir veya değiştirebilir."],
+-  "registry.delete": ["critical", "Registry verilerini silebilir", "Belirtilen Windows Registry anahtarlarını silebilir."],
+-  "registry.all": ["critical", "Registry üzerinde tam erişim kullanabilir", "Windows hesabınızın erişebildiği tüm Registry alanlarını okuyabilir ve değiştirebilir."],
+-  "process.list": ["medium", "Çalışan uygulamaları görebilir", "Bilgisayarda çalışan process listesini ve temel bilgilerini okuyabilir."],
+-  "process.start": ["high", "Program çalıştırabilir", "Bilgisayarınızda executable veya script başlatabilir."],
+-  "process.stop": ["high", "Programları durdurabilir", "Çalışan process'leri sonlandırabilir."],
+-  "process.control": ["critical", "Diğer programları kontrol edebilir", "Çalışan uygulamalara komut gönderebilir ve durumlarını değiştirebilir."],
+-  "process.inject": ["critical", "Diğer process'lere kod yükleyebilir", "Çalışan uygulamaların belleğine kod yükleyebilir."],
+-  "shell.execute": ["critical", "Komut çalıştırabilir", "PowerShell, Komut İstemi veya başka shell komutları yürütebilir."],
+-  "shell.openExternal": ["medium", "Bağlantı ve dosya açabilir", "Varsayılan Windows uygulamalarıyla bağlantı veya dosya açabilir."],
+-  "network.internet": ["medium", "İnternete bağlanabilir", "Belirtilen internet adresleriyle veri alışverişi yapabilir."],
+-  "network.local": ["high", "Yerel ağa erişebilir", "Aynı ağdaki bilgisayar ve cihazlarla iletişim kurabilir."],
+-  "network.listen": ["high", "Ağ bağlantısı kabul edebilir", "Bilgisayarınızda bir ağ portu açıp gelen bağlantıları kabul edebilir."],
+-  "network.unrestricted": ["critical", "Sınırsız ağ erişimi kullanabilir", "İnternet ve yerel ağdaki tüm adreslerle sınırsız iletişim kurabilir."],
+-  "windows.win32": ["high", "Win32 API kullanabilir", "Windows masaüstü ve sistem API'lerine erişebilir."],
+-  "windows.winrt": ["high", "Windows Runtime API kullanabilir", "Windows Runtime özelliklerine erişebilir."],
+-  "windows.com": ["high", "COM bileşenlerini kullanabilir", "Windows ve kurulu uygulamaların COM arayüzlerine erişebilir."],
+-  "windows.wmi": ["high", "WMI sistem bilgilerine erişebilir", "WMI üzerinden sistem bilgisi okuyabilir veya işlem başlatabilir."],
+-  "clipboard.read": ["high", "Panoyu okuyabilir", "Kopyaladığınız metin ve diğer pano verilerini okuyabilir."],
+-  "clipboard.write": ["medium", "Panoyu değiştirebilir", "Windows panosunun içeriğini değiştirebilir."],
+-  "notifications.show": ["low", "Bildirim gösterebilir", "Windows bildirim merkezinde bildirim oluşturabilir."],
+-  camera: ["critical", "Kamerayı kullanabilir", "Bağlı kameradan görüntü alabilir."],
+-  microphone: ["critical", "Mikrofonu kullanabilir", "Bağlı mikrofondan ses alabilir."],
+-  location: ["high", "Konumunuzu okuyabilir", "Windows konum servisinden konum bilgisi alabilir."],
+-  bluetooth: ["high", "Bluetooth cihazlarına erişebilir", "Yakındaki veya eşleştirilmiş Bluetooth cihazlarıyla iletişim kurabilir."],
+-  usb: ["high", "USB cihazlarına erişebilir", "Bağlı USB cihazlarıyla iletişim kurabilir."],
+-  "media.sessions.read": ["medium", "Çalan medyayı görebilir", "Windows medya oturumlarındaki parça, sanatçı ve oynatma durumunu okuyabilir."],
+-  "media.playback.control": ["high", "Medya oynatmayı kontrol edebilir", "Oynat, duraklat, ileri ve geri komutları gönderebilir."],
+-  "steam.downloads.read": ["high", "Steam indirmelerini okuyabilir", "Steam kütüphaneleri, manifestleri ve indirme durumunu okuyabilir."],
+-  "steam.client.control": ["high", "Steam istemcisini kontrol edebilir", "Steam istemcisine komut gönderebilir veya Steam bağlantıları açabilir."],
+-  "discord.state.read": ["high", "Discord durumunu okuyabilir", "Discord kullanıcı, kanal ve ses durumu bilgilerine erişebilir."],
+-  "system.metrics.read": ["low", "Sistem performansını okuyabilir", "CPU, bellek, disk ve ağ kullanım metriklerini okuyabilir."],
+-  "taskbar.control": ["high", "Görev çubuğunu kontrol edebilir", "Taskbar Widgets görev çubuğu yüzeyini ve yerleşimini değiştirebilir."],
+-  "settings.read": ["medium", "Uygulama ayarlarını okuyabilir", "Taskbar Widgets ayarlarını okuyabilir."],
+-  "settings.write": ["high", "Uygulama ayarlarını değiştirebilir", "Taskbar Widgets ayarlarını değiştirebilir."],
+-  "system.fullAccess": ["critical", "Windows hesabınızda tam erişim kullanabilir", "Windows kullanıcı hesabınızın erişebildiği dosyalara, uygulamalara, hesaplara, Registry verilerine ve ağ kaynaklarına erişebilir."],
+-  "system.administrator": ["critical", "Yönetici yetkisi isteyebilir", "Windows UAC onayıyla yönetici olarak çalışabilir ve sistem genelinde değişiklik yapabilir."],
+-  "system.startup": ["high", "Windows başlangıcında çalışabilir", "Windows oturumu açıldığında otomatik olarak başlayabilir."],
+-  "system.background": ["medium", "Arka planda çalışabilir", "Widget görünür değilken de arka planda çalışmaya devam edebilir."],
+-  "legacy.network": ["medium", "İnternete bağlanabilir", "Listelenen HTTPS adreslerinden JSON verisi alabilir."],
+-  "legacy.systemMetrics": ["low", "Sistem performansını okuyabilir", "İzin verilen CPU, bellek, disk veya ağ metriklerini okuyabilir."],
+-  "legacy.openExternal": ["medium", "Bağlantı açabilir", "Listelenen internet adreslerini varsayılan tarayıcıda açabilir."],
+-  "legacy.storage": ["low", "Özel widget depolaması kullanabilir", "Yalnızca kendi widget verilerini yerel olarak saklayabilir."],
+-  "legacy.graphics": ["low", "Gelişmiş grafik kullanabilir", "WebGL veya sürekli animasyon çalıştırabilir."]
++  "accounts.list.read": ["high", "Can view saved accounts", "Can read the list of accounts saved in Taskbar Widgets."],
++  "accounts.profile.read": ["high", "Can read account profiles", "Can read profile and identity information for saved accounts."],
++  "accounts.history.read": ["critical", "Can read all account history", "Can access past usage information for accounts in Taskbar Widgets."],
++  "accounts.tokens.read": ["critical", "Can read account session information", "Can access saved tokens and session data."],
++  "accounts.active.write": ["high", "Can change the active account", "Can change the active account used by Taskbar Widgets."],
++  "accounts.delete": ["critical", "Can delete accounts", "Can delete accounts saved in Taskbar Widgets."],
++  "filesystem.read": ["high", "Can read files", "Can read the contents of the specified files and folders."],
++  "filesystem.write": ["high", "Can modify files", "Can create or modify data in the specified files and folders."],
++  "filesystem.delete": ["critical", "Can delete files", "Can delete data in the specified files and folders."],
++  "filesystem.watch": ["medium", "Can monitor file changes", "Can track changes in the specified folders in the background."],
++  "filesystem.all": ["critical", "Can access all user files", "Can read, modify or delete every file your Windows account can access."],
++  "registry.read": ["high", "Can read Registry data", "Can read the specified Windows Registry keys."],
++  "registry.write": ["high", "Can modify Registry data", "Can create or modify the specified Windows Registry keys."],
++  "registry.delete": ["critical", "Can delete Registry data", "Can delete the specified Windows Registry keys."],
++  "registry.all": ["critical", "Can use full Registry access", "Can read and modify all Registry areas your Windows account can access."],
++  "process.list": ["medium", "Can view running applications", "Can read the list of running processes and their basic information."],
++  "process.start": ["high", "Can run programs", "Can start executables or scripts on your computer."],
++  "process.stop": ["high", "Can stop programs", "Can terminate running processes."],
++  "process.control": ["critical", "Can control other programs", "Can send commands to running applications and change their state."],
++  "process.inject": ["critical", "Can load code into other processes", "Can load code into the memory of running applications."],
++  "shell.execute": ["critical", "Can run commands", "Can execute PowerShell, Command Prompt or other shell commands."],
++  "shell.openExternal": ["medium", "Can open links and files", "Can open links or files with the default Windows applications."],
++  "network.internet": ["medium", "Can connect to the internet", "Can exchange data with the specified internet addresses."],
++  "network.local": ["high", "Can access the local network", "Can communicate with computers and devices on the same network."],
++  "network.listen": ["high", "Can accept network connections", "Can open a network port on your computer and accept incoming connections."],
++  "network.unrestricted": ["critical", "Can use unrestricted network access", "Can communicate without restriction with all internet and local network addresses."],
++  "windows.win32": ["high", "Can use Win32 APIs", "Can access Windows desktop and system APIs."],
++  "windows.winrt": ["high", "Can use Windows Runtime APIs", "Can access Windows Runtime features."],
++  "windows.com": ["high", "Can use COM components", "Can access COM interfaces in Windows and installed applications."],
++  "windows.wmi": ["high", "Can access WMI system information", "Can read system information or start processes through WMI."],
++  "clipboard.read": ["high", "Can read the clipboard", "Can read text you copy and other clipboard data."],
++  "clipboard.write": ["medium", "Can modify the clipboard", "Can change the contents of the Windows clipboard."],
++  "notifications.show": ["low", "Can show notifications", "Can create notifications in the Windows notification center."],
++  camera: ["critical", "Can use the camera", "Can capture images from a connected camera."],
++  microphone: ["critical", "Can use the microphone", "Can capture audio from a connected microphone."],
++  location: ["high", "Can read your location", "Can obtain location information from the Windows location service."],
++  bluetooth: ["high", "Can access Bluetooth devices", "Can communicate with nearby or paired Bluetooth devices."],
++  usb: ["high", "Can access USB devices", "Can communicate with connected USB devices."],
++  "media.sessions.read": ["medium", "Can view playing media", "Can read the track, artist and playback state from Windows media sessions."],
++  "media.playback.control": ["high", "Can control media playback", "Can send play, pause, next and previous commands."],
++  "steam.downloads.read": ["high", "Can read Steam downloads", "Can read Steam libraries, manifests and download status."],
++  "steam.client.control": ["high", "Can control the Steam client", "Can send commands to the Steam client or open Steam links."],
++  "discord.state.read": ["high", "Can read Discord state", "Can access Discord user, channel and voice state information."],
++  "system.metrics.read": ["low", "Can read system performance", "Can read CPU, memory, disk and network usage metrics."],
++  "taskbar.control": ["high", "Can control the taskbar", "Can change the Taskbar Widgets taskbar surface and layout."],
++  "settings.read": ["medium", "Can read application settings", "Can read Taskbar Widgets settings."],
++  "settings.write": ["high", "Can modify application settings", "Can change Taskbar Widgets settings."],
++  "system.fullAccess": ["critical", "Can use full access within your Windows account", "Can access files, applications, accounts, Registry data and network resources that your Windows user account can access."],
++  "system.administrator": ["critical", "Can request administrator privileges", "Can run as administrator with Windows UAC approval and make system-wide changes."],
++  "system.startup": ["high", "Can run at Windows startup", "Can start automatically when you sign in to Windows."],
++  "system.background": ["medium", "Can run in the background", "Can continue running in the background when the widget is not visible."],
++  "legacy.network": ["medium", "Can connect to the internet", "Can retrieve JSON data from the listed HTTPS addresses."],
++  "legacy.systemMetrics": ["low", "Can read system performance", "Can read permitted CPU, memory, disk or network metrics."],
++  "legacy.openExternal": ["medium", "Can open links", "Can open the listed internet addresses in the default browser."],
++  "legacy.storage": ["low", "Can use private widget storage", "Can store only its own widget data locally."],
++  "legacy.graphics": ["low", "Can use advanced graphics", "Can run WebGL or continuous animation."]
+ };
+ 
+ function permissionEntries(permissions) {
+@@ -597,14 +597,14 @@
+ }
+ 
+ function permissionInfo(request) {
+-  const [risk, title, description] = permissionCatalog[request.id] || ["high", request.id, "Bu widget bu sistem yetkisini kullanmak istiyor."];
++  const [risk, title, description] = permissionCatalog[request.id] || ["high", request.id, "This widget requests this system permission."];
+   const scope = Array.isArray(request.scope) ? request.scope.join(", ") : request.scope;
+   return { risk, title, description, scope: scope ? String(scope) : "" };
+ }
+ 
+ function permissionLabel(request) {
+   const info = permissionInfo(request);
+-  return `${info.title}${info.scope ? `: ${info.scope}` : ""}${request.optional ? " (isteğe bağlı)" : ""}`;
++  return `${info.title}${info.scope ? `: ${info.scope}` : ""}${request.optional ? " (optional)" : ""}`;
+ }
+ 
+ function compareVersions(left, right) {
+@@ -1503,13 +1503,13 @@
+ function installPermissionCard(request) {
+   const info = permissionInfo(request);
+   const optionalControl = request.optional
+-    ? `<label class="permission-optional-toggle"><input type="checkbox" data-optional-permission="${escapeAttr(request.id)}" ${state.installOptionalGrants.includes(request.id) ? "checked" : ""}/><span>Bu isteğe bağlı izne izin ver</span></label>`
+-    : `<span class="permission-required-badge">Gerekli</span>`;
++    ? `<label class="permission-optional-toggle"><input type="checkbox" data-optional-permission="${escapeAttr(request.id)}" ${state.installOptionalGrants.includes(request.id) ? "checked" : ""}/><span>Allow this optional permission</span></label>`
++    : `<span class="permission-required-badge">Required</span>`;
+   return `<li class="permission-card permission-risk-${escapeAttr(info.risk)}">
+-    <div class="permission-card-head"><strong>${escapeHtml(info.title)}</strong><span>${escapeHtml(info.risk === "critical" ? "Kritik" : info.risk === "high" ? "Yüksek risk" : info.risk === "medium" ? "Orta risk" : "Düşük risk")}</span></div>
++    <div class="permission-card-head"><strong>${escapeHtml(info.title)}</strong><span>${escapeHtml(info.risk === "critical" ? "Critical" : info.risk === "high" ? "High risk" : info.risk === "medium" ? "Medium risk" : "Low risk")}</span></div>
+     <p>${escapeHtml(info.description)}</p>
+-    ${info.scope ? `<div class="permission-scope"><span>Kapsam</span><code>${escapeHtml(info.scope)}</code></div>` : ""}
+-    ${request.reason ? `<div class="permission-reason"><span>Geliştiricinin nedeni</span><p>${escapeHtml(request.reason)}</p></div>` : ""}
++    ${info.scope ? `<div class="permission-scope"><span>Scope</span><code>${escapeHtml(info.scope)}</code></div>` : ""}
++    ${request.reason ? `<div class="permission-reason"><span>Developer's reason</span><p>${escapeHtml(request.reason)}</p></div>` : ""}
+     ${optionalControl}
+   </li>`;
+ }
+@@ -1550,24 +1550,24 @@
+       <div class="install-scroll">
+         <div class="install-summary">
+           <p>${escapeHtml(preview.description)}</p>
+-          <div class="install-meta"><span>Author</span><strong>${escapeHtml(preview.authorName)}</strong><span>Provider</span><strong>${escapeHtml(preview.providerType)}</strong><span>Renderer</span><strong>${preview.rendererType === "web" ? "Legacy WebView2 UI" : preview.rendererType === "native" ? "Native XAML UI" : "Native DSL"}</strong><span>Çalışma seviyesi</span><strong>${preview.runAs === "administrator" ? "Administrator (UAC)" : "Windows kullanıcısı"}</strong><span>SHA-256</span><code>${escapeHtml(preview.packageSha256)}</code></div>
++          <div class="install-meta"><span>Author</span><strong>${escapeHtml(preview.authorName)}</strong><span>Provider</span><strong>${escapeHtml(preview.providerType)}</strong><span>Renderer</span><strong>${preview.rendererType === "web" ? "Legacy WebView2 UI" : preview.rendererType === "native" ? "Native XAML UI" : "Native DSL"}</strong><span>Execution level</span><strong>${preview.runAs === "administrator" ? "Administrator (UAC)" : "Windows user"}</strong><span>SHA-256</span><code>${escapeHtml(preview.packageSha256)}</code></div>
+         </div>
+         <div class="install-warning-stack">
+-          ${preview.rendererType === "web" ? `<div class="install-warning"><strong>Legacy web UI</strong><span>HTML, CSS ve JavaScript ayrı RenderHost içinde çalışır ve daha fazla kaynak kullanabilir.</span></div>` : ""}
+-          ${preview.providerType === "process" ? `<div class="install-warning install-warning-critical"><strong>Full-access process</strong><span>Bu paket ayrı bir executable veya script çalıştırır. Tam erişim kapsamı aşağıdaki kritik izinlerde açıklanır.</span></div>` : ""}
+-          ${preview.rendererChanged ? `<div class="install-warning"><strong>Renderer changed</strong><span>Bu güncelleme çalışma yüzeyini değiştiriyor ve yeniden onay gerektiriyor.</span></div>` : ""}
++          ${preview.rendererType === "web" ? `<div class="install-warning"><strong>Legacy web UI</strong><span>HTML, CSS and JavaScript run in a separate RenderHost and may use more resources.</span></div>` : ""}
++          ${preview.providerType === "process" ? `<div class="install-warning install-warning-critical"><strong>Full-access process</strong><span>This package runs a separate executable or script. The critical permissions below describe the scope of full access.</span></div>` : ""}
++          ${preview.rendererChanged ? `<div class="install-warning"><strong>Renderer changed</strong><span>This update changes the rendering surface and requires renewed approval.</span></div>` : ""}
+         </div>
+-        ${preview.executableFiles?.length ? `<div class="install-executables"><strong>Çalıştırılabilir içerik</strong><ul>${preview.executableFiles.map((file) => `<li><code>${escapeHtml(file)}</code></li>`).join("")}</ul></div>` : ""}
++        ${preview.executableFiles?.length ? `<div class="install-executables"><strong>Executable content</strong><ul>${preview.executableFiles.map((file) => `<li><code>${escapeHtml(file)}</code></li>`).join("")}</ul></div>` : ""}
+         <div class="permission-review">
+-          <div><span class="material-symbols-outlined">shield</span><div><h4>İstenen izinler</h4><p>Kurulumdan önce bu sürümün erişebileceği alanları inceleyin.</p></div></div>
+-          ${permissions.length ? `<ul class="permission-card-list">${permissions.map(installPermissionCard).join("")}</ul>` : `<p class="permission-none">Bu widget ek izin istemiyor.</p>`}
++          <div><span class="material-symbols-outlined">shield</span><div><h4>Requested permissions</h4><p>Review what this version can access before installing.</p></div></div>
++          ${permissions.length ? `<ul class="permission-card-list">${permissions.map(installPermissionCard).join("")}</ul>` : `<p class="permission-none">This widget does not request additional permissions.</p>`}
+         </div>
+-        <label class="install-enable"><input id="enable-installed-widget" type="checkbox" ${state.installEnable ? "checked" : ""}/><span>${preview.isUpdate ? "Güncellemeden sonra etkin tut" : "Kurulumdan sonra etkinleştir"}</span></label>
++        <label class="install-enable"><input id="enable-installed-widget" type="checkbox" ${state.installEnable ? "checked" : ""}/><span>${preview.isUpdate ? "Keep enabled after updating" : "Enable after installation"}</span></label>
+         ${blockedExisting ? `<div class="install-warning">Version ${escapeHtml(preview.installedVersion || "unknown")} is already installed. Updates must have a higher version number.</div>` : ""}
+       </div>
+       <footer class="modal-actions">
+-        <button class="secondary-action" data-close-install type="button">Vazgeç</button>
+-        <button class="accent-action" id="confirm-widget-install" type="button" ${blockedExisting ? "disabled" : ""}><span class="material-symbols-outlined">${preview.isUpdate ? "sync" : "download"}</span><span>Onayla ve ${preview.isUpdate ? "güncelle" : "kur"}</span></button>
++        <button class="secondary-action" data-close-install type="button">Cancel</button>
++        <button class="accent-action" id="confirm-widget-install" type="button" ${blockedExisting ? "disabled" : ""}><span class="material-symbols-outlined">${preview.isUpdate ? "sync" : "download"}</span><span>Approve and ${preview.isUpdate ? "update" : "install"}</span></button>
+       </footer>
+     </section>`;
+   bindInstallModal();

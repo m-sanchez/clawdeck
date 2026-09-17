@@ -4,6 +4,8 @@ This small .NET Framework host uses Microsoft's `Windows.UI.Shell.Tasks` API. It
 
 Requirements: Windows 11 with App Tasks enabled by Microsoft, .NET Framework 4.8, and the registered Ocelin App Tasks package. `IsSupported()` is checked at runtime. The API remains marked experimental; OS availability and package registration are reported separately from a working connection.
 
+The helper reads back `FindAll()` after publishing and reports stored, matching and user-hidden task counts. A successful API call or storage check does not prove visible taskbar cards. The desktop reports this distinction explicitly. Native App Tasks are hover cards associated with an app icon; the always-visible text strip requires the separate optional host.
+
 ## Build and test locally
 
 Generate the normal desktop assets first with `node desktop/prepare.mjs`. Use a Windows SDK containing MakeAppx and a Windows build whose system metadata includes App Tasks:

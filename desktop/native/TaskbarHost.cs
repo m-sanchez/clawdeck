@@ -29,9 +29,24 @@ namespace Ocelin {
         static string Short(string value, int max) { return (value ?? "").Substring(0, Math.Min((value ?? "").Length, max)); }
         static long Now() { return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds; }
         static void Report(bool supported, string error) {
+            int? persistedTasks = null, matchingTasks = null, hiddenTasks = null;
+            string readbackError = null;
+            bool readbackNull = false;
+            if (supported) {
+                try {
+                    var persisted = AppTaskInfo.FindAll();
+                    readbackNull = persisted == null;
+                    if (persisted != null) {
+                        var ids = new HashSet<string>(Tasks.Values.Select(task => task.Id));
+                        persistedTasks = persisted.Length;
+                        matchingTasks = persisted.Count(task => ids.Contains(task.Id));
+                        hiddenTasks = persisted.Count(task => task.HiddenByUser);
+                    }
+                } catch (Exception exception) { readbackError = exception.Message; }
+            }
             Directory.CreateDirectory(Dir);
             string temp = Status + ".tmp";
-            File.WriteAllText(temp, Json.Serialize(new { sampledAt = Now(), supported, error, tasks = Tasks.Count, pid = System.Diagnostics.Process.GetCurrentProcess().Id }));
+            File.WriteAllText(temp, Json.Serialize(new { sampledAt = Now(), supported, error, tasks = Tasks.Count, persistedTasks, matchingTasks, hiddenTasks, readbackNull, readbackError, pid = System.Diagnostics.Process.GetCurrentProcess().Id }));
             if (File.Exists(Status)) File.Replace(temp, Status, null); else File.Move(temp, Status);
         }
         static bool Valid(Entry e) {

@@ -10,5 +10,8 @@ $facade = Get-ChildItem (Join-Path $env:WINDIR 'Microsoft.NET\assembly\GAC_MSIL\
 if ($LASTEXITCODE -ne 0) { throw 'Native taskbar host compilation failed' }
 Copy-Item -LiteralPath (Join-Path $nativeRoot 'AppxManifest.xml') -Destination $packageRoot
 Copy-Item -LiteralPath (Join-Path $nativeRoot '..\assets\ocelin.png') -Destination (Join-Path $packageRoot 'Assets\ocelin.png')
+foreach ($size in @(44, 150)) {
+    Copy-Item -LiteralPath (Join-Path $nativeRoot ("..\assets\ocelin-{0}.png" -f $size)) -Destination (Join-Path $packageRoot ("Assets\ocelin-{0}.png" -f $size))
+}
 & (Join-Path $SdkBin 'makeappx.exe') pack /o /d $packageRoot /p (Join-Path $outputRoot 'Ocelin.AppTasks.Local.msix')
 if ($LASTEXITCODE -ne 0) { throw 'Native taskbar package build failed' }
