@@ -29,6 +29,13 @@
         ><span class="brand-caption">Your agents, at a glance</span>
       </div>
       <div class="header-actions">
+        <button
+          id="doctor"
+          title="Doctor: cleanup and memory"
+          aria-label="Open Doctor"
+        >
+          Doctor
+        </button>
         <button id="dashboard" title="All sessions" aria-label="All sessions">
           ↗</button
         ><button id="settings" title="Settings" aria-label="Settings">⚙</button
@@ -56,8 +63,8 @@
         <div id="counts" aria-label="Session summary"></div>
         <button id="memory-details" class="text-button">Memory details</button>
       </section>
-      <div id="resources" aria-label="App memory usage"></div>
       <div id="subscriptions"></div>
+      <div id="resources" aria-label="App memory usage"></div>
       <button id="compact-summary" aria-label="Open session dashboard"></button>
       <nav id="view-tabs" role="tablist" aria-label="Session views">
         <button data-view="now" role="tab" aria-selected="true">Now</button>
@@ -181,8 +188,8 @@
             </select></label
           >
           <p>
-            The taskbar text strip keeps running counts and RAM visible inside
-            the Windows taskbar using the optional Taskbar Widgets host.
+            The taskbar text strip keeps running counts and allowance visible
+            inside the Windows taskbar using the optional Taskbar Widgets host.
             Experimental native cards show details when hovering over the app
             icon. You can enable either or both.
           </p>
@@ -192,9 +199,29 @@
           >
           <p id="native-status" role="status"></p>
           <label
-            ><input type="checkbox" data-pref="taskbarBridge" /> Share counts
-            and RAM with the taskbar text strip</label
+            ><input type="checkbox" data-pref="taskbarBridge" /> Share status
+            with the taskbar strip</label
           >
+          <label
+            >Taskbar detail<select data-pref="taskbarDetail">
+              <option value="allowance">Subscription % left</option>
+              <option value="sessions">Running sessions by app</option>
+              <option value="memory">App RAM</option>
+            </select></label
+          >
+          <label
+            >Allowance to show<select data-pref="taskbarAllowance">
+              <option value="lowest">Lowest remaining limit</option>
+              <option value="weekly">Weekly</option>
+              <option value="five-hour">5-hour window</option>
+            </select></label
+          >
+          <p>
+            Percentages are per provider. With multiple profiles, the lowest
+            reported value is shown; * means some readings are unavailable. Open
+            the panel for each account and reset time.
+          </p>
+          <p id="taskbar-preview" class="muted"></p>
           <div class="buttons">
             <button id="install-widget">Connect taskbar strip</button>
             <button id="export-widget">Save taskbar widget package</button

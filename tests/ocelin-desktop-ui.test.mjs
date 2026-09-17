@@ -300,9 +300,12 @@ test(
         memoryBytes: 1024 ** 3,
         theme: "light",
         motion: false,
+        headline: "2 running",
+        detail: "Codex 18% · Claude 72%",
       }),
     );
     await wait(() => rows.some((r) => r.data?.headline === "2 running"));
+    assert.equal(rows.at(-1).data.detail, "Codex 18% · Claude 72%");
     assert.match(rows.at(-1).data.pet, /assets[\\/]coding\.png$/);
     assert.equal(rows.at(-1).data.pet, join(petRoot, "coding.png"));
     await writeFile(

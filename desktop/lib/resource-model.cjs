@@ -20,6 +20,8 @@ function summarize(sample, previous = null, logicalCores = cpus().length || 1) {
         return {
           pid: p.pid,
           name: p.name,
+          started: p.started,
+          path: p.path,
           memoryBytes: p.memoryBytes,
           cpuPercent:
             delta != null && delta >= 0

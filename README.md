@@ -18,6 +18,8 @@ Download the x64 installer from Releases. Sign-in startup and lifecycle hooks ar
 
 Connect additional signed-in local profiles in **Settings → Account profiles** for separate allowance cards and source labels on sessions. Use **Open workspace** at the top of the panel to return to the original project tools, or **Choose folder…** to open another project.
 
+The taskbar puts **running sessions and subscription % left** first. Settings can switch its second line to per-app running counts or RAM, and choose weekly, five-hour or the lowest remaining limit. Percentages stay separate for Codex and Claude. **Doctor** in the panel tidies old inactive history with Undo, removes old Ocelin workspace caches, and offers explicit controls to stop a selected app and its tools or release Ocelin's workspace and history index.
+
 Windows options include the tray, Ctrl Alt O quick panel, floating bar, dashboard, a [native App Tasks development bridge](desktop/native/README.md), and the [optional Taskbar Widgets strip](desktop/integrations/taskbar-widgets/README.md). Native shell features have additional OS/package requirements. [What 0.6 implements and how it was validated](docs/OCELIN-0.6-VALIDATION.md).
 
 ![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)
@@ -127,7 +129,7 @@ Principles:
 The 0.6 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.4/clawdeck-panel-0.6.4.tgz
+npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.5/clawdeck-panel-0.6.5.tgz
 ocelin run --checkout /path/to/your/project
 ```
 

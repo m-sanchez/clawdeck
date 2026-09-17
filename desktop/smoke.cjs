@@ -5,6 +5,7 @@ const {
   renameSync,
   realpathSync,
   readFileSync,
+  utimesSync,
 } = require("node:fs");
 const { join } = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -564,7 +565,9 @@ module.exports = async function smoke({
     );
     project.window.destroy();
     assert.equal(getProject(), null);
-    await dashboard.webContents.executeJavaScript("document.querySelector('#workspace-open').click()");
+    await dashboard.webContents.executeJavaScript(
+      "document.querySelector('#workspace-open').click()",
+    );
     await until(
       () => getProject()?.window && !getProject().window.isDestroyed(),
       "workspace launch button",
@@ -656,6 +659,109 @@ module.exports = async function smoke({
     );
     report.checks.push(
       "Connect, rename and disconnect a second account profile through validated IPC; original provider files preserved",
+    );
+    const oldSessionFile = join(
+      (
+        getState().preferences.sources || JSON.parse(process.env.OCELIN_SOURCES)
+      ).find((s) => s.provider === "claude").root,
+      "doctor-old.jsonl",
+    );
+    const oldDate = new Date(Date.now() - 120 * 86400000);
+    const oldHistory =
+      JSON.stringify({
+        type: "user",
+        sessionId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        cwd: selected.cwd,
+        timestamp: oldDate.toISOString(),
+        message: { content: "A saved Doctor fixture" },
+      }) + "\n";
+    writeFileSync(oldSessionFile, oldHistory);
+    utimesSync(oldSessionFile, oldDate, oldDate);
+    await action("show", { surface: "tray" });
+    const doctorPanel = windows.get("tray");
+    await until(
+      () => !doctorPanel.webContents.isLoading(),
+      "Doctor panel ready",
+    );
+    await doctorPanel.webContents.executeJavaScript(
+      "document.getElementById('doctor').click()",
+    );
+    await until(
+      () =>
+        doctorPanel.webContents.executeJavaScript(
+          "document.getElementById('doctor-status').textContent.startsWith('Scan complete')",
+        ),
+      "Doctor scan",
+    );
+    assert.equal(
+      await doctorPanel.webContents.executeJavaScript(
+        "document.getElementById('doctor-tidy').disabled",
+      ),
+      false,
+    );
+    for (const width of [320, 420]) {
+      doctorPanel.setSize(width, 900);
+      const fits = await doctorPanel.webContents.executeJavaScript(
+        "new Promise(resolve=>requestAnimationFrame(()=>{const d=document.getElementById('doctor-dialog'),b=document.getElementById('doctor');resolve(d.scrollWidth<=d.clientWidth+1 && b.getBoundingClientRect().right<=innerWidth)}))",
+      );
+      assert.equal(fits, true, `Doctor fits ${width}px`);
+    }
+    writeFileSync(
+      join(output, "doctor-panel.png"),
+      (await doctorPanel.webContents.capturePage()).toPNG(),
+    );
+    await doctorPanel.webContents.executeJavaScript(
+      "document.getElementById('doctor-tidy').click()",
+    );
+    await until(
+      () =>
+        doctorPanel.webContents.executeJavaScript(
+          "document.getElementById('doctor-status').textContent.startsWith('Hidden 1 sessions')",
+        ),
+      "Doctor safe tidy",
+    );
+    assert.equal(readFileSync(oldSessionFile, "utf8"), oldHistory);
+    assert.ok(
+      getState().hiddenKeys.includes(
+        "claude:dddddddd-dddd-dddd-dddd-dddddddddddd",
+      ),
+    );
+    await doctorPanel.webContents.executeJavaScript(
+      "document.getElementById('doctor-undo').click()",
+    );
+    await until(
+      () =>
+        doctorPanel.webContents.executeJavaScript(
+          "document.getElementById('doctor-status').textContent.startsWith('Restored 1 sessions')",
+        ),
+      "Doctor undo",
+    );
+    await doctorPanel.webContents.executeJavaScript(
+      "document.getElementById('doctor-release').click()",
+    );
+    await until(() => getProject() === null, "Doctor release workspace");
+    assert.ok(getState().counts.running > 0);
+    await doctorPanel.webContents.executeJavaScript(
+      "document.getElementById('doctor-dialog').close()",
+    );
+    await action("preferences", {
+      taskbarDetail: "allowance",
+      taskbarAllowance: "lowest",
+      taskbarBridge: true,
+    });
+    const taskbar = JSON.parse(
+      readFileSync(join(dataDir, "taskbar-summary.json"), "utf8"),
+    );
+    assert.match(taskbar.detail, /Codex \d+%.*Claude \d+%/);
+    assert.ok(!JSON.stringify(taskbar).includes("@"));
+    await action("preferences", { taskbarDetail: "sessions" });
+    assert.match(getState().statusSummary.detail, /Codex \d+ · Claude \d+/);
+    await action("preferences", {
+      taskbarDetail: "allowance",
+      taskbarBridge: false,
+    });
+    report.checks.push(
+      "Doctor opens from the panel, fits 320px, tidies and restores old history with originals intact, releases only Ocelin workspace/index, and taskbar exports anonymous quota or session counts",
     );
     for (const combo of [
       { tray: true, bar: false, dashboard: false },

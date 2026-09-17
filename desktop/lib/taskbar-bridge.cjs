@@ -16,10 +16,50 @@ function widgetSetupArguments(installed, bundled, destination) {
   return ["--install-widget", destination];
 }
 
+function remainingAllowance(subscriptions, provider, scope, now) {
+  const profiles = [
+    subscriptions?.[provider],
+    ...(subscriptions?.profiles || []).filter((p) => p.provider === provider),
+  ].filter(Boolean);
+  const values = [];
+  let incomplete = false;
+  for (const profile of profiles) {
+    const fresh =
+      profile.status === "ready" &&
+      Number.isFinite(profile.sampledAt) &&
+      now >= profile.sampledAt &&
+      now - profile.sampledAt <= 300000;
+    const windows = (profile.windows || []).filter(
+      (w) =>
+        !w.extra &&
+        (scope === "weekly"
+          ? w.minutes === 10080
+          : scope === "five-hour"
+            ? w.minutes === 300
+            : true),
+    );
+    const valid = windows.filter(
+      (w) =>
+        fresh &&
+        Number.isFinite(w.remainingPercent) &&
+        w.remainingPercent >= 0 &&
+        w.remainingPercent <= 100 &&
+        (w.resetsAt == null || w.resetsAt > now),
+    );
+    if (!valid.length || valid.length !== windows.length) incomplete = true;
+    values.push(...valid.map((w) => w.remainingPercent));
+  }
+  return {
+    remainingPercent: values.length ? Math.min(...values) : null,
+    incomplete,
+  };
+}
+
 function taskbarSummary(state, enabled, now = Date.now()) {
   const ready = enabled && !state.error;
   const fresh =
     state.resources?.status === "ready" &&
+    now >= state.resources.sampledAt &&
     now - state.resources.sampledAt < 35000;
   const groups = (state.resources?.groups || []).filter(
     (g) => g.provider !== "ocelin",
@@ -27,6 +67,38 @@ function taskbarSummary(state, enabled, now = Date.now()) {
   const complete =
     groups.length > 0 &&
     groups.every((g) => Number.isFinite(g.memoryBytes) && !g.unavailable);
+  const allowanceScope = state.preferences?.taskbarAllowance || "lowest";
+  const allowance = Object.fromEntries(
+    ["codex", "claude"].map((provider) => [
+      provider,
+      ready
+        ? remainingAllowance(state.subscriptions, provider, allowanceScope, now)
+        : { remainingPercent: null, incomplete: true },
+    ]),
+  );
+  const running = ready ? state.counts.running : null;
+  const attention = ready ? state.counts.attention : null;
+  const memoryBytes =
+    ready && fresh && complete
+      ? groups.reduce((n, g) => n + g.memoryBytes, 0)
+      : null;
+  const providerCount = (provider) =>
+    (state.sessions || []).filter(
+      (s) => s.provider === provider && s.execution === "running" && !s.stale,
+    ).length;
+  const taskbarDetail = state.preferences?.taskbarDetail || "allowance";
+  const percentage = (provider) =>
+    allowance[provider].remainingPercent == null
+      ? "—"
+      : `${Math.round(allowance[provider].remainingPercent * 10) / 10}%${allowance[provider].incomplete ? "*" : ""}`;
+  const detail =
+    taskbarDetail === "memory"
+      ? memoryBytes == null
+        ? "RAM unavailable"
+        : `${(memoryBytes / 1024 ** 3).toFixed(1)} GB RAM`
+      : taskbarDetail === "sessions"
+        ? `Codex ${providerCount("codex")} · Claude ${providerCount("claude")}`
+        : `Codex ${percentage("codex")} · Claude ${percentage("claude")}`;
   return {
     schemaVersion: 1,
     theme: state.taskbarTheme === "light" ? "light" : "dark",
@@ -35,12 +107,16 @@ function taskbarSummary(state, enabled, now = Date.now()) {
       !state.reducedMotion,
     sampledAt: now,
     status: !enabled ? "disabled" : ready ? "ready" : "unavailable",
-    running: ready ? state.counts.running : null,
-    attention: ready ? state.counts.attention : null,
-    memoryBytes:
-      ready && fresh && complete
-        ? groups.reduce((n, g) => n + g.memoryBytes, 0)
-        : null,
+    running,
+    attention,
+    memoryBytes,
+    allowance,
+    allowanceScope,
+    taskbarDetail,
+    headline: ready
+      ? `${running} running${attention ? ` · ${attention} need you` : ""}`
+      : "Ocelin offline",
+    detail: ready ? detail : "Open Ocelin to connect",
   };
 }
 class TaskbarBridge {
@@ -62,4 +138,9 @@ class TaskbarBridge {
     } catch {}
   }
 }
-module.exports = { TaskbarBridge, taskbarSummary, widgetSetupArguments };
+module.exports = {
+  TaskbarBridge,
+  taskbarSummary,
+  widgetSetupArguments,
+  remainingAllowance,
+};

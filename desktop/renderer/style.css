@@ -16,6 +16,81 @@
   background: var(--bg);
   color: var(--text);
 }
+.doctor-dialog {
+  width: min(540px, calc(100vw - 24px));
+  max-height: calc(100vh - 36px);
+  padding: 0;
+}
+.doctor-body {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  overflow-wrap: anywhere;
+}
+.doctor-body > p,
+.doctor-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+.doctor-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  min-width: 0;
+}
+.doctor-card h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.doctor-card label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.doctor-app {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+.doctor-app + .doctor-app {
+  border-top: 1px solid var(--line);
+}
+.doctor-app > div {
+  display: grid;
+  gap: 4px;
+}
+.doctor-app .muted {
+  font-size: 11px;
+}
+.doctor-app button {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.doctor-body .danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+#doctor {
+  font-size: 12px;
+  padding-inline: 10px;
+  width: auto;
+  flex-shrink: 0;
+}
+@media (max-width: 360px) {
+  body[data-surface="tray"] .brand ocelin-assistant {
+    width: 40px;
+  }
+  body[data-surface="tray"] .brand strong {
+    font-size: 18px;
+  }
+}
+body[data-surface="bar"] #doctor {
+  display: none;
+}
 :root[data-theme="light"] {
   color-scheme: light;
   --bg: #f4f5ef;

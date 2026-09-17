@@ -83,7 +83,7 @@ while ($true) {
   try {
     $file = Get-Item -LiteralPath $summaryFile
     if ($file.Length -le 4096) {
-      $summary = Get-Content -LiteralPath $summaryFile -Raw | ConvertFrom-Json
+      $summary = Get-Content -LiteralPath $summaryFile -Raw -Encoding UTF8 | ConvertFrom-Json
       if ($summary.theme -in @('light', 'dark')) { $theme = $summary.theme }
       $motion = $summary.motion -ne $false
       $age = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - [double]$summary.sampledAt
@@ -96,6 +96,8 @@ while ($true) {
         if ($attention -gt 0) { $headline = if ($attention -eq 1) { '1 needs you' } else { "$attention need you" } }
         $ram = if ($null -eq $summary.memoryBytes) { 'RAM unavailable' } elseif ($summary.memoryBytes -ge 1GB) { '{0:N1} GB RAM' -f ($summary.memoryBytes / 1GB) } else { '{0:N0} MB RAM' -f ($summary.memoryBytes / 1MB) }
         $detail = if ($attention -gt 0 -and $running -gt 0) { "$running active | $($ram -replace ' RAM$', '')" } else { $ram }
+        if ($summary.headline -is [string] -and $summary.headline.Length -le 80) { $headline = $summary.headline -replace '[\x00-\x1f\x7f]', '' }
+        if ($summary.detail -is [string] -and $summary.detail.Length -le 100) { $detail = $summary.detail -replace '[\x00-\x1f\x7f]', '' }
       }
     }
   } catch {}

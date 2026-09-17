@@ -26,7 +26,7 @@ public static class OcelinProcesses {
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
   [DllImport("psapi.dll")] static extern bool GetProcessMemoryInfo(IntPtr process, ref Memory counters, uint size);
   public class Row {
-    public int pid; public string name, provider; public long started; public ulong? memoryBytes; public double? cpuSeconds;
+    public int pid; public string name, provider, started, path; public ulong? memoryBytes; public double? cpuSeconds;
   }
   public static List<Row> Read(int owner) {
     var entries = new Dictionary<uint, Entry>();
@@ -48,8 +48,8 @@ public static class OcelinProcesses {
       while (seen.Add(current.pid)) {
         var name = current.name.ToLowerInvariant();
         if (current.pid == owner || name == "ocelin.exe") { provider = "ocelin"; break; }
-        if (name == "codex.exe") { provider = "codex"; break; }
-        if (name == "claude.exe") { provider = "claude"; break; }
+        if (provider == null && name == "codex.exe") provider = "codex";
+        if (provider == null && name == "claude.exe") provider = "claude";
         Entry parent;
         if (!entries.TryGetValue(current.parent, out parent)) break;
         var childStart = start(current.pid); var parentStart = start(parent.pid);
@@ -60,7 +60,8 @@ public static class OcelinProcesses {
       var row = new Row { pid = (int)entry.pid, name = entry.name, provider = provider };
       try {
         using (var process = Process.GetProcessById(row.pid)) {
-          row.started = process.StartTime.ToUniversalTime().Ticks;
+          row.started = process.StartTime.ToUniversalTime().Ticks.ToString();
+          try { row.path = process.MainModule.FileName; } catch { }
           row.cpuSeconds = process.TotalProcessorTime.TotalSeconds;
           var memory = new Memory(); memory.size = (uint)Marshal.SizeOf(typeof(Memory));
           if (GetProcessMemoryInfo(process.Handle, ref memory, memory.size)) row.memoryBytes = memory.privateWorking.ToUInt64();
