@@ -4,6 +4,7 @@ const {
   mkdirSync,
   renameSync,
   realpathSync,
+  readFileSync,
 } = require("node:fs");
 const { join } = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -137,11 +138,21 @@ module.exports = async function smoke({
       );
       assert.equal(secure, true);
       if (kind !== "bar") {
-        await until(async () => window.webContents.executeJavaScript("document.querySelector('#subscriptions').textContent.includes('18% left') && document.querySelector('#subscriptions').textContent.includes('72% left') && document.querySelector('#subscriptions').textContent.includes('44% left')"), `${kind} subscription allowance`);
-        const allowance = await window.webContents.executeJavaScript("({values:[...document.querySelectorAll('#subscriptions progress')].map(p=>p.value),resets:document.querySelector('#subscriptions').textContent.includes('Resets in')})");
+        await until(
+          async () =>
+            window.webContents.executeJavaScript(
+              "document.querySelector('#subscriptions').textContent.includes('18% left') && document.querySelector('#subscriptions').textContent.includes('72% left') && document.querySelector('#subscriptions').textContent.includes('44% left')",
+            ),
+          `${kind} subscription allowance`,
+        );
+        const allowance = await window.webContents.executeJavaScript(
+          "({values:[...document.querySelectorAll('#subscriptions progress')].map(p=>p.value),resets:document.querySelector('#subscriptions').textContent.includes('Resets in')})",
+        );
         assert.deepEqual(allowance.values, [18, 72, 44]);
         assert.equal(allowance.resets, true);
-        report.checks.push(`${kind}: Codex and Claude percentage remaining and reset countdowns`);
+        report.checks.push(
+          `${kind}: Codex and Claude percentage remaining and reset countdowns`,
+        );
       }
       await until(
         async () =>
@@ -534,16 +545,117 @@ module.exports = async function smoke({
     report.checks.push(
       "Bundled project backend booted and correct session route opened",
     );
-    await project.window.webContents.executeJavaScript("location.hash = '/cost'; void 0");
-    await until(async () => project.window.webContents.executeJavaScript("document.querySelector('.allowances')?.textContent.includes('18% left') && document.querySelector('.allowances')?.textContent.includes('72% left')"), "project Cost subscription allowance");
-    writeFileSync(join(output, "subscription-cost.png"), (await project.window.webContents.capturePage()).toPNG());
-    report.checks.push("Project Cost view shows the same subscription percentages as the desktop");
+    await project.window.webContents.executeJavaScript(
+      "location.hash = '/cost'; void 0",
+    );
+    await until(
+      async () =>
+        project.window.webContents.executeJavaScript(
+          "document.querySelector('.allowances')?.textContent.includes('18% left') && document.querySelector('.allowances')?.textContent.includes('72% left')",
+        ),
+      "project Cost subscription allowance",
+    );
+    writeFileSync(
+      join(output, "subscription-cost.png"),
+      (await project.window.webContents.capturePage()).toPNG(),
+    );
+    report.checks.push(
+      "Project Cost view shows the same subscription percentages as the desktop",
+    );
     project.window.destroy();
     assert.equal(getProject(), null);
-    await action("project", { key: selected.key });
-    assert.ok(getProject() && !getProject().window.isDestroyed());
+    await dashboard.webContents.executeJavaScript("document.querySelector('#workspace-open').click()");
+    await until(
+      () => getProject()?.window && !getProject().window.isDestroyed(),
+      "workspace launch button",
+    );
+    await until(
+      async () =>
+        getProject().window.webContents.executeJavaScript(
+          "location.hash === '#/overview' && !!document.querySelector('a[href=\"#/worktrees\"]')",
+        ),
+      "full workspace overview and navigation",
+    );
+    assert.equal(getState().preferences.lastProjectPath, selected.cwd);
     report.checks.push(
-      "Released project window stops its backend and reopens cleanly",
+      "Visible Open workspace button opens the original full Overview, Worktrees and Review app",
+    );
+    const profileHome = join(dataDir, "sample-work-profile");
+    mkdirSync(join(profileHome, "sessions"), { recursive: true });
+    const { accountProfiles } = require(
+      join(core, "server/monitor/profiles.cjs"),
+    );
+    const extra = accountProfiles([
+      { provider: "codex", home: profileHome, label: "Work" },
+    ]).find((p) => !p.builtin);
+    const cacheFile = join(dataDir, "subscriptions.json");
+    const originalCache = JSON.parse(readFileSync(cacheFile, "utf8"));
+    writeFileSync(
+      cacheFile,
+      JSON.stringify({
+        ...originalCache,
+        schemaVersion: 2,
+        profiles: [
+          {
+            ...originalCache.providers.codex,
+            profileId: extra.id,
+            profileLabel: "Work",
+            accountLabel: "work@example.test",
+            windows: [
+              {
+                id: "codex:primary",
+                label: "Weekly",
+                remainingPercent: 33,
+                resetsAt: Date.now() + 3600000,
+                minutes: 10080,
+                extra: false,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const nativeDialog = require("electron").dialog,
+      originalPicker = nativeDialog.showOpenDialog;
+    nativeDialog.showOpenDialog = async () => ({
+      canceled: false,
+      filePaths: [profileHome],
+    });
+    try {
+      await action("account-profile-add", { provider: "codex", label: "Work" });
+    } finally {
+      nativeDialog.showOpenDialog = originalPicker;
+    }
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "document.querySelector('#subscriptions').textContent.includes('work@example.test') && document.querySelector('#subscriptions').textContent.includes('33% left')",
+        ),
+      "additional account allowance card",
+    );
+    await action("account-profile-rename", {
+      id: extra.id,
+      label: "Work laptop",
+    });
+    assert.equal(
+      getState().accountProfiles.find((p) => p.id === extra.id).label,
+      "Work laptop",
+    );
+    writeFileSync(cacheFile, JSON.stringify(originalCache));
+    await action("account-profile-remove", { id: extra.id });
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "!document.querySelector('#subscriptions').textContent.includes('work@example.test')",
+        ),
+      "disconnected allowance removed",
+    );
+    assert.equal(
+      require("node:fs").existsSync(join(profileHome, "sessions")),
+      true,
+    );
+    report.checks.push(
+      "Connect, rename and disconnect a second account profile through validated IPC; original provider files preserved",
     );
     for (const combo of [
       { tray: true, bar: false, dashboard: false },

@@ -1179,3 +1179,64 @@ body[data-surface="bar"] .brand ocelin-assistant {
 .count-active strong {
   color: var(--muted);
 }
+.account-profile {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.account-profile p {
+  margin: 4px 0 8px;
+  overflow-wrap: anywhere;
+}
+.account-profile .buttons input {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+.session-profile {
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.workspace-launcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px 0 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.workspace-launcher > div {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.workspace-launcher #workspace-choose {
+  justify-self: start;
+  padding: 0;
+  font-size: 11px;
+}
+@media (max-width: 340px) {
+  .workspace-launcher {
+    grid-template-columns: 1fr;
+  }
+}
+.workspace-launcher span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.workspace-launcher select {
+  min-width: 0;
+  width: 100%;
+}
+.workspace-launcher button {
+  border-color: var(--gold, #edbd77);
+}
+.project-workspace {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 5px 8px;
+}
+body[data-surface="bar"] .workspace-launcher {
+  display: none;
+}

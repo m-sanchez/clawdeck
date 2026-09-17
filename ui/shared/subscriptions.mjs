@@ -47,13 +47,19 @@ export function subscriptionView(
   const heading = node("div", "allowance-heading");
   heading.append(
     node("h2", "", "Subscription allowance"),
-    node("span", "allowance-muted", "% remaining"),
+    node("span", "allowance-muted", "% remaining · shared per account"),
   );
   section.append(heading);
   const cards = node("div", "allowance-cards");
-  for (const provider of ["codex", "claude"]) {
-    const value = providers?.[provider];
+  const values = [
+    providers?.codex || { provider: "codex" },
+    providers?.claude || { provider: "claude" },
+    ...(Array.isArray(providers?.profiles) ? providers.profiles : []),
+  ];
+  for (const value of values) {
+    const provider = value.provider;
     const card = node("article", "allowance-card");
+    card.dataset.profile = value.profileId || `${provider}-default`;
     const header = node("div", "allowance-provider");
     if (providerIcon) header.append(providerIcon(provider));
     header.append(
@@ -61,6 +67,18 @@ export function subscriptionView(
     );
     if (value?.plan) header.append(node("span", "allowance-plan", value.plan));
     card.append(header);
+    if (value.profileLabel || value.accountLabel) {
+      const account = node("div", "allowance-account");
+      account.append(
+        node("strong", "", value.profileLabel || "Default"),
+        node(
+          "span",
+          "allowance-muted",
+          value.accountLabel || "Account identity unavailable",
+        ),
+      );
+      card.append(account);
+    }
     const windows = Array.isArray(value?.windows)
       ? value.windows.slice(0, 12)
       : [];
@@ -122,5 +140,13 @@ export function subscriptionView(
     cards.append(card);
   }
   section.append(cards);
+  if (values.length > 2)
+    section.append(
+      node(
+        "p",
+        "allowance-muted",
+        "Profiles using the same account share its limits. Percentages are never added together.",
+      ),
+    );
   return section;
 }

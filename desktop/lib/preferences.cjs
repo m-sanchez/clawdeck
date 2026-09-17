@@ -26,6 +26,9 @@ const defaults = {
   mutedProviders: [],
   mutedProjects: [],
   sources: null,
+  accountProfiles: [],
+  lastProjectKey: null,
+  lastProjectPath: null,
   bounds: {},
 };
 function validate(input, previous = defaults) {
@@ -75,6 +78,15 @@ class Preferences {
     this.value = {
       ...validate(saved),
       sources: Array.isArray(saved.sources) ? saved.sources : null,
+      accountProfiles: Array.isArray(saved.accountProfiles)
+        ? saved.accountProfiles
+        : [],
+      lastProjectKey:
+        typeof saved.lastProjectKey === "string" ? saved.lastProjectKey : null,
+      lastProjectPath:
+        typeof saved.lastProjectPath === "string"
+          ? saved.lastProjectPath
+          : null,
       mutedProjects: Array.isArray(saved.mutedProjects)
         ? saved.mutedProjects
         : [],

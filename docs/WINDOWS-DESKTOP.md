@@ -16,13 +16,21 @@ For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, th
 
 All three share one collector and notification owner. Closing a window hides it. Explicit Quit stops Ocelin's monitor and project backend, without stopping Codex or Claude. Ocelin retains a recovery surface when every option is switched off. Display changes clamp saved window positions to an available work area. Relaunching a second instance brings back the dashboard.
 
+**Open workspace** at the top of the panel or dashboard opens the original project interface, including Overview, Activity, Worktrees, Review, Cost and Delivery. Choose a project from the list or use **Choose folder…** when it has no recent session. Each project heading also has a **Workspace** button. The last opened folder is remembered. **All sessions** opens the separate global session list.
+
 Preferences, checkpoints, notification history and acknowledgements live in `%LOCALAPPDATA%\Ocelin`. Provider transcripts stay where their provider wrote them. The monitor saves metadata and file offsets. The separate history index caches titles and bounded first-request text locally; previews read provider history on demand. Saved native task names, session IDs and project paths are local metadata. Uninstall preserves these preferences so reinstalling is reversible.
 
 ## Sources and state
 
 ### Subscription allowance
 
-Ocelin 0.6.3 shows **percentage remaining** for Codex and Claude at the top of the dashboard and right-edge panel. Each reported session, weekly or model-specific window has its own reset countdown. Hover the countdown for the exact local reset time. Expand **Other model allowances** for separate limits such as Codex Spark. Missing windows are not invented; an expired or stale reading is unavailable until refreshed.
+Ocelin 0.6.4 shows **percentage remaining** for Codex and Claude at the top of the dashboard and right-edge panel. Each reported five-hour, weekly or model-specific window has its own reset countdown. A five-hour window is shared across conversations using that account. Hover the countdown for the exact local reset time. Expand **Other model allowances** for separate limits such as Codex Spark. Missing windows are not invented; an expired or stale reading is unavailable until refreshed.
+
+**Settings → Account profiles** connects up to eight additional existing local Codex or Claude Code profiles. Choose the provider's configuration folder, such as `.codex-work` or `.claude-work`, containing its sign-in and `sessions` or `projects` directory. Each profile has its own allowance card, name and reported account email. Rename or disconnect it in Settings; disconnecting never deletes provider files or signs out. Profiles sharing an account share its allowance, so percentages are never summed.
+
+Codex profiles use separate `CODEX_HOME` values and app-server clients. Claude profiles read their own `.credentials.json` and use the same token for the usage and identity requests. Ocelin does not copy credentials, initiate login, refresh Claude credentials or change another app's account. Sign in with the provider's own tools first. Temporary environment-token sign-ins, credentials held only in another app's memory, remote hosts and WSL profiles are not automatically connected.
+
+Session rows and history previews show the **source profile**, established from the transcript's location. This does not prove which account originally ran a saved conversation, especially after an account switch. Such historical account attribution remains unverified. Native actions retain their existing transcript-path checks and may be unavailable when the owning profile is not the default provider app's home.
 
 The desktop checks every two minutes. Codex uses its signed-in CLI's `account/rateLimits/read` API. Claude reads its existing Claude Code subscription sign-in and makes a read-only request to Anthropic's usage endpoint. Credentials stay in the background process and are never copied into Ocelin's state, UI, logs or taskbar payload. Ocelin does not refresh Claude credentials itself; open Claude Code if its sign-in expires. The source label identifies the sign-in being measured, which can differ from another app signed into a different account.
 

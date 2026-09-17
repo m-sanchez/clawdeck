@@ -2,7 +2,12 @@ import { providerIcon } from "./icons.mjs";
 import { memory } from "./session-model.mjs";
 
 const $ = (id) => document.getElementById(id);
-const fileSize = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1024 ** 2 ? `${Math.ceil(bytes / 1024)} KB` : memory(bytes);
+const fileSize = (bytes) =>
+  bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 ** 2
+      ? `${Math.ceil(bytes / 1024)} KB`
+      : memory(bytes);
 function element(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -93,6 +98,14 @@ async function peek(session) {
     `${value.cwd || "No saved workspace"}${value.workspaceExists ? "" : " · folder unavailable"}`,
   );
   panel.replaceChildren(heading, title, project);
+  if (value.profiles?.length)
+    panel.append(
+      element(
+        "p",
+        "muted",
+        `Source profile: ${value.profiles.map((p) => p.label).join(" · ")}. Original account not verified.`,
+      ),
+    );
   if (value.previewWarning)
     panel.append(element("p", "muted", value.previewWarning));
   for (const [label, text] of [
@@ -204,7 +217,7 @@ async function query(offset = 0) {
       element(
         "span",
         "muted",
-        `${session.title}${session.workspaceExists ? "" : " · missing folder"}${session.archiveScope ? ` · ${session.archiveScope}` : ""}${session.provider === "claude" && session.nativeArchived ? " · opening restores it" : ""}`,
+        `${session.title}${session.profiles?.length ? ` · ${session.profiles.map((p) => p.label).join(" / ")}` : ""}${session.workspaceExists ? "" : " · missing folder"}${session.archiveScope ? ` · ${session.archiveScope}` : ""}${session.provider === "claude" && session.nativeArchived ? " · opening restores it" : ""}`,
       ),
     );
     const age = element(

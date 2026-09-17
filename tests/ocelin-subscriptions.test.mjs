@@ -106,7 +106,7 @@ async function fixture(t, extra = {}) {
   await writeFile(file, JSON.stringify({ claudeAiOauth: credentials }));
   return { dir, home, file, credentials };
 }
-test("Claude reads only fixed usage endpoint, never forwards credentials to cache", async (t) => {
+test("Claude reads fixed usage and identity endpoints without caching credentials", async (t) => {
   const f = await fixture(t);
   let calls = 0;
   const client = {
@@ -124,13 +124,25 @@ test("Claude reads only fixed usage endpoint, never forwards credentials to cach
     client,
     fetcher: async (url, args) => {
       calls++;
-      assert.equal(url, "https://api.anthropic.com/api/oauth/usage");
+      assert.ok(
+        [
+          "https://api.anthropic.com/api/oauth/usage",
+          "https://api.anthropic.com/api/oauth/profile",
+        ].includes(url),
+      );
       assert.equal(args.method, "GET");
       assert.equal(args.redirect, "error");
       assert.equal(
         args.headers.Authorization,
         `Bearer ${f.credentials.accessToken}`,
       );
+      if (url.endsWith("/profile"))
+        return new Response(
+          JSON.stringify({
+            account: { email: "claude@example.test" },
+            accessToken: "do-not-forward",
+          }),
+        );
       return new Response(
         JSON.stringify({
           seven_day: { utilization: 3, resets_at: null },
@@ -140,7 +152,7 @@ test("Claude reads only fixed usage endpoint, never forwards credentials to cach
     },
   });
   await monitor.refresh();
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
   const raw = await readFile(join(f.dir, "subscriptions.json"), "utf8");
   assert.ok(
     !raw.includes("secret") &&
@@ -150,6 +162,10 @@ test("Claude reads only fixed usage endpoint, never forwards credentials to cach
   assert.equal(
     (await readSubscriptionSnapshot(f.dir)).claude.windows[0].remainingPercent,
     97,
+  );
+  assert.equal(
+    (await readSubscriptionSnapshot(f.dir)).claude.accountLabel,
+    "claude@example.test",
   );
 });
 test("expired credentials make no usage request", async (t) => {

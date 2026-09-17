@@ -18,6 +18,8 @@ import {
 } from "../adapters/codex-transcript.mjs";
 import { getSessionFeed } from "../adapters/session-feed.mjs";
 import { CodexClient } from "./codex-client.mjs";
+import profilesModule from "../monitor/profiles.cjs";
+const { accountProfiles, sessionProfiles } = profilesModule;
 
 const text = (value) =>
   typeof value === "string"
@@ -117,8 +119,10 @@ export class SessionLibrary {
       : null,
     now = Date.now,
     client = new CodexClient(),
+    profiles = [],
   } = {}) {
     Object.assign(this, { dataDir, sources, desktopRoot, now, client });
+    this.profiles = accountProfiles(profiles);
     this.entries = new Map();
     this.hidden = {};
     this.plans = new Map();
@@ -372,6 +376,10 @@ export class SessionLibrary {
     const live = this.live.get(entry.key);
     return {
       ...value,
+      profiles: sessionProfiles(
+        { ...entry, sourceRoots: [root] },
+        this.profiles,
+      ),
       ...(live
         ? {
             execution: live.execution,

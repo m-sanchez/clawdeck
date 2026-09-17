@@ -1,6 +1,23 @@
 import { SessionMonitor } from "./collector.mjs";
 import { parentPort } from "node:worker_threads";
 import { SubscriptionMonitor } from "./subscriptions.mjs";
+import profilesModule from "./profiles.cjs";
+const { accountProfiles, sessionProfiles } = profilesModule;
+let profiles = accountProfiles(
+  process.env.OCELIN_ACCOUNT_PROFILES
+    ? JSON.parse(process.env.OCELIN_ACCOUNT_PROFILES)
+    : [],
+);
+const sessionSnapshot = () => {
+  const snapshot = monitor.snapshot();
+  return {
+    ...snapshot,
+    sessions: snapshot.sessions.map((s) => ({
+      ...s,
+      profiles: sessionProfiles(s, profiles),
+    })),
+  };
+};
 
 const port = process.parentPort || parentPort;
 
@@ -13,7 +30,7 @@ const monitor = new SessionMonitor({
 await monitor.load();
 port.postMessage({
   type: "snapshot",
-  snapshot: monitor.snapshot(),
+  snapshot: sessionSnapshot(),
 });
 let preferences = {};
 let chain = Promise.resolve();
@@ -21,10 +38,11 @@ const send = (value) => port.postMessage(value);
 const subscriptions = new SubscriptionMonitor({
   dataDir: process.env.OCELIN_DATA_DIR,
   fixture: process.env.OCELIN_SMOKE_TEST === "1",
+  profiles: profiles.filter((p) => !p.builtin),
   onUpdate: () =>
     send({
       type: "snapshot",
-      snapshot: { ...monitor.snapshot(), subscriptions: subscriptions.value },
+      snapshot: { ...sessionSnapshot(), subscriptions: subscriptions.value },
     }),
 });
 const enqueue = (fn) => {
@@ -33,10 +51,11 @@ const enqueue = (fn) => {
     .catch((error) => send({ type: "error", message: error.message }));
 };
 async function refresh(force = false) {
+  await monitor.tick({ force });
   send({
     type: "snapshot",
     snapshot: {
-      ...(await monitor.tick({ force })),
+      ...sessionSnapshot(),
       subscriptions: subscriptions.value,
     },
   });
@@ -54,7 +73,7 @@ port.on("message", (raw) => {
       }
       if (data.type === "acknowledge") {
         await monitor.acknowledge(data.key);
-        value = { ...monitor.snapshot(), subscriptions: subscriptions.value };
+        value = { ...sessionSnapshot(), subscriptions: subscriptions.value };
         send({ type: "snapshot", snapshot: value });
       } else if (data.type === "target") value = monitor.target(data.key);
       else if (data.type === "refresh") {
@@ -62,6 +81,12 @@ port.on("message", (raw) => {
         value = true;
       } else if (data.type === "sources") {
         monitor.sources = data.value;
+        await refresh(true);
+        value = true;
+      } else if (data.type === "profiles") {
+        profiles = accountProfiles(data.profiles);
+        subscriptions.setProfiles(data.profiles);
+        monitor.setSources(data.sources);
         await refresh(true);
         value = true;
       } else if (data.type === "stop") {

@@ -29,11 +29,7 @@
         ><span class="brand-caption">Your agents, at a glance</span>
       </div>
       <div class="header-actions">
-        <button
-          id="dashboard"
-          title="Open dashboard"
-          aria-label="Open dashboard"
-        >
+        <button id="dashboard" title="All sessions" aria-label="All sessions">
           ↗</button
         ><button id="settings" title="Settings" aria-label="Settings">⚙</button
         ><button id="hide" title="Hide window" aria-label="Hide window">
@@ -43,6 +39,18 @@
     </header>
     <div id="error" role="alert" hidden></div>
     <main id="content">
+      <section class="workspace-launcher" aria-label="Full project workspace">
+        <div>
+          <strong>Full project workspace</strong
+          ><span>Overview · Activity · Worktrees · Review · Cost</span
+          ><button id="workspace-choose" class="text-button">
+            Choose folder…
+          </button>
+        </div>
+        <label class="sr-only" for="workspace-project">Project to open</label>
+        <select id="workspace-project" aria-label="Project to open"></select>
+        <button id="workspace-open">Open workspace ↗</button>
+      </section>
       <section class="overview">
         <h1 class="sr-only">Local agent sessions</h1>
         <div id="counts" aria-label="Session summary"></div>
@@ -261,6 +269,36 @@
             ><button data-source="claude">Add Claude projects folder</button>
           </div>
           <div id="integrations"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Account profiles</legend>
+          <p>
+            Connect another signed-in Codex or Claude Code profile to see its
+            allowance and local sessions. Select its configuration folder, such
+            as .codex-work or .claude-work.
+          </p>
+          <div id="account-profiles"></div>
+          <label
+            >New profile name
+            <input
+              id="account-profile-label"
+              maxlength="48"
+              placeholder="Work or Personal"
+          /></label>
+          <div class="buttons">
+            <button data-account-provider="codex">
+              Connect Codex profile…
+            </button>
+            <button data-account-provider="claude">
+              Connect Claude profile…
+            </button>
+          </div>
+          <p>
+            Each card reads the current sign-in in that profile. Saved sessions
+            show their source profile; their original account may be unknown.
+            App-only sign-ins and temporary terminal tokens are not
+            automatically connected.
+          </p>
         </fieldset>
         <fieldset>
           <legend>About Ocelin</legend>

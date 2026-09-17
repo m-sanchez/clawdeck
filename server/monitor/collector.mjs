@@ -19,6 +19,7 @@ import {
   safeId,
   validEvent,
   localPath,
+  pathKey,
 } from "./model.mjs";
 
 export function defaultSources() {
@@ -106,6 +107,21 @@ export class SessionMonitor {
       this.lastHookAt = saved.lastHookAt || {};
       this.savedFiles = saved.files || {};
     } catch {}
+  }
+  setSources(sources) {
+    this.sources = sources;
+    const allowed = new Set(
+      sources.map((s) => `${s.provider}:${pathKey(s.root)}`),
+    );
+    for (const [key, session] of this.sessions) {
+      if (
+        session.sourceRoots?.length &&
+        !session.sourceRoots.some((root) =>
+          allowed.has(`${session.provider}:${pathKey(root)}`),
+        )
+      )
+        this.sessions.delete(key);
+    }
   }
   async discover() {
     const diagnostics = [];
@@ -284,13 +300,28 @@ export class SessionMonitor {
               entry.provider,
               record,
               entry.context,
-            ))
+            )) {
+              entry.context.lastTs = Math.max(
+                entry.context.lastTs || 0,
+                event.ts,
+              );
               this.apply(event);
+            }
           });
           this.bytesRead += read.bytes;
           const key = sessionKey(entry.provider, entry.context.sessionId);
           const session = this.sessions.get(key);
-          if (session) this.sessions.set(key, { ...session, transcript: file });
+          if (session)
+            this.sessions.set(key, {
+              ...session,
+              transcript:
+                !session.transcript || entry.context.lastTs >= session.lastTs
+                  ? file
+                  : session.transcript,
+              sourceRoots: [
+                ...new Set([...(session.sourceRoots || []), entry.sourceRoot]),
+              ],
+            });
           entry.checkedAt = this.now();
         } catch {
           entry.error = "Transcript unavailable";
