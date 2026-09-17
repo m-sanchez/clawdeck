@@ -6,7 +6,7 @@ Formerly Clawdeck. A local companion for **Codex and Claude Code**, with **Windo
 
 [Website](https://miguelsanchez.co.uk/ocelin/) · [Windows preview downloads](https://github.com/m-sanchez/ocelin/releases) · [Desktop setup and compatibility](docs/WINDOWS-DESKTOP.md)
 
-The browser core keeps zero runtime dependencies. The optional desktop package bundles Electron and Node. The GitHub repository is now `m-sanchez/ocelin`; old repository links redirect here. The npm package and `clawdeck` command remain compatible; `ocelin` is an additional CLI alias.
+The browser core keeps zero runtime dependencies. The optional Windows app includes everything it needs to run. The GitHub repository is now `m-sanchez/ocelin`; old repository links redirect here. The npm package and `clawdeck` command remain compatible; `ocelin` is an additional CLI alias.
 
 ## Windows companion
 
@@ -137,7 +137,7 @@ Principles:
 The 0.6 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.5/clawdeck-panel-0.6.5.tgz
+npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.6/clawdeck-panel-0.6.6.tgz
 ocelin run --checkout /path/to/your/project
 ```
 

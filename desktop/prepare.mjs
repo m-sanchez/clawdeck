@@ -92,15 +92,22 @@ function png(size) {
 writeFileSync(`${assets}/ocelin.png`, png(32));
 for (const size of [44, 150])
   writeFileSync(`${assets}/ocelin-${size}.png`, png(size));
-const image = png(256),
-  ico = Buffer.alloc(22);
+const sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256];
+const images = sizes.map(png);
+const ico = Buffer.alloc(6 + sizes.length * 16);
 ico.writeUInt16LE(1, 2);
-ico.writeUInt16LE(1, 4);
-ico.writeUInt16LE(1, 10);
-ico.writeUInt16LE(32, 12);
-ico.writeUInt32LE(image.length, 14);
-ico.writeUInt32LE(22, 18);
-writeFileSync(`${assets}/ocelin.ico`, Buffer.concat([ico, image]));
+ico.writeUInt16LE(sizes.length, 4);
+let imageOffset = ico.length;
+for (const [index, size] of sizes.entries()) {
+  const entry = 6 + index * 16;
+  ico[entry] = ico[entry + 1] = size === 256 ? 0 : size;
+  ico.writeUInt16LE(1, entry + 4);
+  ico.writeUInt16LE(32, entry + 6);
+  ico.writeUInt32LE(images[index].length, entry + 8);
+  ico.writeUInt32LE(imageOffset, entry + 12);
+  imageOffset += images[index].length;
+}
+writeFileSync(`${assets}/ocelin.ico`, Buffer.concat([ico, ...images]));
 writeFileSync(
   fileURLToPath(new URL("../ui/ocelin/icon.svg", import.meta.url)),
   ocelotIcon(32),
