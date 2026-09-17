@@ -114,17 +114,25 @@ summary::-webkit-details-marker {
   width: 21px;
   height: 21px;
 }
-.icon-claude {
-  color: #dd9d79;
-}
-.icon-codex {
-  color: var(--text);
-}
 .icon-ocelin img {
   image-rendering: pixelated;
 }
-:root[data-theme="light"] .icon-claude {
-  color: #9b502d;
+.provider-icon .provider-on-light {
+  display: none;
+}
+:root[data-theme="light"] .provider-on-light {
+  display: block;
+}
+:root[data-theme="light"] .provider-on-dark {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .provider-on-light {
+    display: block;
+  }
+  :root:not([data-theme="dark"]) .provider-on-dark {
+    display: none;
+  }
 }
 header {
   height: 58px;

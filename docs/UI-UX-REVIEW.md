@@ -7,7 +7,7 @@ The operator's first question is “what needs me, what is running, and what is 
 | Large welcome section above the first session | Compact header and inline running/attention/project counts |
 | 2,398 discovered transcripts looked like live agents | Active now is the default; historical totals are removed from the summary |
 | Repeated cards and four buttons per session | Collapsible project groups, compact rows, one primary action and a details menu |
-| Provider identity required reading text on every row | Distinct provider symbols with accessible names and tooltips |
+| Provider identity required reading text on every row | Official provider icons with accessible names and tooltips |
 | Identical amber status dots | Green running, amber attention diamond, completion check and hollow unknown marker, alongside text |
 | No resource visibility | App RAM totals at the top, with process/PID/CPU details one click away |
 | No way to clear old results | Reversible history cutoff; active work stays visible and new activity restores older sessions |

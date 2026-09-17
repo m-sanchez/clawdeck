@@ -610,6 +610,16 @@ else {
         if (url.hostname !== "app" || request.method !== "GET")
           return new Response("Forbidden", { status: 403 });
         const route = decodeURIComponent(url.pathname);
+        if (route.startsWith("/vendor/")) {
+          const name = route.slice("/vendor/".length);
+          if (
+            !["codex-dark.png", "codex-light.png", "claude.svg"].includes(name)
+          )
+            return new Response("Not found", { status: 404 });
+          return net.fetch(
+            pathToFileURL(join(__dirname, "renderer", "vendor", name)).href,
+          );
+        }
         const base = route.startsWith("/ui/")
           ? join(core, "ui")
           : route.startsWith("/desktop/renderer/")

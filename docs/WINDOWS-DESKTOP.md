@@ -79,6 +79,8 @@ Native Windows and packaged-build results are recorded in the delivery tracker a
 
 ## Sources and attribution
 
+Provider icons come from the official installed Codex Windows app and Anthropic's official Claude Code extension. Their original colors and geometry are preserved, including supplied Codex light/dark variants. [Asset sources and ownership](../desktop/renderer/vendor/ATTRIBUTION.md).
+
 The research and licensed reference extracts are in [Windows research](WINDOWS-DESKTOP-RESEARCH.md) and `research/windows-desktop-2026-09-16/`. The desktop implementation is written for this repository; external reference code has not been pasted into the runtime.
 
 Primary integration references: [Codex hooks](https://learn.chatgpt.com/docs/hooks), [Claude hooks](https://code.claude.com/docs/en/hooks), [Electron utility processes](https://www.electronjs.org/docs/latest/api/utility-process), [Electron security](https://www.electronjs.org/docs/latest/tutorial/security).

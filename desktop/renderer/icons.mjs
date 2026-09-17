@@ -1,7 +1,4 @@
 const paths = {
-  codex: '<path d="m5 7 5 5-5 5m8 0h6"/>',
-  claude:
-    '<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5M8 3l8 18M3 8l18 8M3 16l18-8M8 21 8-18"/>',
   folder: '<path d="M3 7V5h6l2 2h10v12H3Z"/>',
   open: '<path d="M14 3h7v7m0-7L10 14M10 5H4v15h15v-6"/>',
   settings:
@@ -18,7 +15,7 @@ export function icon(name) {
   const span = document.createElement("span");
   span.className = `icon icon-${name}`;
   span.setAttribute("aria-hidden", "true");
-  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.codex}</svg>`;
+  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${paths[name] || ""}</svg>`;
   return span;
 }
 export function providerIcon(provider) {
@@ -32,5 +29,10 @@ export function providerIcon(provider) {
         : "Ocelin";
   if (provider === "ocelin")
     span.innerHTML = '<img src="/ui/ocelin/icon.svg" alt=""/>';
+  if (provider === "codex")
+    span.innerHTML =
+      '<img class="provider-on-dark" src="/vendor/codex-dark.png" alt=""/><img class="provider-on-light" src="/vendor/codex-light.png" alt=""/>';
+  if (provider === "claude")
+    span.innerHTML = '<img src="/vendor/claude.svg" alt=""/>';
   return span;
 }

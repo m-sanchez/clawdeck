@@ -114,6 +114,13 @@ module.exports = async function smoke({
         "typeof require === 'undefined' && typeof process === 'undefined' && typeof window.ocelin.action === 'function'",
       );
       assert.equal(secure, true);
+      await until(
+        async () =>
+          window.webContents.executeJavaScript(
+            "[...document.querySelectorAll('.provider-icon img')].every(i => i.complete && i.naturalWidth > 0)",
+          ),
+        `${kind} official provider icons`,
+      );
       const layout = await window.webContents.executeJavaScript(
         "({surface:document.body.dataset.surface,width:innerWidth,scroll:document.documentElement.scrollWidth,limbs:document.querySelector('ocelin-assistant').shadowRoot.querySelectorAll('.clawd-arm,.clawd-leg').length})",
       );
@@ -129,6 +136,11 @@ module.exports = async function smoke({
       );
     }
     const dashboard = windows.get("dashboard");
+    assert.equal(
+      (await require("electron").net.fetch("ocelin://app/vendor/unknown.svg"))
+        .status,
+      404,
+    );
     await until(
       () => getState().resources?.status === "ready",
       "Windows memory sample",
@@ -203,6 +215,13 @@ module.exports = async function smoke({
     );
     const originalBounds = dashboard.getBounds();
     await action("preferences", { theme: "light" });
+    await until(
+      async () =>
+        dashboard.webContents.executeJavaScript(
+          "getComputedStyle(document.querySelector('.provider-on-light')).display !== 'none' && getComputedStyle(document.querySelector('.provider-on-dark')).display === 'none'",
+        ),
+      "official light-mode Codex icon",
+    );
     for (const width of [700, 420, 320]) {
       dashboard.setSize(width, 700);
       await new Promise((r) => setTimeout(r, 150));
@@ -297,5 +316,9 @@ module.exports = async function smoke({
     report.error = error.stack;
   }
   writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2));
-  app.exit(report.ok ? 0 : 1);
+  app.once("will-quit", (event) => {
+    event.preventDefault();
+    setTimeout(() => app.exit(report.ok ? 0 : 1), 2200);
+  });
+  app.quit();
 };
