@@ -41,9 +41,10 @@ const allowed = new Set([
   "/ui/clawd/clawd-element.mjs", "/ui/clawd/clawd.styles.mjs",
 ]);
 const html = `<!doctype html><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'nonce-ocelin-export'; style-src 'unsafe-inline'; img-src data:">
 <style>html,body{margin:0;width:160px;height:128px;background:transparent}body{font-family:system-ui,sans-serif}ocelin-assistant{width:140px;height:112px}</style>
 <ocelin-assistant state="idle" motion="full" patrol="off" dock="off" bubble="off" badge="off" tooltip="off"></ocelin-assistant>
-<script type="module">
+<script type="module" nonce="ocelin-export">
 import "/ui/ocelin/ocelin-element.mjs";
 const pet = document.querySelector("ocelin-assistant");
 const root = pet.shadowRoot;
@@ -116,14 +117,19 @@ async function main() {
         first ||= png;
         const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
         if (info.width !== crop.width || info.height !== crop.height || info.channels !== 4) throw new Error("Unexpected capture dimensions");
+        let opaque = 0, transparent = 0;
+        for (let pixel = 3; pixel < data.length; pixel += 4) {
+          if (data[pixel] === 0) transparent++;
+          else opaque++;
+        }
+        if (opaque < 500 || transparent < 500) throw new Error(`Missing artwork or transparency in ${state} frame ${frame}`);
         frames.push(data);
       }
       const gif = await sharp(Buffer.concat(frames), {
         raw: { width: crop.width, height: crop.height * frames.length, channels: 4, pageHeight: crop.height },
       }).gif({ loop: 0, delay: Array(options.frames).fill(options.duration / options.frames), colours: 64, dither: 0, effort: 10 }).toBuffer();
       const encoded = await sharp(gif, { animated: true }).metadata();
-      await writeFile(join(options.out, `${state}.png`), first);
-      if (!encoded.hasAlpha || encoded.width !== 104 || encoded.pageHeight !== 84 ||
+      if (!encoded.hasAlpha || encoded.width !== 104 || encoded.pageHeight !== 84 || encoded.pages < 2 || encoded.loop !== 0 ||
           encoded.delay.reduce((sum, delay) => sum + delay, 0) !== options.duration) throw new Error(`GIF verification failed: ${JSON.stringify(encoded)}`);
       for (const [extension, buffer] of [["png", first], ["gif", gif]]) {
         const file = join(options.out, `${state}.${extension}`);
