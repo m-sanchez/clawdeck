@@ -1,0 +1,66 @@
+diff --git a/src/native/taskbar-hook/taskbar_widgets_hook.cpp b/src/native/taskbar-hook/taskbar_widgets_hook.cpp
+--- a/src/native/taskbar-hook/taskbar_widgets_hook.cpp
++++ b/src/native/taskbar-hook/taskbar_widgets_hook.cpp
+@@ -505,6 +505,7 @@
+ struct WidgetInstanceRuntime;
+ struct DynamicWidgetDefinition;
+ const DynamicWidgetDefinition* FindDynamicWidget(const std::wstring& id);
++std::wstring GetNativeWidgetPrimaryAction(const std::wstring& id);
+ bool HasNativeExpandedWidget(const std::wstring& id);
+ bool ShowDynamicWidgetPopup(const wux::UIElement& anchor,
+                             const std::wstring& widgetId,
+@@ -2045,7 +2046,26 @@
+         std::wstring activeDesign = GetWidgetDesignFromRoot(root.as<wux::UIElement>());
+         if (FindDynamicWidget(activeDesign)) {
+             if (!HasNativeExpandedWidget(activeDesign)) {
+-                WriteTaskbarWidgetsCommand(L"openSettings", L"", activeDesign);
++                const auto action = GetNativeWidgetPrimaryAction(activeDesign);
++                if (!action.empty()) {
++                    auto current = args.OriginalSource().try_as<wux::DependencyObject>();
++                    const auto rootObject = root.as<wux::DependencyObject>();
++                    while (current && current != rootObject) {
++                        if (current.try_as<wuxcp::ButtonBase>()) {
++                            args.Handled(true);
++                            return;
++                        }
++                        current = wuxm::VisualTreeHelper::GetParent(current);
++                    }
++                    Wh_Log(L"Native widget primary action: %s; action=%s",
++                           activeDesign.c_str(), action.c_str());
++                    WriteCommunityWidgetCommand(
++                        activeDesign,
++                        GetWidgetInstanceFromRoot(root.as<wux::UIElement>()),
++                        action);
++                } else {
++                    WriteTaskbarWidgetsCommand(L"openSettings", L"", activeDesign);
++                }
+             }
+         } else if (activeDesign == L"weather-static") {
+             ShowWeatherMenu(root);
+@@ -2404,6 +2424,26 @@
+     RefreshDynamicWidgetCatalog();
+     auto found = g_dynamicWidgets.find(id);
+     return found == g_dynamicWidgets.end() ? nullptr : &found->second;
++}
++
++std::wstring GetNativeWidgetPrimaryAction(const std::wstring& id) {
++    const auto* definition = FindDynamicWidget(id);
++    if (!definition || !definition->layout ||
++        _wcsicmp(definition->renderer.c_str(), L"native") != 0) {
++        return L"";
++    }
++    const auto action = JsonString(definition->layout, L"action");
++    if (action.empty() || action.size() > 120 ||
++        !std::all_of(action.begin(), action.end(), [](wchar_t value) {
++            return (value >= L'a' && value <= L'z') ||
++                   (value >= L'A' && value <= L'Z') ||
++                   (value >= L'0' && value <= L'9') ||
++                   value == L'.' || value == L'-' || value == L'_' ||
++                   value == L':';
++        })) {
++        return L"";
++    }
++    return action;
+ }
+ 
+ bool HasNativeExpandedWidget(const std::wstring& id) {

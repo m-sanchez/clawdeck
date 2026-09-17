@@ -31,7 +31,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git -C upstream-taskbar-widgets apply ../desktop/integrations/taskbar-widgets/patches/settings-english.patch
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          foreach ($patchName in @('install-catalog.patch', 'explicit-ide-actions.patch')) {
+          foreach ($patchName in @('install-catalog.patch', 'explicit-ide-actions.patch', 'native-primary-action.patch')) {
             git -C upstream-taskbar-widgets apply --check "../desktop/integrations/taskbar-widgets/patches/$patchName"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             git -C upstream-taskbar-widgets apply "../desktop/integrations/taskbar-widgets/patches/$patchName"
