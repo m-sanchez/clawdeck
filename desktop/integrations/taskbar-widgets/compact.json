@@ -6,7 +6,9 @@
   "children": [
     {
       "type": "image",
-      "source": { "bind": "data.pet" },
+      "source": {
+        "bind": "data.pet"
+      },
       "width": 52,
       "height": 42,
       "stretch": "uniform",
@@ -24,9 +26,15 @@
           "fontWeight": "semibold",
           "width": 112,
           "trimming": "characterEllipsis",
-          "color": { "bind": "data.foreground", "fallback": "#FF202520" },
+          "color": {
+            "bind": "data.foreground",
+            "fallback": "#FF202520"
+          },
           "segments": [
-            { "bind": "data.headline", "fallback": "Ocelin offline" }
+            {
+              "bind": "data.headline",
+              "fallback": "Ocelin offline"
+            }
           ]
         },
         {
@@ -34,21 +42,20 @@
           "fontSize": 11,
           "width": 112,
           "trimming": "characterEllipsis",
-          "color": { "bind": "data.secondary", "fallback": "#FF47534A" },
+          "color": {
+            "bind": "data.secondary",
+            "fallback": "#FF47534A"
+          },
           "segments": [
-            { "bind": "data.detail", "fallback": "Open Ocelin to connect" }
+            {
+              "bind": "data.detail",
+              "fallback": "Open Ocelin to connect"
+            }
           ]
         }
       ]
-    },
-    {
-      "type": "button",
-      "glyph": "\uE8A7",
-      "action": "openOcelin",
-      "width": 22,
-      "height": 28,
-      "fontSize": 12,
-      "color": { "bind": "data.secondary", "fallback": "#FF47534A" }
     }
-  ]
+  ],
+  "action": "openOcelin",
+  "width": 170
 }

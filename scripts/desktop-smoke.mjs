@@ -74,11 +74,13 @@ for (const [id, complete] of [
     rows.map(JSON.stringify).join("\n") + "\n",
   );
 }
-const packaged = process.argv[2] && resolve(process.argv[2]);
+const binary = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+const packaged = binary && resolve(binary);
 const exe =
   packaged ||
   join(root, "desktop", "node_modules", "electron", "dist", "electron.exe");
 const args = [...(packaged ? [] : [join(root, "desktop")]), "--smoke-test"];
+if (process.argv.includes("--panel-launch")) args.push("ocelin://panel");
 const env = {
   ...process.env,
   OCELIN_DATA_DIR: data,

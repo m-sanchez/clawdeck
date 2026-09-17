@@ -19,11 +19,12 @@ const $ = (id) => document.getElementById(id);
 const surface =
   new URLSearchParams(location.search).get("surface") || "dashboard";
 document.body.dataset.surface = surface;
+document.documentElement.dataset.surface = surface;
 document.title =
   surface === "bar"
     ? "Ocelin · Session bar"
     : surface === "tray"
-      ? "Ocelin · Tray panel"
+      ? "Ocelin · Session panel"
       : "Ocelin";
 let state,
   preview,
@@ -123,6 +124,37 @@ if (surface === "bar") {
   $("hide").title = "Hide floating bar";
   $("hide").setAttribute("aria-label", "Hide floating bar");
   document.querySelector(".brand").title = "Drag to move";
+}
+if (surface === "tray") {
+  $("hide").replaceChildren(icon("close"));
+  $("hide").title = "Close panel (Esc)";
+  $("hide").setAttribute("aria-label", "Close panel");
+  let entrance;
+  api.onPanelOpen(({ visible, duration }) => {
+    entrance?.cancel();
+    document.body.dataset.panelOpen = String(visible);
+    if (!visible) return;
+    if (duration)
+      entrance = document.body.animate(
+        [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
+        { duration, easing: "cubic-bezier(.16,1,.3,1)" },
+      );
+    $("hide").focus({ preventScroll: true });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || document.querySelector("dialog[open]"))
+      return;
+    const peek = $("session-peek");
+    if (!peek.hidden) return;
+    const expanded = document.querySelector(".session-actions[open]");
+    if (expanded) {
+      expanded.open = false;
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    void action("hide", { surface });
+  });
 }
 function render(value) {
   state = value;
@@ -668,3 +700,4 @@ document.addEventListener("visibilitychange", motion);
 initLibrary(action, renderSessions);
 api.subscribe(render);
 render(await api.state());
+if (surface === "tray") api.panelReady();

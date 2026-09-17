@@ -18,6 +18,7 @@ import {
   statusLabel,
 } from "../desktop/renderer/session-model.mjs";
 const require = createRequire(import.meta.url);
+const { panelBounds, panelDuration } = require("../desktop/lib/panel.cjs");
 const { summarize } = require("../desktop/lib/resource-model.cjs");
 const {
   taskbarSummary,
@@ -34,6 +35,26 @@ const session = (id, patch = {}) => ({
   execution: "running",
   stale: false,
   ...patch,
+});
+
+test("session drawer fits the right edge of its monitor work area", () => {
+  for (const area of [
+    { x: 0, y: 0, width: 1920, height: 1032 },
+    { x: -1280, y: -144, width: 1280, height: 984 },
+    { x: 60, y: 48, width: 768, height: 976 },
+    { x: 0, y: 0, width: 300, height: 220 },
+  ]) {
+    const panel = panelBounds(area);
+    assert.equal(panel.x + panel.width, area.x + area.width - 8);
+    assert.equal(panel.y, area.y + 8);
+    assert.equal(panel.y + panel.height, area.y + area.height - 8);
+    assert.ok(panel.x >= area.x && panel.width <= 440);
+  }
+  for (const preference of ["system", "full", "reduced", "none"])
+    assert.equal(panelDuration(preference, true), 0);
+  assert.equal(panelDuration("none", false), 0);
+  assert.equal(panelDuration("reduced", false), 0);
+  assert.ok(panelDuration("system", false) > 0);
 });
 
 test("default view groups concurrent providers by project and excludes historical sessions", () => {

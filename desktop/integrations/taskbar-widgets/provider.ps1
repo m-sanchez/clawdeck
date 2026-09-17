@@ -70,7 +70,7 @@ while ($true) {
       $request = $line | ConvertFrom-Json
       if ($request.type -eq 'shutdown') { break }
       if ($request.type -in @('initialize', 'instancesChanged')) { $instances = @($request.instances); $lastSnapshots = @{} }
-      if ($request.type -eq 'action' -and $request.action -eq 'openOcelin') { Start-Process -FilePath 'ocelin://dashboard' -WorkingDirectory $env:LOCALAPPDATA -WindowStyle Hidden }
+      if ($request.type -eq 'action' -and $request.action -eq 'openOcelin') { Start-Process -FilePath 'ocelin://panel' -WorkingDirectory $env:LOCALAPPDATA -WindowStyle Hidden }
     } catch {}
     $pending = $reader.ReadLineAsync()
   }

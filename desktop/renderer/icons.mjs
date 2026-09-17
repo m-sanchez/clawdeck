@@ -9,6 +9,7 @@ const paths = {
   memory:
     '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2v4H7Zm8 0h2v4h-2ZM6 18v3m4-3v3m4-3v3m4-3v3"/>',
   hide: '<path d="M5 12h14"/>',
+  close: '<path d="m6 6 12 12M6 18 18 6"/>',
   seen: '<path d="m5 12 4 4L19 6"/>',
 };
 export function icon(name) {

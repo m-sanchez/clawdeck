@@ -424,12 +424,19 @@ test("session links reject arbitrary routes and retain exact provider identities
     activation(activationUri({ provider: "claude", sessionId: CODEX_ID })),
     { type: "session", key: `claude:${CODEX_ID}` },
   );
+  assert.deepEqual(activation("ocelin://panel"), { type: "panel" });
+  assert.deepEqual(activation("ocelin://panel/"), { type: "panel" });
   for (const uri of [
     "ocelin://app/../../file",
     "ocelin://session/claude/../evil",
     "ocelin://session/codex/a?cmd=run",
     "ocelin://user@dashboard",
     "https://dashboard",
+    "ocelin://panel/commands",
+    "ocelin://panel?command=run",
+    "ocelin://panel#session",
+    "ocelin://user@panel",
+    "ocelin://panel:5394",
   ])
     assert.equal(activation(uri), null);
   assert.throws(() =>

@@ -13,12 +13,14 @@ module.exports = async function smoke({
   app,
   windows,
   action,
+  activate,
   getState,
   getProject,
   dataDir,
   core,
 }) {
   const until = async (test, label) => {
+    writeFileSync(join(dataDir, "proof", "progress.txt"), label);
     for (let n = 0; n < 150; n++) {
       if (await test()) return;
       await new Promise((r) => setTimeout(r, 200));
@@ -47,6 +49,14 @@ module.exports = async function smoke({
         keys.some((k) => k.startsWith("claude:")),
     );
     report.checks.push("Codex and concurrent Claude sessions discovered");
+    if (process.argv.includes("ocelin://panel")) {
+      await until(
+        () => windows.get("tray")?.isVisible(),
+        "cold-start session panel",
+      );
+      assert.equal(windows.has("dashboard"), false);
+      report.checks.push("Panel URI starts without opening the full dashboard");
+    }
     if (process.argv.includes("--background")) {
       const initial = windows.get("dashboard");
       await until(
@@ -133,12 +143,22 @@ module.exports = async function smoke({
           ),
         `${kind} official provider icons`,
       );
+      await until(
+        async () =>
+          window.webContents.executeJavaScript(
+            "document.body.getAnimations().length === 0",
+          ),
+        `${kind} entrance finished`,
+      );
       const layout = await window.webContents.executeJavaScript(
         "({surface:document.body.dataset.surface,width:innerWidth,scroll:document.documentElement.scrollWidth,limbs:document.querySelector('ocelin-assistant').shadowRoot.querySelectorAll('.clawd-arm,.clawd-leg').length})",
       );
       assert.equal(layout.surface, kind);
       assert.equal(layout.limbs, 4);
-      assert.ok(layout.scroll <= layout.width);
+      assert.ok(
+        layout.scroll <= layout.width,
+        `${kind} overflow: ${JSON.stringify(layout)}`,
+      );
       writeFileSync(
         join(output, `${kind}.png`),
         (await window.webContents.capturePage()).toPNG(),
@@ -255,6 +275,57 @@ module.exports = async function smoke({
     });
     report.checks.push(
       "Live RAM, active-first view, collapse persistence, reversible history cleanup and status tile verified",
+    );
+    await action("preferences", { motion: "none", tray: false, bar: false });
+    await activate(["ocelin://panel"]);
+    const drawer = windows.get("tray");
+    await until(() => drawer.isVisible(), "drawer opens without a tray icon");
+    await action("hide", { surface: "dashboard" });
+    assert.equal(drawer.isMovable(), false);
+    const area = require("electron").screen.getDisplayMatching(
+      drawer.getBounds(),
+    ).workArea;
+    assert.deepEqual(
+      drawer.getBounds(),
+      require("./lib/panel.cjs").panelBounds(area),
+    );
+    const panelState = await drawer.webContents.executeJavaScript(
+      "({focus:document.activeElement.id,open:document.body.dataset.panelOpen,animations:document.body.getAnimations().length})",
+    );
+    writeFileSync(join(output, "panel-state.json"), JSON.stringify(panelState));
+    assert.equal(panelState.open, "true");
+    assert.equal(panelState.animations, 0);
+    await drawer.webContents.executeJavaScript(
+      "document.getElementById('settings').click()",
+    );
+    await drawer.webContents.executeJavaScript(
+      "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.getElementById('preferences').close()",
+    );
+    assert.equal(drawer.isVisible(), true);
+    await drawer.webContents.executeJavaScript(
+      "document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))",
+    );
+    await until(() => !drawer.isVisible(), "Escape dismisses drawer");
+    assert.equal(dashboard.isVisible(), false);
+    await activate(["ocelin://panel"]);
+    await until(() => drawer.isVisible(), "drawer reopens");
+    await activate(["ocelin://panel"]);
+    assert.equal(windows.get("tray"), drawer);
+    assert.equal(drawer.isVisible(), true);
+    writeFileSync(
+      join(output, "session-panel.png"),
+      (await drawer.webContents.capturePage()).toPNG(),
+    );
+    await action("show", { surface: "dashboard" });
+    await until(() => !drawer.isVisible(), "outside focus dismisses drawer");
+    await activate(["ocelin://panel"]);
+    await drawer.webContents.executeJavaScript(
+      "document.getElementById('hide').click()",
+    );
+    await until(() => !drawer.isVisible(), "close button dismisses drawer");
+    await action("preferences", { motion: "system", tray: true, bar: true });
+    report.checks.push(
+      "Right-edge session panel opens from URI, reuses its window, respects reduced motion and closes with Escape, outside focus or its close button",
     );
     const originalBounds = dashboard.getBounds();
     await action("preferences", { theme: "light" });
@@ -427,6 +498,7 @@ module.exports = async function smoke({
     report.error = error.stack;
     const dashboard = windows.get("dashboard");
     if (dashboard && !dashboard.isDestroyed()) {
+      dashboard.show();
       report.ui = await dashboard.webContents
         .executeJavaScript(
           "({error:document.getElementById('error').textContent,peek:document.getElementById('session-peek').textContent,hidden:document.getElementById('session-peek').hidden,dialog:[...document.querySelectorAll('dialog[open]')].map(d=>d.id),focus:document.activeElement?.outerHTML})",
