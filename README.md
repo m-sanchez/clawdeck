@@ -4,9 +4,9 @@
 
 Formerly Clawdeck. A local companion for **Codex and Claude Code**, with **Windows status, conversation previews, and a searchable session library**. Choose your desktop surfaces; they share one monitor.
 
-[Website](https://miguelsanchez.co.uk/ocelin/) · [Windows preview downloads](https://github.com/m-sanchez/clawdeck/releases) · [Desktop setup and compatibility](docs/WINDOWS-DESKTOP.md)
+[Website](https://miguelsanchez.co.uk/ocelin/) · [Windows preview downloads](https://github.com/m-sanchez/ocelin/releases) · [Desktop setup and compatibility](docs/WINDOWS-DESKTOP.md)
 
-The browser core keeps zero runtime dependencies. The optional desktop package bundles Electron and Node. The repository URL, npm package and `clawdeck` command remain compatible; `ocelin` is an additional CLI alias.
+The browser core keeps zero runtime dependencies. The optional desktop package bundles Electron and Node. The GitHub repository is now `m-sanchez/ocelin`; old repository links redirect here. The npm package and `clawdeck` command remain compatible; `ocelin` is an additional CLI alias.
 
 ## Windows companion
 
@@ -34,12 +34,12 @@ npm start
 
 ## Browser dashboard
 
-[![CI](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml/badge.svg)](https://github.com/m-sanchez/clawdeck/actions/workflows/ci.yml)
+[![CI](https://github.com/m-sanchez/ocelin/actions/workflows/ci.yml/badge.svg)](https://github.com/m-sanchez/ocelin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-f0ad3d)](LICENSE)
 [![npm](https://img.shields.io/npm/v/clawdeck-panel?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/clawdeck-panel)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-2f6f3f)](package.json)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-f0ad3d)](package.json)
-[![GitHub stars](https://img.shields.io/github/stars/m-sanchez/clawdeck?style=social)](https://github.com/m-sanchez/clawdeck/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/m-sanchez/ocelin?style=social)](https://github.com/m-sanchez/ocelin/stargazers)
 
 An **unofficial local dashboard for Claude Code and Codex**. Point it at any project you
 work on with either assistant and it shows what is actually happening: live
@@ -127,15 +127,15 @@ Principles:
 The 0.6 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/clawdeck/releases/download/v0.6.0/clawdeck-panel-0.6.0.tgz
+npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.4/clawdeck-panel-0.6.4.tgz
 ocelin run --checkout /path/to/your/project
 ```
 
 Or from a clone:
 
 ```bash
-git clone https://github.com/m-sanchez/clawdeck.git
-cd clawdeck
+git clone https://github.com/m-sanchez/ocelin.git
+cd ocelin
 node scripts/panel-run.mjs --checkout /path/to/your/project
 ```
 

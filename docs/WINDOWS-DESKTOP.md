@@ -1,10 +1,10 @@
 # Ocelin for Windows
 
-Ocelin is the new product and mascot identity for Clawdeck. The existing repository URL, npm package, launcher commands, configuration keys, session stores, and canonical Clawd reference remain compatible.
+Ocelin is the new product and mascot identity for Clawdeck. The GitHub repository is now `m-sanchez/ocelin`, with redirects from its former name. The npm package, launcher commands, configuration keys, session stores, and canonical Clawd reference remain compatible.
 
 ## Install and run
 
-Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/clawdeck/releases). The 0.6 integration preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
+Use the x64 Windows installer from [Releases](https://github.com/m-sanchez/ocelin/releases). The 0.6 integration preview is unsigned. It installs for the current user and includes Chromium and Node; no system Node installation is needed to run it. Startup at sign-in is off until enabled in settings. Updates are manual through Releases; Ocelin never downloads or executes an update in the background.
 
 For development, install Node 22.12 or newer, run `npm ci` inside `desktop/`, then `npm start`. `npm run pack` produces an unpacked app; `npm run dist` produces the NSIS installer. The browser core continues to need only Node 20 or newer and no runtime npm dependencies.
 
