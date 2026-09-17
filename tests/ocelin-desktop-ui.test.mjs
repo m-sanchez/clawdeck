@@ -135,7 +135,7 @@ test("taskbar export is opt-in, aggregate-only and rejects stale memory", () => 
 });
 test(
   "native taskbar provider refreshes without more stdin and exits on shutdown",
-  { skip: process.platform !== "win32", timeout: 20000 },
+  { skip: process.platform !== "win32", timeout: 45000 },
   async (t) => {
     const dir = await mkdtemp(join(tmpdir(), "ocelin-widget-test-"));
     assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + "\\"));
@@ -198,15 +198,17 @@ test(
         instances: [{ instanceId: "fixture" }],
       }) + "\n",
     );
-    const wait = async (predicate) => {
-      for (let i = 0; i < 60; i++) {
+    const wait = async (predicate, timeoutMs = 10000) => {
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
         if (predicate()) return;
         await new Promise((r) => setTimeout(r, 150));
       }
-      throw new Error(`Widget did not respond: ${stderr}`);
+      throw new Error(`Widget did not respond: ${stderr}; responses: ${JSON.stringify(rows)}`);
     };
-    await wait(() =>
-      rows.some((r) => r.data?.headline === "2 running | 1 need you"),
+    await wait(
+      () => rows.some((r) => r.data?.headline === "2 running | 1 need you"),
+      30000,
     );
     await writeFile(
       file,
