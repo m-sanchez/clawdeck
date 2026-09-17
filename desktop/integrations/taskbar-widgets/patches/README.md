@@ -1,8 +1,10 @@
-# English permission review
+# English permission review and setup fixes
 
 This optional host build uses [Taskbar Widgets 0.5.36](https://github.com/pfcdev/TaskbarWidgets/tree/c49721cc1cfcdd53d6ad42226410148153c38055), under its MIT license. It is an Ocelin-maintained patch, not an upstream release.
 
 The patch translates the installer's hardcoded Turkish permission and installation text into English. Permission requests, risk levels, package validation and the user's approval controls are unchanged. Ocelin does not preapprove grants.
+
+After an approved installation, the host starts its runtime and waits for the exact installed widget to appear in the refreshed catalog before enabling it. Upstream can otherwise enable its first built-in widget when the runtime was stopped. A separate patch removes the unrelated Antigravity keyboard-shortcut write at host startup; explicit IDE actions retain their existing behavior.
 
 The GitHub `Optional taskbar host` workflow builds from the pinned source and includes the upstream license and third-party notices. Both Settings and the loader are rebuilt because the loader embeds Settings and otherwise restores its original executable.
 

@@ -920,9 +920,11 @@ body[data-surface="bar"] header {
 }
 body[data-surface="bar"] .brand strong,
 body[data-surface="bar"] .brand-caption,
-body[data-surface="bar"] #dashboard,
-body[data-surface="bar"] #hide {
+body[data-surface="bar"] #dashboard {
   display: none;
+}
+body[data-surface="bar"] .brand {
+  cursor: grab;
 }
 body[data-surface="bar"] .brand ocelin-assistant {
   width: 52px;

@@ -11,7 +11,10 @@ import {
 } from "../desktop/renderer/session-model.mjs";
 const require = createRequire(import.meta.url);
 const { summarize } = require("../desktop/lib/resource-model.cjs");
-const { taskbarSummary } = require("../desktop/lib/taskbar-bridge.cjs");
+const {
+  taskbarSummary,
+  widgetSetupArguments,
+} = require("../desktop/lib/taskbar-bridge.cjs");
 const now = Date.now();
 const session = (id, patch = {}) => ({
   key: `codex:${id}`,
@@ -134,6 +137,22 @@ test("taskbar export is opt-in, aggregate-only and rejects stale memory", () => 
   assert.equal(taskbarSummary(state, true, now + 40000).memoryBytes, null);
   state.resources.groups[0].unavailable = 1;
   assert.equal(taskbarSummary(state, true, now).memoryBytes, null);
+});
+
+test("taskbar reconnect opens installed widgets and only reviews new or newer packages", () => {
+  const bundled = { id: "uk.co.miguelsanchez.ocelin", version: "0.6.1" };
+  const setup = (installed) =>
+    widgetSetupArguments(installed, bundled, "Ocelin.twidget");
+  assert.deepEqual(setup(bundled), ["--settings"]);
+  for (const version of ["0.6.2", "0.10.0", "1.0.0"])
+    assert.deepEqual(setup({ ...bundled, version }), ["--settings"]);
+  for (const installed of [
+    undefined,
+    { ...bundled, version: "0.6.0" },
+    { ...bundled, version: "0.5.99" },
+    { ...bundled, id: "other" },
+  ])
+    assert.deepEqual(setup(installed), ["--install-widget", "Ocelin.twidget"]);
 });
 test(
   "native taskbar provider refreshes without more stdin and exits on shutdown",

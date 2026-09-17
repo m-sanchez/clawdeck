@@ -26,7 +26,7 @@ const { createServer } = require("node:net");
 const { Worker } = require("node:worker_threads");
 const { Preferences, recoverBounds } = require("./lib/preferences.cjs");
 const { Resources } = require("./lib/resources.cjs");
-const { TaskbarBridge } = require("./lib/taskbar-bridge.cjs");
+const { TaskbarBridge, widgetSetupArguments } = require("./lib/taskbar-bridge.cjs");
 const { NativeTasks } = require("./lib/native-tasks.cjs");
 const {
   sessionLink,
@@ -423,9 +423,20 @@ function createWindow(kind) {
   };
   window.on("move", saveBounds);
   window.on("resize", saveBounds);
+  if (kind === "bar")
+    window.on("will-move", () => {
+      if (preferences.value.barPlacement === "taskbar") {
+        preferences.update({ barPlacement: "floating" });
+        publish();
+      }
+    });
   window.on("close", (event) => {
     if (quitting) return;
     event.preventDefault();
+    if (kind === "bar") {
+      dismissBar();
+      return;
+    }
     if (
       tray ||
       [...windows.values()].some((w) => w !== window && w.isVisible())
@@ -435,6 +446,10 @@ function createWindow(kind) {
   });
   if (kind === "tray") window.on("blur", () => hideWindow(window));
   return window;
+}
+function dismissBar() {
+  preferences.update({ bar: false });
+  applySurfaces();
 }
 function hideWindow(window) {
   if (!window || window.isDestroyed()) return;
@@ -531,8 +546,8 @@ function placeBar() {
       width: Math.min(bounds.width, area.width - 20),
       height: bounds.height,
     });
-    bar.setMovable(false);
-  } else bar.setMovable(true);
+  }
+  bar.setMovable(true);
 }
 async function freePort() {
   return new Promise((resolvePort, reject) => {
@@ -656,13 +671,47 @@ async function action(name, args = {}) {
   if (name === "install-widget") {
     const destination = join(dataDir, "integrations", "Ocelin.twidget");
     mkdirSync(join(dataDir, "integrations"), { recursive: true });
-    await writeFile(destination, readFileSync(join(__dirname, "integrations", "Ocelin.twidget")));
-    const roots = [join(process.env.LOCALAPPDATA || "", "Programs", "TaskbarWidgets"), join(process.env.LOCALAPPDATA || "", "TaskbarWidgets"), join(process.env.ProgramFiles || "", "TaskbarWidgets")];
-    const host = roots.map(root => join(root, "TaskbarWidgets.exe")).find(existsSync);
+    await writeFile(
+      destination,
+      readFileSync(join(__dirname, "integrations", "Ocelin.twidget")),
+    );
+    const roots = [
+      join(process.env.LOCALAPPDATA || "", "Programs", "TaskbarWidgets"),
+      join(process.env.LOCALAPPDATA || "", "TaskbarWidgets"),
+      join(process.env.ProgramFiles || "", "TaskbarWidgets"),
+    ];
+    const host = roots
+      .map((root) => join(root, "TaskbarWidgets.exe"))
+      .find(existsSync);
     if (host) {
-      const child = spawn(host, ["--install-widget", destination], { windowsHide: true, detached: true, stdio: "ignore" });
-      await new Promise((resolve, reject) => { child.once("spawn", resolve); child.once("error", reject); });
-      child.unref();
+      const bundled = JSON.parse(readFileSync(
+        join(__dirname, "integrations", "taskbar-widgets", "widget.json"),
+        "utf8",
+      ));
+      let installed;
+      if (process.env.LOCALAPPDATA) {
+        try {
+          installed = JSON.parse(readFileSync(
+            join(process.env.LOCALAPPDATA, "TaskbarWidgets", "CommunityWidgets", bundled.id, "widget.json"),
+            "utf8",
+          ));
+        } catch {}
+      }
+      for (const hostArgs of [
+        ["--no-update-check"],
+        widgetSetupArguments(installed, bundled, destination),
+      ]) {
+        const child = spawn(host, hostArgs, {
+          windowsHide: true,
+          detached: true,
+          stdio: "ignore",
+        });
+        await new Promise((resolve, reject) => {
+          child.once("spawn", resolve);
+          child.once("error", reject);
+        });
+        child.unref();
+      }
       return true;
     }
     const failure = await shell.openPath(destination);
@@ -757,6 +806,10 @@ async function action(name, args = {}) {
     return true;
   }
   if (name === "hide") {
+    if (args.surface === "bar") {
+      dismissBar();
+      return true;
+    }
     const window = windows.get(args.surface);
     if (
       window &&

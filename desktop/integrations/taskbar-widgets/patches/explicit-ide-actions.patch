@@ -1,0 +1,11 @@
+diff --git a/src/loader/AccountManager.cs b/src/loader/AccountManager.cs
+--- a/src/loader/AccountManager.cs
++++ b/src/loader/AccountManager.cs
+@@ -67,7 +67,6 @@ internal static class AccountManager
+             WriteSettingsUnlocked(settings);
+         }
+ 
+-        EnsureReloadKeybindingsForKnownProfiles();
+     }
+ 
+     public static long GetChangeVersion() => Interlocked.Read(ref s_changeVersion);

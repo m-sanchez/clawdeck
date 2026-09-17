@@ -15,14 +15,15 @@ This implements the next session-management slice from the [native integration r
 ## Evidence
 
 - Package self-test passed.
-- Full core suite: 692 tests passed. Regression coverage includes mixed parent/child archive ordering, provider-home identity, Windows extended paths and aliases, native activity dates, reconnecting a stopped taskbar helper, and distinguishing native creation from storage and rendering. The 0.6.0 Windows/Linux Node 20/22 CI matrix also passes.
+- Full core suite: 693 tests passed. Regression coverage includes mixed parent/child archive ordering, provider-home identity, Windows extended paths and aliases, native activity dates, reconnecting native tasks and installed widgets, and distinguishing native creation from storage and rendering.
 - Packaged 0.6.0 desktop smoke passed native URI construction/dispatch, history, keyboard-focus preview, hide/restore through IPC, official icons, project routing/reopening, sign-in startup restoration, settings, sandboxing and 320/420/700-pixel layouts. URI dispatch checks do not prove external provider rendering.
 - Installed Codex CLI 0.153.2 successfully archived and restored an isolated fixture through its real API, with no model turn and no real-user history changes.
 - Read-only live library probe indexed 884 distinct conversations, including 203 archived/hidden records, and read a paginated Codex preview through the native API. Indexing plus first native preview took about 7 seconds in the final cached probe on this machine; this is not an instant cold-start guarantee.
 - The installed dashboard was checked against live activity and measured app memory. A Codex lifecycle hook was received. Existing preferences, source folders and history cutoff survived the installer update; the standalone dashboard stayed running.
 - Taskbar Widgets 0.5.36's `twdev validate` accepted the 0.6.0 widget package, including its Ocelin-open button. Explorer placement requires the optional host and its permission review.
 - Native App Tasks 0.6.0.2 installed successfully through an elevated update on Windows 11 build 26200.9457. `FindAll()` in the packaged helper returned both current tasks, with matching IDs and zero hidden tasks. This confirms Windows task storage. The user still reported no taskbar readout; their screenshot showed only the tray tooltip and floating tile. Native cards have not been visually verified.
-- Taskbar Widgets 0.5.36's permission installer contains hardcoded Turkish text. Its settings window was closed before approval. The pinned source patch translates that review into English without changing the permission logic; host installation and actual Explorer rendering are still pending.
+- The English Taskbar Widgets host and Ocelin widget 0.6.1 were installed. The user's approval was persisted. Its runtime then attached to both taskbars, but Ocelin remained disabled because upstream's stale catalog selected a built-in widget after installation. The setup patch starts the runtime and waits for the exact widget before enabling it; 11 mocked regressions cover delayed catalogs, updates and failures without changing permission approval. Inside-taskbar text still needs visual confirmation after enabling the widget.
+- Packaged 0.6.1 desktop smoke passed. The anchored tile is movable, dragging releases its anchor, and its visible hide button and window close both persist the disabled preference. Restoring through preferences works. The physical drag gesture has not been verified in this run.
 
 ## Remaining limits
 

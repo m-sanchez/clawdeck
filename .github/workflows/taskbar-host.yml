@@ -21,18 +21,29 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Apply English installer text
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply Ocelin host fixes
         shell: pwsh
         run: |
           git -C upstream-taskbar-widgets apply --check ../desktop/integrations/taskbar-widgets/patches/settings-english.patch
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git -C upstream-taskbar-widgets apply ../desktop/integrations/taskbar-widgets/patches/settings-english.patch
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($patchName in @('install-catalog.patch', 'explicit-ide-actions.patch')) {
+            git -C upstream-taskbar-widgets apply --check "../desktop/integrations/taskbar-widgets/patches/$patchName"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git -C upstream-taskbar-widgets apply "../desktop/integrations/taskbar-widgets/patches/$patchName"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
           $lockFile = Join-Path $PWD 'upstream-taskbar-widgets/src/settings/src-tauri/Cargo.lock'
           $lockText = [IO.File]::ReadAllText($lockFile)
           $rootVersion = '(\[\[package\]\]\r?\nname = "taskbar-widgets-settings-tauri"\r?\nversion = ")0\.5\.21(")'
           if ([regex]::Matches($lockText, $rootVersion).Count -ne 1) { throw 'Unexpected upstream package version' }
           [IO.File]::WriteAllText($lockFile, [regex]::Replace($lockText, $rootVersion, '${1}0.5.36${2}'))
+      - name: Verify widget setup behavior
+        run: node scripts/taskbar-host-smoke.cjs upstream-taskbar-widgets
       - uses: actions/cache@v4
         with:
           path: |

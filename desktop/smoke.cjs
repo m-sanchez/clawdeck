@@ -202,6 +202,31 @@ module.exports = async function smoke({
         ),
       "summary tile",
     );
+    assert.equal(bar.isMovable(), true);
+    assert.equal(
+      await bar.webContents.executeJavaScript(
+        "document.getElementById('hide').getBoundingClientRect().width > 0",
+      ),
+      true,
+    );
+    bar.emit("will-move");
+    assert.equal(getState().preferences.barPlacement, "floating");
+    await bar.webContents.executeJavaScript(
+      "document.getElementById('hide').click()",
+    );
+    await until(() => !bar.isVisible(), "floating bar dismissed");
+    assert.equal(getState().preferences.bar, false);
+    await action("preferences", { density: "compact" });
+    assert.equal(bar.isVisible(), false);
+    await action("preferences", { bar: true });
+    await until(() => bar.isVisible(), "floating bar restored");
+    bar.close();
+    assert.equal(getState().preferences.bar, false);
+    await action("preferences", { bar: true });
+    await until(() => bar.isVisible(), "closed floating bar restored");
+    report.checks.push(
+      "Anchored tile is movable; dragging releases its anchor; button and window dismissal persist with recovery",
+    );
     writeFileSync(
       join(output, "summary-tile.png"),
       (await bar.webContents.capturePage()).toPNG(),

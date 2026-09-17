@@ -34,7 +34,7 @@ RAM cards show private working set for each app and its recognized child tools. 
 
 ### Taskbar choices
 
-Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. **Move freely** keeps it draggable. Both layouts remain selectable.
+Enable the floating bar, choose **Compact status tile**, then **Above Windows taskbar** for the built-in readout. Drag the mascot to move it; dragging releases the taskbar anchor and remembers its position. Its hide button keeps it hidden across settings changes and restarts. Restore it from the tray's **Toggle floating bar** or Settings. Both layouts remain selectable.
 
 For native Windows hover cards, install the separate [App Tasks development bridge](../desktop/native/README.md) and enable **Native Windows hover cards (experimental)**. This uses Microsoft's public, experimental API and reports whether Windows stores the tasks. Storage is distinct from visible rendering. It needs a supported Windows rollout and package identity.
 

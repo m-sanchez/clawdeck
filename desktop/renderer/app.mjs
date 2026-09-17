@@ -120,6 +120,9 @@ if (surface === "bar") {
   $("settings").replaceChildren(icon("open"));
   $("settings").title = "Open dashboard";
   $("settings").setAttribute("aria-label", "Open dashboard");
+  $("hide").title = "Hide floating bar";
+  $("hide").setAttribute("aria-label", "Hide floating bar");
+  document.querySelector(".brand").title = "Drag to move";
 }
 function render(value) {
   state = value;

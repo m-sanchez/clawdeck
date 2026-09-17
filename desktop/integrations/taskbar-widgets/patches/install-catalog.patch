@@ -1,0 +1,94 @@
+diff --git a/src/settings/dist/app.js b/src/settings/dist/app.js
+--- a/src/settings/dist/app.js
++++ b/src/settings/dist/app.js
+@@ -1583,6 +1583,23 @@
+   renderInstallModal();
+ }
+ 
++async function waitForInstalledWidget(id, version) {
++  let catalogError = "";
++  for (let attempt = 0; attempt < 20; attempt++) {
++    const loaded = await invoke("load_state");
++    const manifest = loaded.widgetCatalog?.widgets?.find((widget) =>
++      widget.id === id && widget.version === version);
++    if (manifest?.valid) {
++      applyRuntimeCatalog(loaded.widgetCatalog);
++      if (!isKnownWidget(id)) throw new Error("The installed widget's renderer is not supported by Settings");
++      return;
++    }
++    catalogError = manifest?.error || catalogError;
++    if (attempt < 19) await new Promise((resolve) => setTimeout(resolve, 500));
++  }
++  throw new Error(catalogError || `The runtime catalog did not confirm ${id} v${version}`);
++}
++
+ function bindInstallModal() {
+   document.querySelectorAll("[data-close-install]").forEach((button) => {
+     button.onclick = () => closeInstallModal();
+@@ -1604,42 +1621,44 @@
+     const preview = state.installPreview;
+     const enableAfter = state.installEnable;
+     let runtimeUnloaded = false;
++    let installedId = null;
+     try {
+       if (preview?.isUpdate) {
+         setStatus("Stopping the widget runtime for a safe update…");
+         await invoke("control_runtime", { action: "unload" });
+         runtimeUnloaded = true;
+       }
+-      const id = await invoke("install_community_widget", {
++      installedId = await invoke("install_community_widget", {
+         reviewToken: preview.reviewToken,
+         grantedOptionalPermissions: state.installOptionalGrants,
+         replaceExisting: Boolean(preview?.isUpdate),
+       });
+-      if (runtimeUnloaded) {
+-        await invoke("control_runtime", { action: "load" });
+-        runtimeUnloaded = false;
+-      }
++      await invoke("control_runtime", { action: "load" });
++      runtimeUnloaded = false;
++      setStatus(`${installedId} ${preview?.isUpdate ? "updated" : "installed"}; validating…`);
++      await waitForInstalledWidget(installedId, preview.version);
++      state.settings = mergeSettings(state.settings);
++      const installed = state.settings.widgets.find((widget) => widget.design === installedId);
++      if (!installed) throw new Error("The installed widget is missing from Settings");
++      installed.settings._permissionsApproved = true;
++      installed.enabled = enableAfter;
++      state.settings.activeDesign = installedId;
++      state.page = "library";
++      setDirty(true);
++      await saveSettings();
+       closeInstallModal();
+-      setStatus(`${id} ${preview?.isUpdate ? "updated" : "installed"}; validating…`);
+-      setTimeout(async () => {
+-        try {
+-          const loaded = await invoke("load_state");
+-          applyRuntimeCatalog(loaded.widgetCatalog);
+-          state.settings = mergeSettings(state.settings);
+-          const installed = widgetState(id);
+-          installed.settings._permissionsApproved = true;
+-          installed.enabled = enableAfter;
+-          state.settings.activeDesign = id;
+-          state.page = "library";
+-          setDirty(true);
+-          await saveSettings();
+-          render();
+-          setStatus(`${id} ${preview?.isUpdate ? `updated to ${preview.version}` : `installed${installed.enabled ? " and enabled" : ""}`}`);
+-        } catch (error) { setStatus(`Installed, but catalog refresh failed: ${error}`); }
+-      }, 1200);
++      render();
++      setStatus(`${installedId} ${preview?.isUpdate ? `updated to ${preview.version}` : `installed${installed.enabled ? " and enabled" : ""}`}`);
+     } catch (error) {
+       if (runtimeUnloaded) {
+         try { await invoke("control_runtime", { action: "load" }); } catch {}
++      }
++      if (installedId) {
++        closeInstallModal();
++        state.page = "library";
++        render();
++        setStatus(`Installed ${installedId}, but setup could not finish: ${error}. Open Settings, load the runtime, then enable the installed widget in the library.`);
++        return;
+       }
+       state.installError = String(error);
+       state.installPreview = null;
