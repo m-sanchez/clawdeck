@@ -22,9 +22,17 @@ The taskbar puts **running sessions and subscription % left** first. Settings ca
 
 Windows options include the tray, Ctrl Alt O quick panel, floating bar, dashboard, a [native App Tasks development bridge](desktop/native/README.md), and the [optional Taskbar Widgets strip](desktop/integrations/taskbar-widgets/README.md). Native shell features have additional OS/package requirements. [What 0.6 implements and how it was validated](docs/OCELIN-0.6-VALIDATION.md).
 
-![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)
+Screenshots from **Ocelin 0.6.5**, using sample conversations, accounts and allowance readings. Memory figures come from the capture machine.
 
-![Ocelin floating session bar with sample sessions](docs/assets/ocelin-bar.png)
+![Ocelin dashboard with Codex and Claude subscription percentages, reset countdowns, active sessions and the Doctor button](docs/assets/ocelin-desktop.png)
+
+| Sliding session panel | Doctor: cleanup and memory |
+| --- | --- |
+| <img src="docs/assets/ocelin-panel.png" width="340" alt="Ocelin sliding panel with remaining allowance, active sessions and Open workspace" /> | <img src="docs/assets/ocelin-doctor.png" width="340" alt="Doctor with reversible history cleanup, measured memory and separate app stop controls" /> |
+
+The movable floating tile can show the same running counts and allowance percentages as the optional taskbar strip:
+
+![Ocelin floating tile with one running session, one needing attention, Codex 18% and Claude 44% remaining](docs/assets/ocelin-tile.png)
 
 From source (Node 22.12 or newer):
 
@@ -48,7 +56,7 @@ work on with either assistant and it shows what is actually happening: live
 sessions, an event timeline, cost and context telemetry, git worktrees,
 reviews, and delivery state - in one local web UI.
 
-Existing project dashboard (screenshot from the earlier Clawdeck release):
+Choose **Open workspace** in the companion to reach the full project dashboard:
 
 ![Project overview dashboard, dark theme](docs/assets/dashboard.png)
 
@@ -86,13 +94,13 @@ never move state - only a human action promotes advice into anything.
 with real durations: subagent tasks, failing commands, and human-wait spans
 (dashed, width-capped) at a glance.
 
-![Trace waterfall: turns with tool-call spans on a timeline](docs/assets/trace.png)
-
 **Burn rate & forecast** - $/hour from statusline cost deltas, 5h/7d
 depletion slopes with ETA, per-model token history over 7d/30d/all-time
 windows. Estimates are labelled as estimates; unknowns stay unknown.
 
-![Cost hub: burn KPIs, forecast card, per-model history](docs/assets/cost.png)
+The Cost page also shows subscription percentages and reset countdowns separately from estimated API-equivalent spending.
+
+![Ocelin Cost page with sample Codex and Claude subscription allowances above separate spending estimates](docs/assets/cost.png)
 
 **Ask Ocelin** (Prompt hub) - ask questions about panel state, answered by
 a local `claude -p` child running tool-less in a sterile temp dir; the only
