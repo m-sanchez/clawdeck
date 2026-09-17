@@ -16,6 +16,7 @@ const defaults = {
   barPlacement: "floating",
   historySince: 0,
   taskbarBridge: false,
+  nativeTasks: false,
   motion: "system",
   theme: "system",
   quiet: false,
@@ -39,6 +40,7 @@ function validate(input, previous = defaults) {
     "sound",
     "startup",
     "taskbarBridge",
+    "nativeTasks",
   ])
     if (typeof input[key] === "boolean") next[key] = input[key];
   for (const [key, values] of Object.entries({

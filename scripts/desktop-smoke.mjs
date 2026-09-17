@@ -1,0 +1,110 @@
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+const target = resolve(root, ".ocelin-smoke", `v060-${Date.now()}`);
+const data = join(target, "data"),
+  codex = join(target, "codex"),
+  claude = join(target, "claude");
+const checkout = join(target, "Proyecto español");
+await Promise.all(
+  [data, codex, claude, checkout].map((p) => mkdir(p, { recursive: true })),
+);
+await writeFile(join(checkout, "README.md"), "# Ocelin integration fixture\n");
+const timestamp = new Date().toISOString();
+await writeFile(
+  join(codex, "rollout.jsonl"),
+  [
+    {
+      type: "session_meta",
+      timestamp,
+      payload: { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", cwd: checkout },
+    },
+    {
+      type: "event_msg",
+      timestamp,
+      payload: { type: "task_started", turn_id: "turn-1" },
+    },
+    {
+      type: "event_msg",
+      timestamp,
+      payload: {
+        type: "user_message",
+        message: "Check the native conversation preview",
+      },
+    },
+  ]
+    .map(JSON.stringify)
+    .join("\n") + "\n",
+);
+for (const [id, complete] of [
+  ["bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", false],
+  ["cccccccc-cccc-cccc-cccc-cccccccccccc", true],
+]) {
+  const rows = [
+    {
+      type: "user",
+      timestamp,
+      sessionId: id,
+      cwd: checkout,
+      message: {
+        content: [{ type: "text", text: "Review the Windows integration" }],
+      },
+    },
+  ];
+  if (complete)
+    rows.push({
+      type: "assistant",
+      timestamp,
+      sessionId: id,
+      cwd: checkout,
+      message: {
+        content: [{ type: "text", text: "The fixture is complete." }],
+        stop_reason: "end_turn",
+      },
+    });
+  await writeFile(
+    join(claude, `${id}.jsonl`),
+    rows.map(JSON.stringify).join("\n") + "\n",
+  );
+}
+const packaged = process.argv[2];
+const exe =
+  packaged ||
+  join(root, "desktop", "node_modules", "electron", "dist", "electron.exe");
+const args = [...(packaged ? [] : [join(root, "desktop")]), "--smoke-test"];
+const env = {
+  ...process.env,
+  OCELIN_DATA_DIR: data,
+  OCELIN_SOURCES: JSON.stringify([
+    { provider: "codex", root: codex },
+    { provider: "claude", root: claude },
+  ]),
+};
+delete env.ELECTRON_RUN_AS_NODE;
+const child = spawn(exe, args, {
+  windowsHide: true,
+  stdio: ["ignore", "pipe", "pipe"],
+  env,
+});
+let log = "";
+child.stdout.on("data", (data) => {
+  log = (log + data).slice(-16000);
+});
+child.stderr.on("data", (data) => {
+  log = (log + data).slice(-16000);
+});
+const code = await new Promise((done, reject) => {
+  child.on("error", reject);
+  child.on("exit", done);
+});
+try {
+  console.log(await readFile(join(data, "proof", "report.json"), "utf8"));
+} catch {
+  console.log(log);
+  process.exitCode = 1;
+}
+console.log(`Artifacts: ${join(data, "proof")}`);
+process.exitCode ||= code || 0;

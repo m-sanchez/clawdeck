@@ -13,6 +13,7 @@ while ($true) {
       $request = $line | ConvertFrom-Json
       if ($request.type -eq 'shutdown') { break }
       if ($request.type -in @('initialize', 'instancesChanged')) { $instances = @($request.instances) }
+      if ($request.type -eq 'action' -and $request.action -eq 'openOcelin') { Start-Process -FilePath 'ocelin://dashboard' -WindowStyle Hidden }
     } catch {}
     $pending = $reader.ReadLineAsync()
   }

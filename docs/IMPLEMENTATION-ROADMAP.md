@@ -1,6 +1,6 @@
 # Ocelin delivery tracker
 
-The [17 September native integration research](OCELIN-NEXT-RESEARCH.md) defines the next product direction and acceptance gates. The 0.5 work below records implementation delivered, not acceptance of the complete Windows/session-management experience. Native taskbar proof, exact-session opening, instant history previews and provider lifecycle operations remain outstanding.
+The [0.6 implementation and validation record](OCELIN-0.6-VALIDATION.md) tracks the current native/session-management work against the [17 September research](OCELIN-NEXT-RESEARCH.md). Exact conversation dispatch, previews, a separate history library and Codex archive/restore are implemented. Native shell rendering, production signing and the memory target retain separate acceptance gates. The 0.5 record below is historical.
 
 Approved scope: native Windows monitoring for Codex and Claude, with independently selectable tray, floating bar, and dashboard; the approved golden pixel ocelot; compatible browser operation; GitHub and personal website updates.
 

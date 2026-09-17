@@ -1,28 +1,90 @@
 {
   "name": "ocelin-desktop",
   "productName": "Ocelin",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A Windows companion for local Codex and Claude sessions",
   "private": true,
   "main": "main.cjs",
   "author": "Miguel Sanchez",
   "license": "MIT",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "start": "electron .",
     "pack": "node prepare.mjs && electron-builder --dir --win",
     "dist": "node prepare.mjs && electron-builder --win nsis"
   },
-  "devDependencies": { "electron": "44.4.1", "electron-builder": "26.15.3" },
+  "devDependencies": {
+    "electron": "44.4.1",
+    "electron-builder": "26.15.3"
+  },
   "build": {
     "appId": "uk.co.miguelsanchez.ocelin",
     "productName": "Ocelin",
-    "directories": { "output": "dist", "buildResources": "assets" },
-    "files": ["main.cjs", "preload.cjs", "smoke.cjs", "lib/**", "renderer/**", "assets/**", "integrations/**", "package.json"],
-    "asarUnpack": ["lib/resources.ps1"],
-    "extraResources": [{ "from": "../", "to": "core", "filter": ["server/**", "ui/**", "hooks/**", "scripts/**", "contracts/**", "schemas/**", "reference/**", "command-templates/**", "package.json", "panel.config.json", "README.md", "ARCHITECTURE.md", "LICENSE"] }],
-    "win": { "target": "nsis", "icon": "assets/ocelin.ico", "artifactName": "Ocelin-${version}-${arch}-setup.${ext}", "signExecutable": false },
-    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "deleteAppDataOnUninstall": false, "shortcutName": "Ocelin" }
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "smoke.cjs",
+      "lib/**",
+      "renderer/**",
+      "assets/**",
+      "integrations/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "lib/resources.ps1"
+    ],
+    "extraResources": [
+      {
+        "from": "native/activate.ps1",
+        "to": "native/activate.ps1"
+      },
+      {
+        "from": "../",
+        "to": "core",
+        "filter": [
+          "server/**",
+          "ui/**",
+          "hooks/**",
+          "scripts/**",
+          "contracts/**",
+          "schemas/**",
+          "reference/**",
+          "command-templates/**",
+          "package.json",
+          "panel.config.json",
+          "README.md",
+          "ARCHITECTURE.md",
+          "LICENSE"
+        ]
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Ocelin conversation links",
+        "schemes": [
+          "ocelin"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/ocelin.ico",
+      "artifactName": "Ocelin-${version}-${arch}-setup.${ext}",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "Ocelin"
+    }
   }
 }

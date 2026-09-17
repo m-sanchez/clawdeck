@@ -2,7 +2,7 @@
 
 # Ocelin
 
-Formerly Clawdeck. A local companion for **Codex and Claude Code**, with an optional **Windows tray, floating session bar, and full dashboard**. Choose any combination; they share one monitor.
+Formerly Clawdeck. A local companion for **Codex and Claude Code**, with **Windows status, conversation previews, and a searchable session library**. Choose your desktop surfaces; they share one monitor.
 
 [Website](https://miguelsanchez.co.uk/ocelin/) · [Windows preview downloads](https://github.com/m-sanchez/clawdeck/releases) · [Desktop setup and compatibility](docs/WINDOWS-DESKTOP.md)
 
@@ -12,7 +12,9 @@ The browser core keeps zero runtime dependencies. The optional desktop package b
 
 Download the x64 installer from Releases. Sign-in startup and lifecycle hooks are optional. The preview is unsigned; automatic updates are not enabled.
 
-The compact start screen groups active Codex and Claude sessions by project and shows live app RAM. Expand a project for session rows, open memory details for process usage, or clear older sessions from view without deleting provider conversations. The floating bar also has a status-tile mode. An [optional Taskbar Widgets adapter](desktop/integrations/taskbar-widgets/README.md) can display the summary inside the Windows taskbar.
+**Now** groups active sessions by project and shows measured app RAM. Hover a conversation to read its latest request and response; click to continue in the exact Codex or Claude task. **History** searches saved conversations, including those with missing project folders. Select old sessions to hide them in Ocelin, or archive/restore Codex sessions through its native API.
+
+Windows options include the tray, Ctrl Alt O quick panel, floating bar, dashboard, a [native App Tasks development bridge](desktop/native/README.md), and the [optional Taskbar Widgets strip](desktop/integrations/taskbar-widgets/README.md). Native shell features have additional OS/package requirements. [What 0.6 implements and how it was validated](docs/OCELIN-0.6-VALIDATION.md).
 
 ![Ocelin Windows dashboard with sample Codex and Claude sessions](docs/assets/ocelin-desktop.png)
 

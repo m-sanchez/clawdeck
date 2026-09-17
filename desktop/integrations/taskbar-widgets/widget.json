@@ -1,7 +1,7 @@
 {
   "schemaVersion": 4,
   "id": "uk.co.miguelsanchez.ocelin",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "minHostVersion": "0.5.4",
   "displayName": "Ocelin sessions",
   "description": "Local Codex and Claude running counts, attention and app RAM from Ocelin.",
@@ -12,7 +12,7 @@
   "runtime": { "type": "process", "entry": "provider.ps1", "arguments": [], "protocol": "json-lines-v1", "lifetime": "persistent", "runAs": "user", "workingDirectory": "package" },
   "permissions": {
     "required": [
-      { "id": "system.fullAccess", "reason": "Runs this read-only PowerShell provider with normal user rights because the sandbox cannot read Ocelin's local summary file. The host does not sandbox process providers." },
+      { "id": "system.fullAccess", "reason": "Reads Ocelin's fixed local summary file and opens the fixed ocelin://dashboard link when clicked, using normal user rights. The host does not sandbox process providers." },
       { "id": "filesystem.read", "scope": "%LOCALAPPDATA%\\Ocelin\\taskbar-summary.json", "reason": "Reads only Ocelin's opt-in aggregate counts and memory totals, without session names, project paths, prompts or account data." },
       { "id": "system.background", "reason": "Refreshes the summary every two seconds while this widget is enabled." }
     ],
