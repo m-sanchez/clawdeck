@@ -338,7 +338,11 @@ function startMonitor() {
           : pending.resolve(message.value);
       }
     }
-    if (message.type === "notification" && Notification.isSupported()) {
+    if (
+      !smokeTest &&
+      message.type === "notification" &&
+      Notification.isSupported()
+    ) {
       const s = message.session;
       const toast = new Notification({
         title: `Ocelin · ${s.provider === "codex" ? "Codex" : "Claude"}`,
