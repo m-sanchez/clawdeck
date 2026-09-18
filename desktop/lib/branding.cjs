@@ -1,10 +1,44 @@
 const { app, Menu, dialog, shell, BrowserWindow } = require("electron");
 const { join, resolve } = require("node:path");
+const {
+  applicationId,
+  repairLegacyShortcut,
+} = require("./windows-identity.cjs");
 
-const appId = "uk.co.miguelsanchez.ocelin";
+const appId = applicationId(
+  app.isPackaged,
+  process.argv.includes("--smoke-test") && Boolean(process.env.OCELIN_DATA_DIR),
+);
 const iconPath = app.isPackaged
   ? join(process.resourcesPath, "assets", "ocelin.ico")
   : join(__dirname, "..", "assets", "ocelin.ico");
+
+function repairWindowsIdentity(dataDir) {
+  if (process.platform !== "win32" || !app.isPackaged) return;
+  try {
+    const programs = join(
+      app.getPath("appData"),
+      "Microsoft/Windows/Start Menu/Programs",
+    );
+    const backup = repairLegacyShortcut(
+      programs,
+      join(dataDir, "shortcut-backups"),
+      (path) => shell.readShortcutLink(path),
+    );
+    if (!backup) return;
+    const installed = join(programs, "Ocelin.lnk");
+    const details = shell.readShortcutLink(installed);
+    if (details.target.toLowerCase() === process.execPath.toLowerCase())
+      shell.writeShortcutLink(installed, "update", {
+        target: process.execPath,
+        appUserModelId: appId,
+        icon: iconPath,
+        iconIndex: 0,
+      });
+  } catch (error) {
+    console.error(`Ocelin shortcut repair: ${error.message}`);
+  }
+}
 
 function brandWindow(window) {
   if (process.platform !== "win32") return;
@@ -92,4 +126,10 @@ function installMenu(showWindow) {
   );
 }
 
-module.exports = { appId, iconPath, brandWindow, installMenu };
+module.exports = {
+  appId,
+  iconPath,
+  brandWindow,
+  installMenu,
+  repairWindowsIdentity,
+};

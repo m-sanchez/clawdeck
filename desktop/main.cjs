@@ -40,6 +40,7 @@ const {
   iconPath,
   brandWindow,
   installMenu,
+  repairWindowsIdentity,
 } = require("./lib/branding.cjs");
 const {
   sessionLink,
@@ -337,7 +338,11 @@ function startMonitor() {
           : pending.resolve(message.value);
       }
     }
-    if (message.type === "notification" && Notification.isSupported()) {
+    if (
+      !smokeTest &&
+      message.type === "notification" &&
+      Notification.isSupported()
+    ) {
       const s = message.session;
       const toast = new Notification({
         title: `Ocelin · ${s.provider === "codex" ? "Codex" : "Claude"}`,
@@ -1124,6 +1129,7 @@ else {
   app
     .whenReady()
     .then(async () => {
+      if (!smokeTest) repairWindowsIdentity(dataDir);
       installMenu(showWindow);
       protocol.handle("ocelin", async (request) => {
         const url = new URL(request.url);

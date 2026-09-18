@@ -137,7 +137,7 @@ Principles:
 The 0.6 preview browser package is attached to the GitHub release. The npm registry still carries the earlier Clawdeck release.
 
 ```bash
-npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.7/clawdeck-panel-0.6.7.tgz
+npm install --global https://github.com/m-sanchez/ocelin/releases/download/v0.6.8/clawdeck-panel-0.6.8.tgz
 ocelin run --checkout /path/to/your/project
 ```
 
