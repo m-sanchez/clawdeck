@@ -2,19 +2,27 @@ const { app, Menu, dialog, shell, BrowserWindow } = require("electron");
 const { join, resolve } = require("node:path");
 
 const appId = "uk.co.miguelsanchez.ocelin";
-const iconPath = join(__dirname, "..", "assets", "ocelin.ico");
+const iconPath = app.isPackaged
+  ? join(process.resourcesPath, "assets", "ocelin.ico")
+  : join(__dirname, "..", "assets", "ocelin.ico");
 
 function brandWindow(window) {
   if (process.platform !== "win32") return;
-  window.setAppDetails({
-    appId,
-    appIconPath: app.isPackaged ? process.execPath : iconPath,
-    appIconIndex: 0,
-    relaunchDisplayName: "Ocelin",
-    relaunchCommand: app.isPackaged
-      ? `"${process.execPath}" ocelin://dashboard`
-      : `"${process.execPath}" "${resolve(__dirname, "..")}" ocelin://dashboard`,
-  });
+  const apply = () => {
+    window.setIcon(iconPath);
+    window.setAppDetails({
+      appId,
+      appIconPath: iconPath,
+      appIconIndex: 0,
+      relaunchDisplayName: "Ocelin",
+      relaunchCommand: app.isPackaged
+        ? `"${process.execPath}" ocelin://dashboard`
+        : `"${process.execPath}" "${resolve(__dirname, "..")}" ocelin://dashboard`,
+    });
+  };
+  apply();
+  window.on("show", apply);
+  window.on("restore", apply);
 }
 
 function installMenu(showWindow) {

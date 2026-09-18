@@ -2,10 +2,10 @@ name: Windows desktop
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', 'scripts/verify-windows-branding.cjs', '.github/workflows/windows-desktop.yml']
+    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', 'scripts/verify-windows-branding.cjs', 'scripts/check-window-icons.ps1', '.github/workflows/windows-desktop.yml']
   push:
     branches: [main]
-    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', 'scripts/verify-windows-branding.cjs', '.github/workflows/windows-desktop.yml']
+    paths: ['desktop/**', 'server/**', 'ui/**', 'hooks/**', 'package.json', 'scripts/verify-windows-branding.cjs', 'scripts/check-window-icons.ps1', '.github/workflows/windows-desktop.yml']
 permissions:
   contents: read
 jobs:

@@ -1,5 +1,7 @@
 # Ocelin for Windows
 
+Version 0.6.7 gives Windows a dedicated Ocelin icon file and reapplies window branding when a workspace is shown or restored. Packaged checks compare the workspace's actual small and large Windows icons with the pet artwork, including after reopening. The taskbar widget remains at 0.6.5.
+
 Version 0.6.6 uses Ocelin's own application menu, About dialog and explicit Windows taskbar identity. The app, installer and uninstaller share the pet icon at nine sizes from 16 to 256 pixels. The existing taskbar widget remains at 0.6.5 and needs no new approval for this update.
 
 Ocelin is the new product and mascot identity for Clawdeck. The GitHub repository is now `m-sanchez/ocelin`, with redirects from its former name. The npm package, launcher commands, configuration keys, session stores, and canonical Clawd reference remain compatible.

@@ -9,7 +9,8 @@ const {
 } = require("node:fs");
 const { join } = require("node:path");
 const { pathToFileURL } = require("node:url");
-const { spawnSync } = require("node:child_process");
+const { spawnSync, execFile } = require("node:child_process");
+const { promisify } = require("node:util");
 
 module.exports = async function smoke({
   app,
@@ -35,6 +36,29 @@ module.exports = async function smoke({
     version: app.getVersion(),
     packaged: app.isPackaged,
     checks: [],
+  };
+  const verifyWindowIcon = async (window) => {
+    if (process.platform !== "win32") return;
+    const handle = window.getNativeWindowHandle();
+    const hwnd =
+      handle.length === 8 ? handle.readBigUInt64LE() : handle.readUInt32LE();
+    await promisify(execFile)(
+      join(
+        process.env.SystemRoot,
+        "System32/WindowsPowerShell/v1.0/powershell.exe",
+      ),
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        join(core, "scripts/check-window-icons.ps1"),
+        "-WindowHandle",
+        String(hwnd),
+        "-IconPath",
+        require("./lib/branding.cjs").iconPath,
+      ],
+      { windowsHide: true, timeout: 15000 },
+    );
   };
   try {
     const menu = require("electron").Menu.getApplicationMenu();
@@ -566,6 +590,25 @@ module.exports = async function smoke({
     report.checks.push(
       "Bundled project backend booted and correct session route opened",
     );
+    if (process.platform === "win32") {
+      await verifyWindowIcon(project.window);
+      project.window.setIcon(
+        require("electron").nativeImage.createFromBitmap(
+          Buffer.alloc(32 * 32 * 4, 255),
+          { width: 32, height: 32 },
+        ),
+      );
+      await assert.rejects(
+        verifyWindowIcon(project.window),
+        /does not match Ocelin/,
+      );
+      project.window.hide();
+      project.window.showInactive();
+      await verifyWindowIcon(project.window);
+      report.checks.push(
+        "Workspace small and large Windows icons match Ocelin and recover on reopening",
+      );
+    }
     await project.window.webContents.executeJavaScript(
       "location.hash = '/cost'; void 0",
     );
@@ -600,6 +643,7 @@ module.exports = async function smoke({
       "full workspace overview and navigation",
     );
     assert.equal(getState().preferences.lastProjectPath, selected.cwd);
+    await verifyWindowIcon(getProject().window);
     report.checks.push(
       "Visible Open workspace button opens the original full Overview, Worktrees and Review app",
     );
