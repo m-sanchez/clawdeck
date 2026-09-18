@@ -1,7 +1,7 @@
 {
   "name": "ocelin-desktop",
   "productName": "Ocelin",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Ocelin: a local Windows companion for Codex and Claude",
   "private": true,
   "main": "main.cjs",
@@ -42,6 +42,10 @@
       "lib/stop-processes.ps1"
     ],
     "extraResources": [
+      {
+        "from": "assets/ocelin.ico",
+        "to": "assets/ocelin.ico"
+      },
       {
         "from": "native/activate.ps1",
         "to": "native/activate.ps1"

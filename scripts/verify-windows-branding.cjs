@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { createHash } = require("node:crypto");
 const { createRequire } = require("node:module");
-const { join, resolve } = require("node:path");
+const { basename, dirname, join, resolve } = require("node:path");
 
 const desktop = resolve(__dirname, "../desktop");
 const requireBuild = createRequire(join(desktop, "package.json"));
@@ -29,6 +29,12 @@ if (!files.length)
     join(desktop, `dist/Ocelin-${version}-x64-setup.exe`),
   );
 for (const file of files) {
+  if (basename(file) === "Ocelin.exe")
+    assert.deepEqual(
+      readFileSync(join(dirname(file), "resources/assets/ocelin.ico")),
+      ico,
+      `${file}: dedicated Windows shell icon`,
+    );
   const exe = PE.NtExecutable.from(readFileSync(file), { ignoreCert: true });
   const resources = PE.NtExecutableResource.from(exe);
   const groups = ResEdit.Resource.IconGroupEntry.fromEntries(resources.entries);
