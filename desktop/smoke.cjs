@@ -61,6 +61,48 @@ module.exports = async function smoke({
     );
   };
   try {
+    const identity = require("./lib/windows-identity.cjs");
+    assert.equal(
+      require("./lib/branding.cjs").appId,
+      `${identity.installedAppId}.tests`,
+    );
+    if (process.platform === "win32") {
+      const programs = join(dataDir, "shortcut-fixture/programs");
+      const development = join(dataDir, "shortcut-fixture/desktop");
+      mkdirSync(programs, { recursive: true });
+      mkdirSync(development, { recursive: true });
+      writeFileSync(
+        join(development, "package.json"),
+        JSON.stringify({ name: "ocelin-desktop" }),
+      );
+      const shortcut = join(programs, "Electron.lnk");
+      const shell = require("electron").shell;
+      assert.equal(
+        shell.writeShortcutLink(shortcut, "create", {
+          target: join(development, "node_modules/electron/dist/electron.exe"),
+          appUserModelId: identity.installedAppId,
+        }),
+        true,
+      );
+      const original = readFileSync(shortcut);
+      const backup = identity.repairLegacyShortcut(
+        programs,
+        join(dataDir, "shortcut-fixture/backups"),
+        (path) => shell.readShortcutLink(path),
+      );
+      assert.deepEqual(readFileSync(backup), original);
+      assert.equal(
+        identity.repairLegacyShortcut(
+          programs,
+          join(dataDir, "shortcut-fixture/backups"),
+          (path) => shell.readShortcutLink(path),
+        ),
+        null,
+      );
+      report.checks.push(
+        "Real Windows shortcut collision repaired with an exact backup; smoke identity stays separate from installed Ocelin",
+      );
+    }
     const menu = require("electron").Menu.getApplicationMenu();
     assert.equal(app.getName(), "Ocelin");
     assert.ok(menu.getMenuItemById("ocelin-dashboard"));

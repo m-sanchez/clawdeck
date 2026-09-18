@@ -1,5 +1,7 @@
 # Ocelin for Windows
 
+Version 0.6.8 separates installed, development and test Windows identities. It backs up a legacy `Electron.lnk` only when the shortcut claims Ocelin's installed app ID and points to a verified Ocelin development package. This resolves a shortcut collision that can make Windows use Electron's taskbar icon despite correct window icons. Backups are kept in `%LOCALAPPDATA%\Ocelin\shortcut-backups`. The taskbar widget stays at 0.6.5.
+
 Version 0.6.7 gives Windows a dedicated Ocelin icon file and reapplies window branding when a workspace is shown or restored. Packaged checks compare the workspace's actual small and large Windows icons with the pet artwork, including after reopening. The taskbar widget remains at 0.6.5.
 
 Version 0.6.6 uses Ocelin's own application menu, About dialog and explicit Windows taskbar identity. The app, installer and uninstaller share the pet icon at nine sizes from 16 to 256 pixels. The existing taskbar widget remains at 0.6.5 and needs no new approval for this update.
